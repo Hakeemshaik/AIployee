@@ -11,12 +11,14 @@ interface Props {
 }
 
 const OPTIONAL: NutrientKey[] = ['protein', 'carbs', 'fat', 'fibre', 'sugar', 'sodium']
+const PRIMARY_GOALS: NutrientKey[] = ['kcal', 'protein', 'carbs', 'fat']
 
 export function SettingsScreen({ toast }: Props) {
   const { data, dispatch, resetAll } = useStore()
   const { settings } = data
   const fileRef = useRef<HTMLInputElement>(null)
   const [calcOpen, setCalcOpen] = useState(false)
+  const [showAllGoals, setShowAllGoals] = useState(false)
 
   const customCount = Object.values(data.foods).filter((f) => f.custom).length
 
@@ -63,11 +65,14 @@ export function SettingsScreen({ toast }: Props) {
         <div className="section">
           <div className="section-title">Daily goals</div>
           <div className="card">
-            {NUTRIENT_KEYS.map((key) => (
+            {/* The four you look at daily; the rest sit behind a disclosure. */}
+            {(showAllGoals ? NUTRIENT_KEYS : PRIMARY_GOALS).map((key) => (
               <div className="setting-row" key={key}>
                 <div className="grow">
-                  <div className="setting-label">{NUTRIENT_LABEL[key]}</div>
-                  <div className="setting-help">{nutrientUnit(key)} per day</div>
+                  <div className="setting-label">
+                    {NUTRIENT_LABEL[key]}{' '}
+                    <span className="faint small">{nutrientUnit(key)}</span>
+                  </div>
                 </div>
                 <input
                   className="goal-input"
@@ -84,8 +89,9 @@ export function SettingsScreen({ toast }: Props) {
             ))}
             <div className="setting-row">
               <div className="grow">
-                <div className="setting-label">Goal weight</div>
-                <div className="setting-help">kg — drawn on the weight chart</div>
+                <div className="setting-label">
+                  Goal weight <span className="faint small">kg</span>
+                </div>
               </div>
               <input
                 className="goal-input"
@@ -105,13 +111,14 @@ export function SettingsScreen({ toast }: Props) {
               />
             </div>
           </div>
-          <button
-            className="btn btn-sm btn-ghost"
-            style={{ marginTop: 10 }}
-            onClick={() => setCalcOpen(true)}
-          >
-            Work out my targets
-          </button>
+          <div className="row wrap gap-8" style={{ marginTop: 12 }}>
+            <button className="btn btn-sm btn-ghost" onClick={() => setCalcOpen(true)}>
+              Work out my targets
+            </button>
+            <button className="btn btn-quiet" onClick={() => setShowAllGoals(!showAllGoals)}>
+              {showAllGoals ? 'Fewer' : 'Fibre, sugar & sodium'}
+            </button>
+          </div>
         </div>
 
         <div className="section">
@@ -147,9 +154,8 @@ export function SettingsScreen({ toast }: Props) {
               )
             })}
           </div>
-          <p className="note" style={{ marginTop: 8 }}>
-            Calories always show. Everything is recorded either way — this only changes what the
-            summary lists.
+          <p className="note" style={{ marginTop: 10 }}>
+            Everything is recorded either way — this only changes what the summary lists.
           </p>
         </div>
 

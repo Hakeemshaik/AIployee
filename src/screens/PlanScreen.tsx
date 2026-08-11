@@ -120,22 +120,24 @@ export function PlanScreen({ toast }: Props) {
           })}
         </div>
 
-        <div className="card">
-          <div className="row">
-            <div className="grow" style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 700, fontSize: 15 }}>{longDate(selected)}</div>
-              <div className="small muted num">
-                {planned.length === 0
-                  ? 'Nothing planned'
-                  : `${fmtKcal(totals.kcal)} kcal · ${fmtG(totals.protein)} g P · ${fmtG(
-                      totals.carbs,
-                    )} g C · ${fmtG(totals.fat)} g F`}
-              </div>
+        <div className="row" style={{ padding: '4px 4px 0' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 600 }}>{longDate(selected)}</div>
+            <div className="small faint num">
+              {planned.length === 0
+                ? 'Nothing planned'
+                : `${fmtKcal(totals.kcal)} kcal · ${fmtG(totals.protein)} g protein`}
             </div>
           </div>
-
           {planned.length > 0 && (
-            <div className="row wrap gap-8" style={{ marginTop: 12 }}>
+            <>
+              <button
+                className="icon-btn"
+                onClick={() => setCopying(true)}
+                aria-label="Copy this day to other days"
+              >
+                <IconCopy size={19} />
+              </button>
               <button
                 className="btn btn-sm btn-primary"
                 onClick={() => {
@@ -145,10 +147,7 @@ export function PlanScreen({ toast }: Props) {
               >
                 Log this day
               </button>
-              <button className="btn btn-sm btn-ghost" onClick={() => setCopying(true)}>
-                <IconCopy size={16} /> Copy to…
-              </button>
-            </div>
+            </>
           )}
         </div>
 
@@ -160,9 +159,7 @@ export function PlanScreen({ toast }: Props) {
               <div className="meal-head">
                 <span className="meal-name">{slot.label}</span>
                 {list.length > 0 && (
-                  <span className="meal-totals num">
-                    {fmtKcal(slotTotals.kcal)} kcal · {fmtG(slotTotals.protein)} g P
-                  </span>
+                  <span className="meal-totals num">{fmtKcal(slotTotals.kcal)} kcal</span>
                 )}
                 <span className="spacer" />
                 <button
@@ -170,17 +167,17 @@ export function PlanScreen({ toast }: Props) {
                   onClick={() => setAdding(slot.key)}
                   aria-label={`Add to ${slot.label}`}
                 >
-                  <IconPlus />
+                  <IconPlus size={19} />
                 </button>
               </div>
 
               {list.length === 0 ? (
                 <button
-                  className="card card-tight muted small"
+                  className="card card-tight faint small"
                   style={{ width: '100%', textAlign: 'left' }}
                   onClick={() => setAdding(slot.key)}
                 >
-                  Nothing planned — tap to add
+                  Plan {slot.label.toLowerCase()}
                 </button>
               ) : (
                 <div className="entry-list">
@@ -207,7 +204,7 @@ export function PlanScreen({ toast }: Props) {
                         </div>
                         <div className="entry-right">
                           <div className="entry-kcal num">{fmtKcal(n.kcal)}</div>
-                          <div className="entry-p num">{fmtG(n.protein)} g P</div>
+                          <div className="entry-p num">{fmtG(n.protein)} g protein</div>
                         </div>
                         <button
                           className="star"
@@ -251,9 +248,8 @@ export function PlanScreen({ toast }: Props) {
 
           {data.recurring.length === 0 ? (
             <div className="card">
-              <p className="small muted" style={{ margin: 0 }}>
-                Set up a meal once and have it land on the days you choose — the same breakfast
-                every weekday, chicken and rice on Mon/Wed/Fri, whatever you eat on repeat.
+              <p className="small faint" style={{ margin: 0 }}>
+                Set a meal up once and have it land on the days you choose.
               </p>
             </div>
           ) : (
@@ -265,17 +261,14 @@ export function PlanScreen({ toast }: Props) {
                     <div className="row">
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div className="row gap-6">
-                          <span style={{ fontWeight: 650, fontSize: 14.5 }}>{r.name}</span>
+                          <span style={{ fontWeight: 600 }}>{r.name}</span>
                           {!r.active && <span className="badge">paused</span>}
                         </div>
-                        <div className="small muted">
-                          {MEAL_LABEL[r.meal]} · {r.items.length} item
-                          {r.items.length === 1 ? '' : 's'} ·{' '}
-                          <span className="num">
-                            {fmtKcal(rTotals.kcal)} kcal · {fmtG(rTotals.protein)} g P
-                          </span>
+                        <div className="small faint num">
+                          {MEAL_LABEL[r.meal]} · {fmtKcal(rTotals.kcal)} kcal ·{' '}
+                          {fmtG(rTotals.protein)} g protein
                         </div>
-                        <div className="row gap-6" style={{ marginTop: 6 }}>
+                        <div className="row gap-6" style={{ marginTop: 8 }}>
                           {weekdayOrder(mondayFirst).map((d) => (
                             <span
                               key={d}
@@ -314,10 +307,6 @@ export function PlanScreen({ toast }: Props) {
           )}
         </div>
 
-        <p className="note">
-          Planned items show greyed out on the Today screen until you log them, so you can see
-          what is still coming.
-        </p>
       </div>
 
       <AddFoodSheet

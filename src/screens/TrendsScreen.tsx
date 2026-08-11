@@ -82,11 +82,11 @@ export function TrendsScreen({ toast }: Props) {
                 /{loggedDays.length || 0}
               </span>
             </div>
-            <div className="stat-key">Days hit protein goal</div>
+            <div className="stat-key">Days on protein target</div>
           </div>
           <div className="stat">
             <div className="stat-val num">{streak}</div>
-            <div className="stat-key">Day logging streak</div>
+            <div className="stat-key">Day streak</div>
           </div>
         </div>
 
@@ -117,8 +117,8 @@ export function TrendsScreen({ toast }: Props) {
         </div>
 
         <div className="section">
-          <div className="section-title">Macro split</div>
-          <div className="card stack gap-10">
+          <div className="section-title">Average day</div>
+          <div className="card stack gap-12">
             <MacroSplitBar
               totals={{
                 protein: avg((n) => n.protein),
@@ -129,15 +129,15 @@ export function TrendsScreen({ toast }: Props) {
             <div className="chart-legend">
               <span>
                 <i className="legend-dot" style={{ background: 'var(--protein)' }} />
-                Protein {fmtG(avg((n) => n.protein))} g
+                {fmtG(avg((n) => n.protein))} g protein
               </span>
               <span>
                 <i className="legend-dot" style={{ background: 'var(--carbs)' }} />
-                Carbs {fmtG(avg((n) => n.carbs))} g
+                {fmtG(avg((n) => n.carbs))} g carbs
               </span>
               <span>
                 <i className="legend-dot" style={{ background: 'var(--fat)' }} />
-                Fat {fmtG(avg((n) => n.fat))} g
+                {fmtG(avg((n) => n.fat))} g fat
               </span>
             </div>
           </div>

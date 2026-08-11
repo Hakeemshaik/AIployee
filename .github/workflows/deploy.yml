@@ -2,7 +2,10 @@ name: Deploy Macros to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    # The feature branch is included so the app can go live before it is merged.
+    branches:
+      - main
+      - claude/food-tracking-meal-planner-rc976z
     paths-ignore:
       - '**.md'
   workflow_dispatch:

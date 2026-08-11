@@ -274,7 +274,7 @@ function SavedMealList({
         <span className="empty-emoji">🍱</span>
         No saved meals yet.
         <br />
-        On the Today screen, tap a meal’s ••• and choose “Save as meal”.
+        On Today, tap a meal’s ⋯ and choose “Save as a reusable meal”.
       </div>
     )
   }

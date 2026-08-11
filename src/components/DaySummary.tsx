@@ -28,20 +28,13 @@ export function DaySummary({ totals, goals, tracked, plannedRemaining }: Props) 
   return (
     <div className="card">
       <div className="summary">
-        <Ring progress={totals.kcal / kcalGoal} size={116} thickness={11}>
+        <Ring progress={totals.kcal / kcalGoal} size={112} thickness={8}>
           <span className="ring-value num">{fmtKcal(Math.abs(remaining))}</span>
-          <span className="ring-caption">{over ? 'over' : 'left'}</span>
+          <span className="ring-caption">{over ? 'kcal over' : 'kcal left'}</span>
         </Ring>
 
+        {/* Calories are the ring — repeating them as a bar just adds noise. */}
         <div className="bars">
-          <BarRow
-            label="Calories"
-            value={totals.kcal}
-            goal={goals.kcal}
-            unit="kcal"
-            colour={COLOR.kcal}
-            nutrient="kcal"
-          />
           {tracked.map((key) => (
             <BarRow
               key={key}
@@ -56,12 +49,17 @@ export function DaySummary({ totals, goals, tracked, plannedRemaining }: Props) 
         </div>
       </div>
 
-      {plannedRemaining && plannedRemaining.kcal > 0 && (
-        <p className="note" style={{ marginTop: 12, marginBottom: 0 }}>
-          Still planned today: <strong>{fmtKcal(plannedRemaining.kcal)} kcal</strong> ·{' '}
-          {fmtNutrient('protein', plannedRemaining.protein)} g protein
-        </p>
-      )}
+      <p className="note center" style={{ marginTop: 16, marginBottom: 0 }}>
+        <span className="num">
+          {fmtKcal(totals.kcal)} of {fmtKcal(goals.kcal)} kcal
+        </span>
+        {plannedRemaining && plannedRemaining.kcal > 0 && (
+          <>
+            {' · '}
+            <span className="num">{fmtKcal(plannedRemaining.kcal)}</span> still planned
+          </>
+        )}
+      </p>
     </div>
   )
 }
@@ -89,7 +87,7 @@ function BarRow({
       <div className="bar-head">{label}</div>
       <div className={`bar-nums num${over ? ' over' : ''}`}>
         {fmtNutrient(nutrient, value)}
-        <span className="faint" style={{ fontWeight: 500 }}>
+        <span className="faint" style={{ fontWeight: 400 }}>
           {' '}
           / {fmtNutrient(nutrient, goal)} {unit}
         </span>

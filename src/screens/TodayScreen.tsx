@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
+import { ActionMenu } from '../components/ActionMenu'
 import { AddFoodSheet } from '../components/AddFoodSheet'
 import { DaySummary } from '../components/DaySummary'
 import {
   IconChevronLeft,
   IconChevronRight,
+  IconMore,
   IconPlus,
   IconRepeat,
   IconTrash,
@@ -16,6 +18,7 @@ import { resolvePlan } from '../lib/plan'
 import { newId } from '../lib/id'
 import { useStore } from '../state/store'
 import {
+  MEAL_LABEL,
   MEAL_SLOTS,
   type LogEntry,
   type MealSlot,
@@ -32,6 +35,8 @@ export function TodayScreen({ toast }: Props) {
   const [adding, setAdding] = useState<MealSlot | null>(null)
   const [editing, setEditing] = useState<LogEntry | null>(null)
   const [savingMeal, setSavingMeal] = useState<MealSlot | null>(null)
+  const [mealMenu, setMealMenu] = useState<MealSlot | null>(null)
+  const [dayMenu, setDayMenu] = useState(false)
 
   const entries = useMemo(() => data.log.filter((e) => e.date === date), [data.log, date])
   const totals = useMemo(() => totalFor(entries), [entries])
@@ -110,27 +115,29 @@ export function TodayScreen({ toast }: Props) {
           >
             <IconChevronRight />
           </button>
+          <button
+            className="icon-btn icon-btn-plain"
+            onClick={() => setDayMenu(true)}
+            aria-label="Day options"
+          >
+            <IconMore />
+          </button>
         </div>
       </div>
 
-      <div className="screen stack gap-12" style={{ paddingTop: 12 }}>
+      <div className="screen stack gap-16" style={{ paddingTop: 4 }}>
         <DaySummary
           totals={totals}
           goals={data.settings.goals}
           tracked={data.settings.trackedNutrients}
+          plannedRemaining={plannedTotals}
         />
-
-        {date !== todayISO() && (
-          <button className="btn btn-sm btn-ghost" onClick={() => setDate(todayISO())}>
-            Jump to today
-          </button>
-        )}
 
         {unloggedPlan.length > 0 && (
           <div className="banner">
             <div className="banner-text">
-              <strong>{fmtKcal(plannedTotals.kcal)} kcal</strong> ·{' '}
-              {fmtG(plannedTotals.protein)} g protein planned and not logged yet
+              <strong className="num">{fmtKcal(plannedTotals.kcal)} kcal</strong> planned, not
+              logged yet
             </div>
             <button
               className="btn btn-sm btn-primary"
@@ -158,32 +165,34 @@ export function TodayScreen({ toast }: Props) {
               <div className="meal-head">
                 <span className="meal-name">{slot.label}</span>
                 {list.length > 0 && (
-                  <span className="meal-totals num">
-                    {fmtKcal(slotTotals.kcal)} kcal · {fmtG(slotTotals.protein)} g P
-                  </span>
+                  <span className="meal-totals num">{fmtKcal(slotTotals.kcal)} kcal</span>
                 )}
                 <span className="spacer" />
-                {list.length > 0 && (
-                  <button className="btn btn-quiet" onClick={() => setSavingMeal(slot.key)}>
-                    Save as meal
-                  </button>
-                )}
                 <button
                   className="icon-btn"
                   onClick={() => setAdding(slot.key)}
                   aria-label={`Add food to ${slot.label}`}
                 >
-                  <IconPlus />
+                  <IconPlus size={19} />
                 </button>
+                {list.length > 0 && (
+                  <button
+                    className="icon-btn"
+                    onClick={() => setMealMenu(slot.key)}
+                    aria-label={`More options for ${slot.label}`}
+                  >
+                    <IconMore size={19} />
+                  </button>
+                )}
               </div>
 
               {list.length === 0 && slotPlan.length === 0 ? (
                 <button
-                  className="card card-tight muted small"
+                  className="card card-tight faint small"
                   style={{ width: '100%', textAlign: 'left' }}
                   onClick={() => setAdding(slot.key)}
                 >
-                  Nothing logged — tap to add
+                  Add {slot.label.toLowerCase()}
                 </button>
               ) : (
                 <div className="entry-list">
@@ -197,18 +206,15 @@ export function TodayScreen({ toast }: Props) {
                         onClick={() => setEditing(e)}
                       >
                         <div className="entry-main">
-                          <div className="entry-name">
-                            <span className="truncate">{e.snapshot.name}</span>
-                            {e.fromPlan && <span className="badge badge-plan">plan</span>}
-                          </div>
-                          <div className="entry-sub">
+                          <div className="entry-name truncate">{e.snapshot.name}</div>
+                          <div className="entry-sub truncate">
                             {fmtQty(e.snapshot, e.qty)}
                             {e.snapshot.brand ? ` · ${e.snapshot.brand}` : ''}
                           </div>
                         </div>
                         <div className="entry-right">
                           <div className="entry-kcal num">{fmtKcal(n.kcal)}</div>
-                          <div className="entry-p num">{fmtG(n.protein)} g P</div>
+                          <div className="entry-p num">{fmtG(n.protein)} g protein</div>
                         </div>
                       </div>
                     )
@@ -217,19 +223,17 @@ export function TodayScreen({ toast }: Props) {
                   {slotPlan.map((p) => {
                     const n = scaleNutrients(p.snapshot, p.qty)
                     return (
-                      <div className="entry" key={p.id} style={{ opacity: 0.62 }}>
+                      <div className="entry" key={p.id}>
                         <div className="entry-main">
                           <div className="entry-name">
-                            <span className="truncate">{p.snapshot.name}</span>
+                            <span className="truncate faint">{p.snapshot.name}</span>
                             <span className="badge badge-pending">
                               {p.source === 'recurring' && <IconRepeat size={10} />} to eat
                             </span>
                           </div>
-                          <div className="entry-sub">{fmtQty(p.snapshot, p.qty)}</div>
-                        </div>
-                        <div className="entry-right">
-                          <div className="entry-kcal num">{fmtKcal(n.kcal)}</div>
-                          <div className="entry-p num">{fmtG(n.protein)} g P</div>
+                          <div className="entry-sub">
+                            {fmtQty(p.snapshot, p.qty)} · {fmtKcal(n.kcal)} kcal
+                          </div>
                         </div>
                         <button
                           className="btn btn-sm btn-ghost"
@@ -249,26 +253,7 @@ export function TodayScreen({ toast }: Props) {
           )
         })}
 
-        {entries.length > 0 && (
-          <button
-            className="btn btn-sm btn-danger"
-            style={{ alignSelf: 'flex-start', marginTop: 6 }}
-            onClick={() => {
-              if (confirm(`Clear everything logged on ${friendlyDate(date)}?`)) {
-                dispatch({ type: 'clearDay', date })
-                toast('Day cleared')
-              }
-            }}
-          >
-            <IconTrash size={16} /> Clear this day
-          </button>
-        )}
-
       </div>
-
-      <button className="fab" onClick={() => setAdding(guessMeal())}>
-        <IconPlus /> Add food
-      </button>
 
       <AddFoodSheet
         open={adding !== null}
@@ -308,18 +293,56 @@ export function TodayScreen({ toast }: Props) {
           }}
         />
       )}
+
+      {mealMenu && (
+        <ActionMenu
+          title={MEAL_LABEL[mealMenu]}
+          onClose={() => setMealMenu(null)}
+          actions={[
+            { label: 'Add food', onSelect: () => setAdding(mealMenu) },
+            { label: 'Save as a reusable meal', onSelect: () => setSavingMeal(mealMenu) },
+            {
+              label: 'Clear this meal',
+              danger: true,
+              onSelect: () => {
+                for (const e of byMeal[mealMenu]) dispatch({ type: 'removeLog', id: e.id })
+                toast(`${MEAL_LABEL[mealMenu]} cleared`)
+              },
+            },
+          ]}
+        />
+      )}
+
+      {dayMenu && (
+        <ActionMenu
+          title={friendlyDate(date)}
+          onClose={() => setDayMenu(false)}
+          actions={[
+            ...(date !== todayISO()
+              ? [{ label: 'Jump to today', onSelect: () => setDate(todayISO()) }]
+              : []),
+            ...(entries.length > 0
+              ? [
+                  {
+                    label: 'Clear this day',
+                    danger: true,
+                    onSelect: () => {
+                      if (confirm(`Clear everything logged on ${friendlyDate(date)}?`)) {
+                        dispatch({ type: 'clearDay', date })
+                        toast('Day cleared')
+                      }
+                    },
+                  },
+                ]
+              : []),
+            { label: 'Close', onSelect: () => {} },
+          ]}
+        />
+      )}
     </>
   )
 }
 
-/** Pick a sensible default meal from the clock. */
-function guessMeal(): MealSlot {
-  const h = new Date().getHours()
-  if (h < 10.5) return 'breakfast'
-  if (h < 15) return 'lunch'
-  if (h < 21) return 'dinner'
-  return 'snack'
-}
 
 /** Mounted with key={entry.id}, so its local state starts from that entry. */
 function EditEntrySheet({

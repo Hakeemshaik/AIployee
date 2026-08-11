@@ -72,7 +72,7 @@ export default function App() {
   }, [])
 
   return (
-    <div className={`app${tab === 'today' ? ' has-fab' : ''}`}>
+    <div className="app">
       {tab === 'today' && <TodayScreen toast={toast} />}
       {tab === 'plan' && <PlanScreen toast={toast} />}
       {tab === 'foods' && <FoodsScreen toast={toast} />}

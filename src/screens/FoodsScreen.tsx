@@ -176,10 +176,8 @@ export function FoodsScreen({ toast }: Props) {
               </div>
             </div>
 
-            <p className="note">
-              {foods.length} foods loaded. Values for chain menus are close estimates — SA menus
-              differ from overseas ones and portions vary by store. Tap any food to edit it, or
-              add your own straight off a pack label.
+            <p className="note center" style={{ marginTop: 28 }}>
+              {foods.length} foods · chain figures are close estimates, tap any food to edit
             </p>
           </>
         ) : listed.length > 0 ? (

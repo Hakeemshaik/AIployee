@@ -16,12 +16,12 @@ offline like any other app. All data stays on the device — no account, no serv
 **Today** — the logging screen
 
 - Calorie ring showing what's left, plus bars for protein, carbs and fat against your goals
-- Breakfast / Lunch / Dinner / Snacks, each with its own running total
+- Breakfast / Lunch / Dinner / Snacks, each with its own total and its own **+**
 - Add a food, pick grams or a count, see the numbers before you commit
 - Tap any entry to change the amount or move it to another meal
 - Anything you planned but haven't eaten yet shows greyed out with a **Log** button
-- Save a meal you just logged as a reusable combo, loggable in one tap
-- Swipe back and forward through days, or jump to any date
+- Each meal's **⋯** saves it as a reusable combo or clears it; the day's **⋯** clears the day
+- Step through days with the arrows, or tap the date for a picker
 
 **Plan** — days ahead
 
@@ -89,10 +89,13 @@ Other commands:
 
 ## Deploying
 
-`.github/workflows/deploy.yml` builds and publishes to GitHub Pages on every push to
-`main`. One-time setup: repository **Settings → Pages → Build and deployment → Source:
-GitHub Actions**. After that, the app is served at
-`https://<user>.github.io/<repo>/`.
+`.github/workflows/deploy.yml` builds and publishes to GitHub Pages. One-time setup:
+repository **Settings → Pages → Build and deployment → Source: GitHub Actions**. After
+that, every push deploys and the app is served at `https://<user>.github.io/<repo>/`.
+
+It deploys from `main` and from the `claude/food-tracking-meal-planner-rc976z` branch,
+so the app can go live before the branch is merged. Drop the branch from the `on.push`
+list once it is merged.
 
 The build uses a relative base path, so the same output also works from any static
 host or a subdirectory without reconfiguring.

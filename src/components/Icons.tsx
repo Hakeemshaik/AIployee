@@ -118,6 +118,14 @@ export const IconEdit = ({ size = 18 }: Props) => (
   </svg>
 )
 
+export const IconMore = ({ size = 20 }: Props) => (
+  <svg {...base(size)} strokeWidth={2.4}>
+    <circle cx="5" cy="12" r="0.6" />
+    <circle cx="12" cy="12" r="0.6" />
+    <circle cx="19" cy="12" r="0.6" />
+  </svg>
+)
+
 export const IconBolt = ({ size = 16 }: Props) => (
   <svg {...base(size)}>
     <path d="M13 2L4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5Z" />
