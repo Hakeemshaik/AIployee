@@ -89,9 +89,17 @@ Other commands:
 
 ## Deploying
 
-`.github/workflows/deploy.yml` builds and publishes to GitHub Pages. One-time setup:
-repository **Settings → Pages → Build and deployment → Source: GitHub Actions**. After
-that, every push deploys and the app is served at `https://<user>.github.io/<repo>/`.
+`.github/workflows/deploy.yml` builds and publishes to GitHub Pages.
+
+**One-time setup, and it has to be done by hand:** repository **Settings → Pages →
+Build and deployment → Source: GitHub Actions**. Until that is set, the workflow fails
+at `actions/configure-pages` with *"Create Pages site failed: Resource not accessible by
+integration"* — a workflow cannot enable Pages itself, because creating a Pages site
+needs repo admin rights that `GITHUB_TOKEN` is never granted. Re-run the workflow after
+flipping it. If the deploy step then fails on permissions, check **Settings → Actions →
+General → Workflow permissions** is *Read and write*.
+
+After that, every push deploys and the app is served at `https://<user>.github.io/<repo>/`.
 
 It deploys from `main` and from the `claude/food-tracking-meal-planner-rc976z` branch,
 so the app can go live before the branch is merged. Drop the branch from the `on.push`
