@@ -1,0 +1,801 @@
+<title>The Collections Loop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    --paper:    #EDF1F1;
+    --surface:  #FAFCFC;
+    --sunk:     #E3E9E9;
+    --ink:      #0E1518;
+    --body:     #33454A;
+    --muted:    #6B7F84;
+    --rule:     #C7D3D4;
+    --accent:   #0B6E75;
+    --accent-2: #0F8F98;
+    --signal:   #A34A0D;
+    --signal-bg:#F4E5D8;
+    --good:     #2E6B45;
+    --good-bg:  #DFE9E1;
+
+    --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --f-body:    "Newsreader", Georgia, "Times New Roman", serif;
+    --f-mono:    "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:    #0C1214;
+      --surface:  #141D20;
+      --sunk:     #182427;
+      --ink:      #E9F0F0;
+      --body:     #B4C3C5;
+      --muted:    #7E9297;
+      --rule:     #2A393D;
+      --accent:   #4FC7CE;
+      --accent-2: #2AA5AE;
+      --signal:   #E1904F;
+      --signal-bg:#2A1F16;
+      --good:     #75BE8D;
+      --good-bg:  #16241C;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:    #0C1214;
+    --surface:  #141D20;
+    --sunk:     #182427;
+    --ink:      #E9F0F0;
+    --body:     #B4C3C5;
+    --muted:    #7E9297;
+    --rule:     #2A393D;
+    --accent:   #4FC7CE;
+    --accent-2: #2AA5AE;
+    --signal:   #E1904F;
+    --signal-bg:#2A1F16;
+    --good:     #75BE8D;
+    --good-bg:  #16241C;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--body);
+    font-family: var(--f-body);
+    font-size: 17px;
+    line-height: 1.68;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 0 28px 100px;
+  }
+
+  .prose { max-width: 66ch; }
+
+  p { margin: 0 0 1.1em; }
+  p:last-child { margin-bottom: 0; }
+
+  strong { color: var(--ink); font-weight: 500; }
+  em { color: var(--ink); }
+
+  code, .mono {
+    font-family: var(--f-mono);
+    font-size: 0.86em;
+    background: var(--sunk);
+    padding: 0.1em 0.36em;
+    border-radius: 2px;
+    color: var(--ink);
+  }
+
+  /* ---------- masthead ---------- */
+
+  header.masthead {
+    padding: 76px 0 40px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 52px;
+  }
+
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+    margin: 0 0 20px;
+  }
+
+  h1 {
+    font-family: var(--f-display);
+    font-weight: 700;
+    font-size: clamp(2.2rem, 5.6vw, 3.5rem);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    margin: 0 0 22px;
+    text-wrap: balance;
+  }
+
+  .standfirst {
+    font-size: 1.16rem;
+    line-height: 1.6;
+    max-width: 60ch;
+    color: var(--body);
+    margin: 0;
+  }
+
+  /* ---------- sections ---------- */
+
+  section { margin-bottom: 68px; }
+
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 12px;
+    margin-bottom: 28px;
+  }
+
+  .sec-head .tag {
+    font-family: var(--f-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+    padding-top: 4px;
+  }
+
+  h2 {
+    font-family: var(--f-display);
+    font-weight: 600;
+    font-size: clamp(1.42rem, 3vw, 1.85rem);
+    letter-spacing: -0.018em;
+    line-height: 1.15;
+    color: var(--ink);
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--f-display);
+    font-weight: 600;
+    font-size: 1.03rem;
+    letter-spacing: -0.006em;
+    color: var(--ink);
+    margin: 0 0 8px;
+  }
+
+  .stack { display: flex; flex-direction: column; gap: 26px; }
+
+  /* ---------- tables ---------- */
+
+  .scroller {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: var(--surface);
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 620px;
+    font-size: 0.925rem;
+  }
+
+  th {
+    font-family: var(--f-mono);
+    font-weight: 500;
+    font-size: 0.65rem;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--sunk);
+    vertical-align: bottom;
+  }
+
+  td {
+    padding: 15px 18px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+    line-height: 1.55;
+  }
+
+  tbody tr:last-child td { border-bottom: 0; }
+
+  td.lead { color: var(--ink); }
+  td.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 0.86rem; }
+  .step-n {
+    font-family: var(--f-mono);
+    font-size: 0.78rem;
+    color: var(--accent-2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- callout ---------- */
+
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    padding: 22px 26px;
+    margin: 0;
+    border-radius: 0 3px 3px 0;
+  }
+  .callout .label {
+    font-family: var(--f-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+    display: block;
+    margin-bottom: 9px;
+  }
+  .callout p { max-width: 62ch; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .callout.warn { border-left-color: var(--signal); }
+  .callout.warn .label { color: var(--signal); }
+
+  /* ---------- layer cards ---------- */
+
+  .layers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .layer {
+    background: var(--surface);
+    padding: 24px 24px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .layer .name {
+    font-family: var(--f-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+  }
+
+  .layer h3 { margin: 0; }
+
+  .layer p {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .layer .replaces {
+    font-family: var(--f-mono);
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--muted);
+    border-top: 1px dashed var(--rule);
+    padding-top: 11px;
+    margin-top: auto;
+  }
+
+  /* ---------- diagram ---------- */
+
+  figure { margin: 0; }
+
+  .diagram {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 12px 8px 4px;
+    overflow-x: auto;
+  }
+  .diagram svg { display: block; min-width: 660px; width: 100%; height: auto; }
+
+  figcaption {
+    font-family: var(--f-mono);
+    font-size: 0.72rem;
+    line-height: 1.55;
+    color: var(--muted);
+    margin-top: 12px;
+    max-width: 70ch;
+  }
+
+  /* ---------- KPI tiles ---------- */
+
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .tile {
+    background: var(--surface);
+    padding: 18px 18px 20px;
+  }
+
+  .tile .k {
+    font-family: var(--f-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 10px;
+    line-height: 1.4;
+    min-height: 2.5em;
+  }
+
+  .tile .v {
+    font-family: var(--f-display);
+    font-weight: 600;
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .tile .v.hl { color: var(--accent-2); }
+
+  /* ---------- chips ---------- */
+
+  .chip {
+    display: inline-block;
+    font-family: var(--f-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .chip.out { background: var(--signal-bg); color: var(--signal); }
+  .chip.in  { background: var(--good-bg);   color: var(--good); }
+
+  /* ---------- phases ---------- */
+
+  .phases { display: flex; flex-direction: column; gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; }
+
+  .phase {
+    background: var(--surface);
+    padding: 22px 26px;
+    display: grid;
+    grid-template-columns: 78px 1fr;
+    gap: 4px 22px;
+    align-items: baseline;
+  }
+
+  .phase .p-n {
+    font-family: var(--f-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+    padding-top: 3px;
+  }
+
+  .phase h3 { margin: 0 0 6px; }
+  .phase p { font-size: 0.95rem; margin: 0; max-width: 68ch; }
+  .phase .unlocks {
+    grid-column: 2;
+    font-family: var(--f-mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 560px) {
+    .phase { grid-template-columns: 1fr; gap: 8px; }
+    .phase .unlocks { grid-column: 1; }
+    .sec-head { flex-direction: column; gap: 6px; }
+  }
+
+  footer.end {
+    border-top: 1px solid var(--rule);
+    padding-top: 26px;
+    font-family: var(--f-mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  a { color: var(--accent-2); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">AIployee &middot; Collections operations</p>
+    <h1>The Collections Loop</h1>
+    <p class="standfirst">Mafadi and Ripple run through four manual handoffs and one fragile browser session. Here is how that becomes a closed loop that builds its own next round &mdash; and what the dashboard on top of it should actually show.</p>
+  </header>
+
+  <section>
+    <div class="sec-head">
+      <span class="tag">Diagnosis</span>
+      <h2>Five steps, and where each one breaks</h2>
+    </div>
+    <div class="prose" style="margin-bottom:26px">
+      <p>Every campaign runs the same way today. None of these failures are the voice platform's fault, and none are the skills' fault &mdash; they all trace back to one thing, which is the section after this.</p>
+    </div>
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr><th style="width:34px"></th><th style="width:24%">Step</th><th style="width:30%">How it happens now</th><th>What breaks</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="step-n">1</td>
+            <td class="lead">Age analysis arrives</td>
+            <td>Client emails an <code>.xlsx</code>; the import-builder skill restructures it into the 72-column file</td>
+            <td>Excel destroys phone numbers &mdash; <code>787766532.0</code> naively stripped becomes a <em>different valid-looking number</em>. Multi-unit tenants appear several times. Blank units leaked the literal <code>{{ attributes.unit_number }}</code> into 75 live records.</td>
+          </tr>
+          <tr>
+            <td class="step-n">2</td>
+            <td class="lead">Import uploaded to Jobix</td>
+            <td>By hand, through the dashboard</td>
+            <td>Nothing confirms the batch fired. On 30 July a batch of 79 never dialled &mdash; no attempt, no record, no error. It was only caught by manually comparing phones called against records loaded.</td>
+          </tr>
+          <tr>
+            <td class="step-n">3</td>
+            <td class="lead">Agent dials, extractor writes outcomes</td>
+            <td>Automatic &mdash; the only step already unattended</td>
+            <td>The outcome fields can't be trusted. 262 of 326 records landed in <code>No Outcome</code>, which mixes &ldquo;never answered&rdquo; with &ldquo;answered and refused&rdquo;. 164 of 438 calls carried <code>voicemail: true</code> over a full two-way conversation.</td>
+          </tr>
+          <tr>
+            <td class="step-n">4</td>
+            <td class="lead">Pull the campaign back out</td>
+            <td>Architect-tool drives the browser through the dashboard API, transcripts 300 at a time</td>
+            <td>The fragile step. Runs on a session cookie, wrong workspace returns a plausible but completely wrong dataset, <code>page_size=100</code> throws a 500, and any page navigation wipes every <code>window.__*</code> variable. Re-pulled from scratch, by hand, every campaign.</td>
+          </tr>
+          <tr>
+            <td class="step-n">5</td>
+            <td class="lead">Classify, count, write the report</td>
+            <td>Claude re-derives every figure from the raw pull, then builds the <code>.docx</code> and the redial list</td>
+            <td>The arithmetic is recomputed by a language model each time. One draft reported 60.7% contact where the true unique figure was 58.3%. The skill's own pitfalls file lists twelve ways a number has already gone out wrong.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <span class="tag">The pivot</span>
+      <h2>Stop pulling from Jobix. Make Jobix push to you.</h2>
+    </div>
+    <div class="prose stack" style="margin-bottom:26px">
+      <p>Every problem above is a symptom of the same root cause: <strong>the call data never lands anywhere you own.</strong> It lives in someone else's dashboard behind a session cookie, so every campaign starts with a scrape.</p>
+      <p>You already built the fix and haven't switched it on. Speed to Lead has a live call-ingestion endpoint on the MPM form:</p>
+    </div>
+
+    <div class="scroller" style="margin-bottom:26px">
+      <table>
+        <thead><tr><th style="width:30%">What it accepts</th><th>What that gives you</th></tr></thead>
+        <tbody>
+          <tr><td class="lead"><code>POST /api/forms/{form}/calls</code></td><td>One request per call <em>attempt</em> &mdash; answered, voicemail, busy, failed. Not one per contact.</td></tr>
+          <tr><td class="lead"><code>suid</code></td><td>Links the attempt straight back to the tenant record you imported. No phone-number matching, no dedupe guesswork.</td></tr>
+          <tr><td class="lead"><code>transcript</code></td><td>Role-tagged turns with timestamps, stored next to the record. The transcript-verification step stops being a fetch loop and becomes a column.</td></tr>
+          <tr><td class="lead"><code>event_id</code></td><td>Duplicate webhook deliveries are discarded on arrival. Retries are safe.</td></tr>
+          <tr><td class="lead"><code>attempt</code>, <code>final</code>, <code>duration_seconds</code>, <code>recording_url</code></td><td>Attempt decay and the dead-number pile become queries. Recordings play inline.</td></tr>
+          <tr><td class="lead"><code>importBatchId</code> filter on <code>call_stats</code></td><td>Already the campaign key. Connect rate, contacts reached, attempts per contact, talk time and a per-outcome breakdown, per campaign, already computed.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout warn" style="margin-bottom:26px">
+      <span class="label">Live finding</span>
+      <p><code>call_stats</code> on the MPM form currently returns <code>total: 0</code>. The endpoint is built, authenticated and schema-validated &mdash; and not one call has ever been posted to it. The whole pipe exists and nothing is going through it.</p>
+    </div>
+
+    <div class="prose stack">
+      <p>Wire the post-call webhook to that endpoint and Phases 0 through 3 of the analyser &mdash; workspace check, paging, transcript fetch, reach classification &mdash; stop being work you do. They become a query against your own database.</p>
+      <p><strong>If Jobix has no outbound webhook, write the sync worker instead.</strong> Same destination, but headless: service credentials, on a cron, polling conversations and posting each one into Speed to Lead. It is the code already sitting in the skill, moved somewhere it can run unattended. A day's work, and it retires the browser step permanently.</p>
+      <p>Everything below this is easy once call data lands in a database you control, and effectively impossible while it doesn't.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <span class="tag">Architecture</span>
+      <h2>Six layers, four of which you have already written once</h2>
+    </div>
+
+    <figure style="margin-bottom:34px">
+      <div class="diagram">
+        <svg viewBox="0 0 1000 215" role="img" aria-label="Flow diagram: client file, import and quality check, agent dials, your database, truth layer producing dashboard and report, with a return arc from the truth layer back to the import stage labelled redial engine.">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--muted)"></path>
+            </marker>
+          </defs>
+
+          <g font-family="Archivo, Arial, sans-serif">
+            <!-- node 1 -->
+            <rect x="19" y="40" width="170" height="66" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
+            <text x="104" y="70" text-anchor="middle" font-size="14" font-weight="600" fill="var(--ink)">Client file</text>
+            <text x="104" y="88" text-anchor="middle" font-size="10" font-family="IBM Plex Mono, monospace" fill="var(--muted)">watched folder</text>
+
+            <!-- node 2 -->
+            <rect x="217" y="40" width="170" height="66" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
+            <text x="302" y="70" text-anchor="middle" font-size="14" font-weight="600" fill="var(--ink)">Import + QA</text>
+            <text x="302" y="88" text-anchor="middle" font-size="10" font-family="IBM Plex Mono, monospace" fill="var(--muted)">cleaned &middot; batch id</text>
+
+            <!-- node 3 -->
+            <rect x="415" y="40" width="170" height="66" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
+            <text x="500" y="70" text-anchor="middle" font-size="14" font-weight="600" fill="var(--ink)">Agent dials</text>
+            <text x="500" y="88" text-anchor="middle" font-size="10" font-family="IBM Plex Mono, monospace" fill="var(--muted)">fired vs loaded</text>
+
+            <!-- node 4 - the pivot -->
+            <rect x="613" y="40" width="170" height="66" rx="3" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.6"></rect>
+            <text x="698" y="70" text-anchor="middle" font-size="14" font-weight="600" fill="var(--ink)">Your database</text>
+            <text x="698" y="88" text-anchor="middle" font-size="10" font-family="IBM Plex Mono, monospace" fill="var(--accent-2)">attempt + transcript</text>
+
+            <!-- node 5 -->
+            <rect x="811" y="40" width="170" height="66" rx="3" fill="var(--sunk)" stroke="var(--rule)"></rect>
+            <text x="896" y="70" text-anchor="middle" font-size="14" font-weight="600" fill="var(--ink)">Truth layer</text>
+            <text x="896" y="88" text-anchor="middle" font-size="10" font-family="IBM Plex Mono, monospace" fill="var(--muted)">dashboard &middot; report</text>
+
+            <!-- arrows -->
+            <line x1="193" y1="73" x2="211" y2="73" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#ah)"></line>
+            <line x1="391" y1="73" x2="409" y2="73" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#ah)"></line>
+            <line x1="589" y1="73" x2="607" y2="73" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#ah)"></line>
+            <line x1="787" y1="73" x2="805" y2="73" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#ah)"></line>
+
+            <!-- return arc -->
+            <path d="M 896 110 L 896 168 Q 896 180 884 180 L 314 180 Q 302 180 302 168 L 302 118"
+                  fill="none" stroke="var(--accent-2)" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#ah)"></path>
+            <text x="593" y="172" text-anchor="middle" font-size="10" font-family="IBM Plex Mono, monospace" fill="var(--accent-2)">redial engine &mdash; next round builds itself</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>The only new plumbing is the fourth box. Everything to its left you already do; everything to its right you already do by hand.</figcaption>
+    </figure>
+
+    <div class="layers">
+      <div class="layer">
+        <span class="name">Intake</span>
+        <h3>Client file in, import out</h3>
+        <p>A watched inbox or Drive folder per client. The existing builder script runs headless on arrival and emits two things: the import file, and a data-quality sheet &mdash; dead numbers, phones failing the SA mobile-prefix check, duplicate tenants with their combined exposure, floats that got mangled.</p>
+        <p class="replaces">Surfaces the data problems <em>before</em> anyone dials. You currently find them after the campaign.</p>
+      </div>
+      <div class="layer">
+        <span class="name">Dispatch</span>
+        <h3>Batch out, receipt back</h3>
+        <p>Push the import, record the returned batch id against the campaign, then reconcile unique phones dialled against records loaded. If the gap isn't zero, alert.</p>
+        <p class="replaces">The silent-79 detector. It is a subtraction.</p>
+      </div>
+      <div class="layer">
+        <span class="name">Truth</span>
+        <h3>One classifier, versioned and tested</h3>
+        <p>The definitions currently living in a skill prompt, moved into code: reached, the dedupe rank, first-reach decay, arrears under commitment versus cash committed with its floor and ceiling.</p>
+        <p class="replaces">The model then reads and writes about the numbers instead of recomputing them.</p>
+      </div>
+      <div class="layer">
+        <span class="name">Surface</span>
+        <h3>Two screens, not one</h3>
+        <p>A client-facing campaign view carrying the eight KPIs already validated with Mafadi, and an operations view you'd actually open daily. Detailed below.</p>
+        <p class="replaces">Both read the truth layer, so the dashboard and the Word report can never disagree.</p>
+      </div>
+      <div class="layer">
+        <span class="name">Redial</span>
+        <h3>The next round builds itself</h3>
+        <p>The Phase 5 exclusion rules as a scheduled job. Round N+1 exists the morning after round N closes, with an attempt cap and a dialling-hour spread taken from your own answer-rate data.</p>
+        <p class="replaces">A person approves the round instead of assembling it.</p>
+      </div>
+      <div class="layer">
+        <span class="name">Report</span>
+        <h3>Scheduled, not requested</h3>
+        <p>The report-maker skill stays exactly as it is &mdash; branding, section order, house wording &mdash; but fires on campaign close and takes its figures from the truth layer rather than re-deriving them.</p>
+        <p class="replaces">The five-point verification checklist becomes assertions that fail a build.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <span class="tag">The dashboard</span>
+      <h2>What goes on the two screens</h2>
+    </div>
+
+    <div class="prose" style="margin-bottom:22px">
+      <h3>Screen one &mdash; the campaign view</h3>
+      <p>Don't redesign this. You already know the cards that work, because the client has already signed off on them in the report: <strong>tenants in book, calls placed, tenants reached, contact rate, arrears under commitment, cash committed, promises to pay, PTP rate.</strong> Filterable by import batch, which means per campaign.</p>
+    </div>
+
+    <div class="tiles" style="margin-bottom:12px">
+      <div class="tile"><span class="k">Tenants in book</span><span class="v">326</span></div>
+      <div class="tile"><span class="k">Tenants reached</span><span class="v">190</span></div>
+      <div class="tile"><span class="k">Contact rate</span><span class="v hl">58.3%</span></div>
+      <div class="tile"><span class="k">Arrears under commitment</span><span class="v">R303,069</span></div>
+      <div class="tile"><span class="k">Cash committed</span><span class="v hl">R100,843</span></div>
+      <div class="tile"><span class="k">Promises to pay</span><span class="v">29</span></div>
+      <div class="tile"><span class="k">PTP rate</span><span class="v">8.9%</span></div>
+    </div>
+    <p class="prose" style="font-family:var(--f-mono);font-size:0.72rem;color:var(--muted);line-height:1.55;margin-bottom:34px">
+      Illustrative, using the 6 August figures recorded in your pitfalls notes. Cash committed is what the 29 tenants agreed to pay; arrears under commitment is what they owe. Six committed without naming an amount, so the honest ceiling is R194,075 &mdash; the dashboard should show that range, not a point.
+    </p>
+
+    <div class="prose" style="margin-bottom:22px">
+      <h3>Screen two &mdash; the operations view</h3>
+      <p>This is the one that doesn't exist yet, and the one you'd open every morning. It answers &ldquo;what needs me today&rdquo;, so state should read at a glance &mdash; a batch with a gap is a red chip, not two numbers you have to subtract yourself.</p>
+    </div>
+
+    <div class="scroller">
+      <table>
+        <thead><tr><th style="width:26%">Pane</th><th>What it shows, and why</th></tr></thead>
+        <tbody>
+          <tr><td class="lead">Batch health</td><td>Records loaded versus unique phones dialled, per batch, gap called out in colour. This is the pane that would have caught the 79 that never fired, on the day, instead of weeks later.</td></tr>
+          <tr><td class="lead">Dead numbers</td><td>Every tenant whose every attempt connected for zero seconds, with balance attached. These people aren't ignoring you &mdash; the number doesn't work. It's a data-cleaning job for the client, and it's worth quantifying in rands so they act on it.</td></tr>
+          <tr><td class="lead">Attempt decay</td><td>Reach rate per attempt, plus cumulative unique tenants by <em>first</em> reach. Tells you which round to stop at instead of guessing.</td></tr>
+          <tr><td class="lead">Exception queue</td><td>Disputes, escalations, refusals, wrong numbers, commercial tenants &mdash; each routed to a person with the transcript quote and the balance already attached. The work an agent can't finish, made actionable rather than buried in a category count.</td></tr>
+          <tr><td class="lead">Transcript search</td><td>Free text across the whole book. &ldquo;Retrenched&rdquo;, &ldquo;attorney&rdquo;, &ldquo;already paid&rdquo;, &ldquo;deceased&rdquo; &mdash; one query instead of a re-pull. This is the pane that finds the story for the report's one finding that matters.</td></tr>
+          <tr><td class="lead">Prompt version</td><td>Which agent prompt ran which batch. Without it you can't tell whether a prompt change helped, and you're already iterating on prompts with the sim runner.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <span class="tag">Truth layer</span>
+      <h2>Your pitfalls file is already a test suite</h2>
+    </div>
+    <div class="prose" style="margin-bottom:26px">
+      <p>This is the highest-value thing on the page after the webhook. Every figure that has ever gone out wrong is written down with the campaign it came from &mdash; which means each one is a fixture with a known-correct answer. Port them once and no future campaign can repeat them.</p>
+    </div>
+    <div class="scroller">
+      <table>
+        <thead><tr><th style="width:42%">Fixture, from a real campaign</th><th>Assertion it locks in</th></tr></thead>
+        <tbody>
+          <tr><td class="lead">30 July &mdash; 164 of 438 calls flagged <code>voicemail: true</code> over two-way transcripts</td><td>A metadata flag never overrides transcript evidence.</td></tr>
+          <tr><td class="lead">6 August &mdash; 262 of 326 records in <code>No Outcome</code></td><td>Reach derives from the transcript plus <code>previous_milestone_reached</code>. Never from <code>outcome_category</code>, which has no &ldquo;no answer&rdquo; value at all.</td></tr>
+          <tr><td class="lead">Cumulative contact reported 60.7%, true figure 58.3%</td><td>Cumulative counts unique tenants by first-reach attempt, never a running sum of per-round reached.</td></tr>
+          <tr><td class="lead">29 committing tenants &mdash; R303,069 owed, R100,843 agreed</td><td>Arrears under commitment and cash committed are separate fields. Six unnamed amounts produce a range, not a point.</td></tr>
+          <tr><td class="lead">75 records containing <code>{{ attributes.unit_number }}</code></td><td>Template placeholders are stripped on read, not reported as unit numbers.</td></tr>
+          <tr><td class="lead"><code>787766532.0</code></td><td>Phones parse as int before digit-stripping, then validate against SA mobile prefixes 6, 7 and 8.</td></tr>
+          <tr><td class="lead">Multi-unit tenant, duplicate phone</td><td>Deduped on highest balance; the other units are retained and reported so the office sees full exposure.</td></tr>
+          <tr><td class="lead">Call length versus speech &mdash; 0s: 0%, 60s+: 100%</td><td>&ldquo;Reached&rdquo; and &ldquo;had a 30-second call&rdquo; are different populations. Whichever is quoted is labelled.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <span class="tag">Redial engine</span>
+      <h2>The rules that decide round N+1</h2>
+    </div>
+    <div class="prose" style="margin-bottom:26px">
+      <p>Phase 5 of the analyser already encodes this. As a nightly job it stops being a task and becomes a queue waiting for approval.</p>
+    </div>
+    <div class="scroller">
+      <table>
+        <thead><tr><th style="width:120px">Disposition</th><th style="width:34%">Who</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><span class="chip out">Excluded</span></td><td class="lead">Any stop outcome</td><td>Promise to Pay, PTP Recommitted, Partial Payment Arrangement, Paid Claimed, Dispute Logged, Escalated, Office Visit Claimed, Callback Requested, Wrong Number, Refused to Pay.</td></tr>
+          <tr><td><span class="chip out">Excluded</span></td><td class="lead">Spoke, made no commitment</td><td>They answered and declined. Calling again burns goodwill; this belongs in the exception queue, not the dialler.</td></tr>
+          <tr><td><span class="chip out">Excluded</span></td><td class="lead"><code>do_not_call</code>, internal test line</td><td>Compliance, and the test number that has appeared in every campaign.</td></tr>
+          <tr><td><span class="chip out">Excluded</span></td><td class="lead">Over the attempt cap</td><td>Set the cap from the decay curve, where new unique reaches flatten out.</td></tr>
+          <tr><td><span class="chip out">Rerouted</span></td><td class="lead">Dead numbers</td><td>Every attempt connected for zero seconds. Goes back to the client for a phone number, not into another round.</td></tr>
+          <tr><td><span class="chip in">Redial</span></td><td class="lead">Everything else</td><td>Ordered by balance, spread across the hours your own data shows tenants answer. Timestamps are UTC &mdash; the scheduler adds two for SAST.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout" style="margin-top:26px">
+      <span class="label">Note</span>
+      <p>Build this from the <em>exclusion</em> list rather than the inclusion list, exactly as the skill does today. It's shorter, and it makes every skipped tenant auditable &mdash; you can show a client why someone wasn't called again.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <span class="tag">The gap</span>
+      <h2>From promised to actually paid</h2>
+    </div>
+    <div class="prose stack">
+      <p>Everything above measures <em>commitments</em>. <code>Paid Claimed</code> is the tenant's word, taken on a phone call. The number that sells this service is recovered rands, and it cannot be computed from call data alone.</p>
+      <p>The fix needs one thing from each client: a monthly receipts or payments file. Reconcile PTPs against actual receipts and you get <strong>kept, broken, partial, and paid-without-a-call</strong> &mdash; which yields a PTP-kept rate per client, per agent prompt, per campaign.</p>
+      <p>That's the metric worth building toward. It turns a pipeline figure into a recovery figure, and it's the only honest way to answer whether a prompt change made things better. Until a client sends receipts, be explicit in the reports that commitments are commitments.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <span class="tag">Scaling</span>
+      <h2>Two clients, one system, config not code</h2>
+    </div>
+    <div class="prose stack">
+      <p>Mafadi and Ripple are the same shape with different details: column maps, brand colours, outcome vocabularies, agent prompts, report sections. Right now that difference is expressed as two separate skills whose builder scripts are largely the same script.</p>
+      <p>Everything client-specific belongs in a config file &mdash; column mapping, outcome ranks, stop list, palette, report section order, dialling hours. Client three should then be a config, a form and an agent prompt. Not a rebuild, and not a third skill to keep in sync with the first two when a pitfall gets fixed.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <span class="tag">Build order</span>
+      <h2>What to do in what order</h2>
+    </div>
+    <div class="prose" style="margin-bottom:26px">
+      <p>Genuinely sequential &mdash; each phase is cheaper because the one before it happened. Phase one pays for itself before anything else is built.</p>
+    </div>
+    <div class="phases">
+      <div class="phase">
+        <span class="p-n">Phase 1</span>
+        <div>
+          <h3>Get the calls into your own database</h3>
+          <p>Wire the Jobix post-call webhook to the Speed to Lead calls endpoint, or write the cron sync worker if there's no outbound webhook. Then backfill the campaigns you've already run, so the history is queryable too.</p>
+        </div>
+        <p class="unlocks">Unlocks: the browser step disappears. Nothing else on this page needs to exist for that to be worth it.</p>
+      </div>
+      <div class="phase">
+        <span class="p-n">Phase 2</span>
+        <div>
+          <h3>Lift the classifier out of the prompt</h3>
+          <p>Port reach, dedupe, decay and the commitment split into code, with the eight fixtures above as tests. Point the report-maker at it instead of at a fresh derivation.</p>
+        </div>
+        <p class="unlocks">Unlocks: figures stop drifting between the dashboard and the report, because there's one source.</p>
+      </div>
+      <div class="phase">
+        <span class="p-n">Phase 3</span>
+        <div>
+          <h3>Put a surface on it</h3>
+          <p>Operations view first &mdash; batch health, dead numbers, exception queue, transcript search &mdash; because that's the screen you'd use daily. Client view second, since the Word report already covers that audience.</p>
+        </div>
+        <p class="unlocks">Unlocks: campaign state without asking anyone, including mid-campaign.</p>
+      </div>
+      <div class="phase">
+        <span class="p-n">Phase 4</span>
+        <div>
+          <h3>Close the loop</h3>
+          <p>Redial engine on a schedule, next round generated and held for approval. Intake watcher on the client folders. Reports fire on campaign close.</p>
+        </div>
+        <p class="unlocks">Unlocks: campaigns run continuously instead of when you sit down to run one.</p>
+      </div>
+      <div class="phase">
+        <span class="p-n">Phase 5</span>
+        <div>
+          <h3>Reconcile payments</h3>
+          <p>Once a client sends receipts, PTP-kept becomes the headline metric and everything above becomes provable rather than promised.</p>
+        </div>
+        <p class="unlocks">Unlocks: recovery rate per client and per prompt &mdash; the number that wins the next client.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <span class="tag">Scope</span>
+      <h2>What stays human, deliberately</h2>
+    </div>
+    <div class="prose stack">
+      <p>Approving an import before it dials. Disputes and escalations. The tenant who has been retrenched. Dead numbers going back to the client rather than into another round. A prompt change, after you've seen why it's needed.</p>
+      <p>Automating collections isn't removing the person. It's making sure the only things that reach them are the things that need them &mdash; which is exactly what the exception queue is for, and why it's on the screen you open first.</p>
+    </div>
+  </section>
+
+  <footer class="end">
+    Grounded in the mafadi-call-analyser, mafadi-import-builder, ripple-import-builder and mafadi-report-maker skills, their pitfalls notes, and the live Speed to Lead form and call-endpoint configuration. Campaign figures quoted are the ones already recorded in those notes.
+  </footer>
+
+</div>
