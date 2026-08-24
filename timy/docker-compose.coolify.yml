@@ -1,0 +1,37 @@
+# Timy.ai for Coolify.
+#
+# In Coolify: New Resource -> Docker Compose, point it at this repo and this
+# file path. Coolify supplies the reverse proxy, TLS, env vars and logs.
+#
+# The magic-variable comments below are Coolify conventions: SERVICE_FQDN_*
+# tells Coolify to route a domain to this service and terminate TLS for it.
+services:
+  timy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      # Coolify generates and injects the FQDN, then proxies to port 8090.
+      - SERVICE_FQDN_TIMY_8090
+      # Point at the LiteLLM gateway. This is a LAN address, so the Coolify
+      # host must be able to reach the cluster network.
+      - UPSTREAM_BASE_URL=${UPSTREAM_BASE_URL:?set this in Coolify's env vars}
+      - UPSTREAM_API_KEY=${UPSTREAM_API_KEY:?set this in Coolify's env vars}
+      - TIMY_DEFAULT_MODEL=${TIMY_DEFAULT_MODEL:-workhorse}
+      - TIMY_FAST_MODEL=${TIMY_FAST_MODEL:-fast}
+      - TIMY_EMBED_MODEL=${TIMY_EMBED_MODEL:-embed}
+      - TIMY_TEMPERATURE=${TIMY_TEMPERATURE:-0.4}
+      - TIMY_HISTORY_TURNS=${TIMY_HISTORY_TURNS:-10}
+      - TIMY_KNOWLEDGE_MIN_SCORE=${TIMY_KNOWLEDGE_MIN_SCORE:-0.35}
+    volumes:
+      # Persist the feedback log across redeploys. This file is your eval set --
+      # losing it on a deploy would be the worst kind of quiet data loss.
+      - timy-data:/app/data
+      # Knowledge as a volume means you add documents without a rebuild.
+      # Copy files in, then POST /api/knowledge/reload.
+      - timy-knowledge:/app/knowledge
+    restart: unless-stopped
+
+volumes:
+  timy-data:
+  timy-knowledge:

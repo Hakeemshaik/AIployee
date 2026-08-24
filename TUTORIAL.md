@@ -580,6 +580,95 @@ vzdump 201 --storage local --mode snapshot --exclude-path /var/lib/llm/models
 
 ---
 
+## Phase 6b — Optional: Coolify for the app tier (40 min)
+
+Skip this on your first pass. Come back once Phases 1–6 are working — debugging
+a PaaS and a llama.cpp flag rename at the same time is two unfamiliar failure
+modes at once.
+
+**What Coolify gives you here:** push-to-deploy on `persona.md` (which shortens
+the loop where most of Timy's value gets made), managed TLS so it's
+`https://timy.yourdomain` not `http://10.0.0.201:8090`, secrets in a UI instead
+of `/etc/timy.env`, readable logs, and one-click rollback when a persona edit
+makes Timy worse.
+
+**What it must not touch:** the `llama.cpp` workers. They stay LXC + systemd.
+Docker fights `--mlock`, native-ISA builds, and P-core pinning, and Coolify's
+"recreate the container on deploy" behaviour is wrong for a process that takes
+minutes to fault 18 GB into page cache. Full reasoning in
+`llm-lab/docs/07-coolify-and-self-hosted-git.md`.
+
+### 6b.1 Host it in a VM, not an LXC
+
+Coolify's installer assumes a normal Ubuntu host with Docker. Docker-in-LXC
+works but you'll fight cgroups and overlayfs for no benefit.
+
+```bash
+# On pve-6 or a spare node -- NEVER on an inference worker: a build job at full
+# tilt steals exactly the memory bandwidth your workers need.
+qm create 210 --name coolify --cores 4 --cpu host --memory 8192 --balloon 0 \
+  --net0 virtio,bridge=vmbr0 --scsihw virtio-scsi-single \
+  --scsi0 local-lvm:80,discard=on,ssd=1 --ostype l26 --agent enabled=1 --onboot 1
+```
+
+Install Ubuntu 24.04 LTS, then run Coolify's installer — check
+`coolify.io/docs` for the current command rather than trusting one pasted here.
+
+### 6b.2 Deploy Timy through Coolify
+
+In the Coolify UI: **New Resource → Docker Compose**, point it at your repo and
+`timy/docker-compose.coolify.yml`. Then set these env vars in Coolify:
+
+```
+UPSTREAM_BASE_URL=http://10.0.0.201:4000
+UPSTREAM_API_KEY=sk-your-gateway-key
+```
+
+The compose file declares `SERVICE_FQDN_TIMY_8090`, so Coolify assigns a domain
+and terminates TLS for it. It also puts `data/` on a named volume — **that's
+deliberate: your feedback log is your eval set, and losing it on a redeploy is
+the worst kind of quiet data loss.**
+
+Once it's up, stop the systemd copy so they don't both bind the port:
+
+```bash
+pct exec 201 -- systemctl disable --now timy
+```
+
+### 6b.3 Optional: get off GitHub entirely
+
+Coolify is *not* a GitHub replacement — it deploys, it doesn't host code. The
+GitHub replacement is **Gitea** or **Forgejo**, which you can also run as a
+Coolify compose stack. That gives you a fully local
+commit → build → deploy loop.
+
+**Before you do this, know the trade-off:** a Claude Code session on
+claude.ai/code can reach GitHub but *cannot* reach a Gitea on your LAN — same
+network reason as `llm-lab/docs/06`. So going Gitea-only means no remote Claude
+sessions on the repo, no GitHub CI, no review from your phone.
+
+The setup that keeps both — Gitea authoritative, GitHub as a push mirror:
+
+```bash
+git remote set-url origin ssh://git@10.0.0.206:2222/hakeem/aiployee.git
+git remote set-url --add --push origin ssh://git@10.0.0.206:2222/hakeem/aiployee.git
+git remote set-url --add --push origin git@github.com:Hakeemshaik/AIployee.git
+git remote -v      # one fetch URL, two push URLs
+```
+
+Or configure it server-side in Gitea: **Settings → Mirror Settings → Push
+Mirror**.
+
+**Then back Gitea up and test a restore the same day.** GitHub is someone else's
+backup problem; a self-hosted Gitea is yours, and a dead disk with no verified
+restore means the history is gone.
+
+> **Checkpoint 6b.** A commit to `persona.md` triggers a redeploy, Timy comes
+> back on its domain over HTTPS, and `data/feedback.jsonl` still has your
+> earlier feedback in it.
+
+---
+
 ## Phase 7 — What to do next
 
 In the order that pays best:

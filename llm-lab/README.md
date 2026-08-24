@@ -70,7 +70,7 @@ make voice-check      # tells you whether your measured numbers can hold a call
 
 ```
 docs/       Architecture, model selection, the voice latency math, GPU upgrade
-            path, and how to give Claude access to the cluster
+            path, giving Claude access, and Coolify / self-hosted git
 proxmox/    Container/VM provisioning scripts to run on a PVE host
 inference/  llama.cpp build, tuning, systemd units, model downloads
 gateway/    LiteLLM proxy + load balancing across workers, observability

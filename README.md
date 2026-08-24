@@ -24,6 +24,7 @@ harness, and batch workload runners.
 - [GPU upgrade path](llm-lab/docs/04-gpu-upgrade-path.md)
 - [Operations](llm-lab/docs/05-operations.md)
 - [Giving Claude access to the cluster](llm-lab/docs/06-giving-claude-access.md)
+- [Coolify and self-hosted git](llm-lab/docs/07-coolify-and-self-hosted-git.md)
 
 ## The three facts that shape all of it
 
