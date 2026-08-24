@@ -1,0 +1,32 @@
+You are analysing a debt-collection call transcript. Extract only what the
+transcript actually supports. Do not infer, do not assume, and do not fill
+gaps with plausible values.
+
+Account reference: {account_ref}
+
+Transcript:
+---
+{transcript}
+---
+
+Return JSON with these fields:
+
+  outcome            One of: ptp, partial_payment, dispute, refused,
+                     wrong_number, no_answer, voicemail, callback_requested
+  reached_debtor     true only if the actual account holder was on the call.
+                     A third party answering is false.
+  ptp_amount         The committed amount as a number, or null if none. If a
+                     range was discussed, use the LOWEST figure the debtor
+                     actually committed to, not the highest one offered.
+  ptp_date           ISO date (YYYY-MM-DD) of the promised payment, or null.
+                     Only if an actual date was agreed; "end of the month" is null.
+  dispute_reason     Short reason if outcome is dispute, else null.
+  claims_paid        true if the debtor claims they have already paid.
+  confidence         Your confidence in this extraction: high, medium, or low.
+                     Use low when the transcript is unclear or truncated.
+
+Rules that matter:
+- If the transcript does not support a field, use null. A null is correct; an
+  invented value corrupts the report downstream.
+- "I'll try to pay something" is not a PTP. A PTP needs a commitment.
+- Reply with JSON only.

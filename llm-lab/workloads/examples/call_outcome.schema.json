@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "required": ["outcome", "reached_debtor", "claims_paid", "confidence"],
+  "additionalProperties": false,
+  "properties": {
+    "outcome": {
+      "type": "string",
+      "enum": ["ptp", "partial_payment", "dispute", "refused",
+               "wrong_number", "no_answer", "voicemail", "callback_requested"]
+    },
+    "reached_debtor": { "type": "boolean" },
+    "ptp_amount":     { "type": "number" },
+    "ptp_date":       { "type": "string" },
+    "dispute_reason": { "type": "string" },
+    "claims_paid":    { "type": "boolean" },
+    "confidence":     { "type": "string", "enum": ["high", "medium", "low"] }
+  }
+}

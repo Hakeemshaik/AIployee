@@ -1,0 +1,34 @@
+# Scrape the gateway and every llama-server. The three metrics worth alerting
+# on are in docs/05-operations.md -- tokens/sec per node, queue depth, and
+# resident size. Everything else is decoration.
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+scrape_configs:
+  - job_name: litellm
+    static_configs:
+      - targets: ["litellm:4000"]
+    metrics_path: /metrics
+
+  - job_name: llama-workers
+    static_configs:
+      - targets:
+          - "10.0.0.202:8080"
+          - "10.0.0.203:8080"
+          - "10.0.0.204:8080"
+        labels:
+          tier: workhorse
+      - targets:
+          - "10.0.0.205:8081"
+        labels:
+          tier: fast
+    metrics_path: /metrics
+
+  # Add node_exporter on each PVE host to correlate throughput against CPU
+  # temperature. Mini PCs thermally throttle under sustained load, which shows
+  # up as throughput that is fine for ten minutes and poor for two hours --
+  # with no error in any log. See docs/05-operations.md.
+  # - job_name: node
+  #   static_configs:
+  #     - targets: ["10.0.0.201:9100", "10.0.0.202:9100"]

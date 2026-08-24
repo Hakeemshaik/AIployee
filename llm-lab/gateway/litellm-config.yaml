@@ -1,0 +1,133 @@
+# ---------------------------------------------------------------------------
+# LiteLLM gateway config -- the single endpoint every application talks to.
+#
+# Why a gateway at all (docs/01): your apps ask for "workhorse" or "fast" and
+# never learn which node served them. That means you can add nodes, move models,
+# or fail over to a hosted API without touching application code.
+#
+# Replace the 10.0.0.x addresses with your actual container IPs.
+# ---------------------------------------------------------------------------
+
+model_list:
+  # --- Tier 1: workhorse, three identical replicas -------------------------
+  # Identical models on every replica is what lets the router pick any of them
+  # without caring which. Losing one node costs throughput, not availability.
+  - model_name: workhorse
+    litellm_params:
+      model: openai/workhorse            # openai/ prefix = OpenAI-compatible API
+      api_base: http://10.0.0.202:8080/v1
+      api_key: "none"                    # llama-server has no auth; see below
+      rpm: 600
+    model_info:
+      id: workhorse-pve2
+
+  - model_name: workhorse
+    litellm_params:
+      model: openai/workhorse
+      api_base: http://10.0.0.203:8080/v1
+      api_key: "none"
+      rpm: 600
+    model_info:
+      id: workhorse-pve3
+
+  - model_name: workhorse
+    litellm_params:
+      model: openai/workhorse
+      api_base: http://10.0.0.204:8080/v1
+      api_key: "none"
+      rpm: 600
+    model_info:
+      id: workhorse-pve4
+
+  # --- Tier 2: fast lane ---------------------------------------------------
+  # Small dense model, many slots. Takes the bulk of request volume:
+  # classification, routing, field extraction, guardrails.
+  - model_name: fast
+    litellm_params:
+      model: openai/fast
+      api_base: http://10.0.0.205:8081/v1
+      api_key: "none"
+      rpm: 2000
+    model_info:
+      id: fast-pve5
+
+  # --- Tier 3: embeddings --------------------------------------------------
+  - model_name: embed
+    litellm_params:
+      model: openai/embed
+      api_base: http://10.0.0.205:8082/v1
+      api_key: "none"
+    model_info:
+      id: embed-pve5
+
+  # --- Hosted fallback -----------------------------------------------------
+  # This matters more than it looks. It is what lets you point production at
+  # the local cluster at all: a node dying degrades to a cloud model instead of
+  # failing the request. Uncomment and set the key in .env to enable.
+  #
+  # - model_name: hosted-fallback
+  #   litellm_params:
+  #     model: anthropic/claude-sonnet-5
+  #     api_key: os.environ/ANTHROPIC_API_KEY
+
+router_settings:
+  # Route to whichever replica has the shortest queue. Better than round-robin
+  # here because CPU request durations vary a lot with prompt length -- a node
+  # stuck on a 4k-token prefill should not receive the next request.
+  routing_strategy: least-busy
+
+  # Active health checks. A node that OOMs or thermally throttles into
+  # uselessness gets pulled out of rotation instead of silently poisoning p95.
+  health_check_interval: 30
+  allowed_fails: 2
+  cooldown_time: 60
+
+  num_retries: 2
+  # Retry on the transient failures only. Do NOT retry on context-length
+  # errors: the same oversized prompt will fail identically three times.
+  retry_policy:
+    TimeoutErrorRetries: 2
+    RateLimitErrorRetries: 2
+    InternalServerErrorRetries: 1
+    ContentPolicyViolationErrorRetries: 0
+    BadRequestErrorRetries: 0
+
+  # Uncomment together with the hosted-fallback block above.
+  # fallbacks:
+  #   - workhorse: ["hosted-fallback"]
+  #   - fast: ["workhorse"]
+
+litellm_settings:
+  # CPU inference is slow. The default timeouts assume a GPU and will abort
+  # legitimate long batch requests.
+  request_timeout: 600
+  drop_params: true          # tolerate params llama.cpp does not implement
+
+  # Response caching on exact-match prompts. For batch jobs that re-run over
+  # overlapping datasets this is a large free win -- a repeated request costs
+  # nothing instead of 30 seconds of CPU.
+  cache: true
+  cache_params:
+    type: redis
+    host: redis
+    port: 6379
+    ttl: 86400
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL
+
+  # --- POPIA / privacy: read docs/05-operations.md before changing this -----
+  # The entire point of local inference is that debtor data never leaves your
+  # premises. Logging full prompt bodies to Postgres quietly undoes that: you
+  # would be building a searchable database of personal financial information
+  # with a retention policy of "forever".
+  #
+  # Default here: keep timings, token counts and routing metadata (which is
+  # what you need for the dashboards and cost accounting), discard message
+  # bodies. Turn bodies on deliberately, for debugging, with a retention window.
+  store_model_in_db: true
+  store_prompts_in_spend_logs: false
+
+  # Keep the metrics endpoint for Prometheus.
+  otel: false

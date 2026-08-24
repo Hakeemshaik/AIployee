@@ -1,0 +1,5 @@
+.env
+*.gguf
+tune-results.tsv
+*-results.json
+__pycache__/
