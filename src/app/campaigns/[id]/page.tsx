@@ -6,7 +6,7 @@ import { formatDate, money, percent } from "@/lib/format";
 import { getCampaign } from "@/services/campaigns";
 import { listDebtors } from "@/services/debtors";
 import { BackLink, Badge, GlassCard, Meta, PageHeader, StatCard } from "@/components/ui";
-import { CampaignActivityChart, PaymentsBarChart } from "@/components/charts";
+import { CampaignActivityChart, HBarChart, PaymentsBarChart } from "@/components/charts";
 import { StatusControls } from "./StatusControls";
 
 export const dynamic = "force-dynamic";
@@ -74,7 +74,22 @@ export default async function CampaignDetailPage({
         </GlassCard>
       </div>
 
-      <div className="mb-4">
+      <div className="mb-4 grid gap-4 xl:grid-cols-2">
+        <GlassCard
+          title="Collection funnel"
+          subtitle="Debtors at each stage of the campaign workflow"
+        >
+          <HBarChart
+            height={210}
+            data={[
+              { label: "In campaign", value: metrics.totalDebtors },
+              { label: "Contacted", value: metrics.contacted },
+              { label: "Connected", value: metrics.connected },
+              { label: "Promised", value: metrics.promisedDebtors },
+              { label: "Paid", value: metrics.paidDebtors },
+            ]}
+          />
+        </GlassCard>
         <GlassCard title="Recovered per day" subtitle="Rand value received, last 30 days">
           <PaymentsBarChart data={series.map((s) => ({ date: s.date, received: s.recovered }))} />
         </GlassCard>

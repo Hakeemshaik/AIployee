@@ -1,5 +1,6 @@
 import { getContext } from "@/lib/auth";
 import { Sparkles } from "lucide-react";
+import { CommandPalette } from "./CommandPalette";
 
 export async function Topbar() {
   let orgName = "—";
@@ -30,6 +31,7 @@ export async function Topbar() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <CommandPalette />
           <span
             className="hidden items-center gap-1.5 rounded-full border border-line bg-white/[0.04] px-2.5 py-1 text-[0.6875rem] text-ink-2 sm:inline-flex"
             title={

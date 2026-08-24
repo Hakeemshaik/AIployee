@@ -6,9 +6,14 @@ import { Plus, X } from "lucide-react";
 import { label, PAYMENT_METHODS } from "@/lib/domain";
 
 export function RecordPaymentButton({
-  debtors,
+  debtors = [],
+  fixedDebtor,
+  buttonClass = "btn btn-primary",
 }: {
-  debtors: { id: string; name: string; accountNumber: string }[];
+  debtors?: { id: string; name: string; accountNumber: string }[];
+  /** Lock the payment to one debtor (used on the debtor profile). */
+  fixedDebtor?: { id: string; name: string; accountNumber: string };
+  buttonClass?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -45,13 +50,13 @@ export function RecordPaymentButton({
 
   return (
     <>
-      <button className="btn btn-primary" onClick={() => setOpen(true)}>
+      <button className={buttonClass} onClick={() => setOpen(true)}>
         <Plus size={14} /> Record payment
       </button>
       {open && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[10vh]">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !busy && setOpen(false)} />
-          <div className="glass relative w-full max-w-md p-5">
+          <div className="glass-solid relative w-full max-w-md p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-[0.9375rem] font-semibold text-ink">Record a payment</h2>
               <button className="btn-ghost btn p-1.5" onClick={() => setOpen(false)} aria-label="Close">
@@ -64,15 +69,25 @@ export function RecordPaymentButton({
               </p>
             ) : (
               <form onSubmit={onSubmit} className="space-y-3.5">
-                <div>
-                  <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="debtorId">Debtor *</label>
-                  <select id="debtorId" name="debtorId" required className="field w-full" defaultValue="">
-                    <option value="" disabled>Select a debtor…</option>
-                    {debtors.map((d) => (
-                      <option key={d.id} value={d.id}>{d.name} — {d.accountNumber}</option>
-                    ))}
-                  </select>
-                </div>
+                {fixedDebtor ? (
+                  <div>
+                    <p className="mb-1 text-[0.71875rem] font-medium text-ink-2">Debtor</p>
+                    <p className="field w-full bg-white/[0.02] text-ink">
+                      {fixedDebtor.name} — {fixedDebtor.accountNumber}
+                    </p>
+                    <input type="hidden" name="debtorId" value={fixedDebtor.id} />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="debtorId">Debtor *</label>
+                    <select id="debtorId" name="debtorId" required className="field w-full" defaultValue="">
+                      <option value="" disabled>Select a debtor…</option>
+                      {debtors.map((d) => (
+                        <option key={d.id} value={d.id}>{d.name} — {d.accountNumber}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="amount">Amount (R) *</label>

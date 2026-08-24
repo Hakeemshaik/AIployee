@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { verifyApiKey } from "@/lib/api-auth";
+import { checkRateLimit } from "@/lib/rate-limit";
 import {
   callCompletedSchema,
   IntegrationError,
@@ -20,6 +21,14 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "unauthorized", message: "A valid API key with the voice:ingest scope is required." },
       { status: 401 },
+    );
+  }
+
+  const rate = checkRateLimit(`voice:${auth.apiKeyId}`, { limit: 120, windowMs: 60_000 });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "rate_limited", message: "Too many requests — slow down and retry." },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } },
     );
   }
 

@@ -4,9 +4,10 @@ import { AlertTriangle, Banknote, CalendarClock, MessageSquare, PhoneCall } from
 import { getContext } from "@/lib/auth";
 import { label } from "@/lib/domain";
 import { formatDate, formatDateTime, money, relativeDays } from "@/lib/format";
-import { getDebtorProfile } from "@/services/debtors";
+import { getDebtorProfile, listCampaignOptions } from "@/services/debtors";
 import { promiseDisplayStatus } from "@/services/promises";
 import { BackLink, Badge, GlassCard, Meta, PageHeader } from "@/components/ui";
+import { DebtorActions } from "./DebtorActions";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Debtor" };
@@ -26,7 +27,10 @@ export default async function DebtorProfilePage({
 }) {
   const { id } = await params;
   const ctx = await getContext();
-  const profile = await getDebtorProfile(ctx.organizationId, id);
+  const [profile, campaigns] = await Promise.all([
+    getDebtorProfile(ctx.organizationId, id),
+    listCampaignOptions(ctx.organizationId),
+  ]);
   if (!profile) notFound();
   const { debtor, stats, timeline } = profile;
   const account = debtor.accounts[0];
@@ -39,10 +43,19 @@ export default async function DebtorProfilePage({
         title={`${debtor.firstName} ${debtor.lastName}`}
         description={`Account ${debtor.accountNumber}${account ? ` · ${account.creditorName}` : ""}`}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <Badge value={debtor.status} label={label(debtor.status)} />
             <Badge value={`risk_${stats.riskBand}`} label={`${label(stats.riskBand)} risk · ${debtor.riskScore}/100`} />
             {debtor.doNotContact && <Badge value="legal" label="Do not contact" />}
+            <DebtorActions
+              debtor={{
+                id: debtor.id,
+                name: `${debtor.firstName} ${debtor.lastName}`,
+                accountNumber: debtor.accountNumber,
+              }}
+              campaigns={campaigns}
+              currentCampaignId={debtor.campaignId}
+            />
           </div>
         }
       />

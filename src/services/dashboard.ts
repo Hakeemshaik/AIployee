@@ -14,11 +14,11 @@ export async function getDashboardData(organizationId: string) {
     await Promise.all([
       db.debtAccount.findMany({
         where: { organizationId },
-        select: { currentBalance: true },
+        select: { currentBalance: true, daysOverdue: true, debtorId: true },
       }),
       db.payment.findMany({
         where: { organizationId, status: "completed" },
-        select: { amount: true, paidAt: true },
+        select: { amount: true, paidAt: true, debtorId: true },
       }),
       db.call.findMany({
         where: { organizationId, startedAt: { gte: since } },
@@ -124,6 +124,30 @@ export async function getDashboardData(organizationId: string) {
     .sort((a, b) => b.recovered - a.recovered)
     .slice(0, 6);
 
+  // Book by account age: outstanding vs recovered per aging bucket.
+  const recoveredByDebtor = new Map<string, number>();
+  for (const p of payments) {
+    recoveredByDebtor.set(p.debtorId, (recoveredByDebtor.get(p.debtorId) ?? 0) + p.amount);
+  }
+  const agingSeries = [
+    { bucket: "0–30 days", min: 0, max: 30 },
+    { bucket: "31–60 days", min: 31, max: 60 },
+    { bucket: "61–90 days", min: 61, max: 90 },
+    { bucket: "90+ days", min: 91, max: Infinity },
+  ].map(({ bucket, min, max }) => {
+    const inBucket = accounts.filter((a) => a.daysOverdue >= min && a.daysOverdue <= max);
+    return {
+      bucket,
+      outstanding: Math.round(inBucket.reduce((s, a) => s + a.currentBalance, 0)),
+      recovered: Math.round(
+        [...new Set(inBucket.map((a) => a.debtorId))].reduce(
+          (s, id) => s + (recoveredByDebtor.get(id) ?? 0),
+          0,
+        ),
+      ),
+    };
+  });
+
   const outcomeCounts: Record<string, number> = {};
   for (const a of analyses) outcomeCounts[a.outcome] = (outcomeCounts[a.outcome] ?? 0) + 1;
   const outcomeSeries = Object.entries(outcomeCounts)
@@ -137,6 +161,70 @@ export async function getDashboardData(organizationId: string) {
     promiseSeries,
     campaignSeries,
     outcomeSeries,
+    agingSeries,
     insight,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Work queue — the "what needs a human touch today" list: promises to chase,
+// open escalations, and requested callbacks.
+// ---------------------------------------------------------------------------
+
+export async function getWorkQueue(organizationId: string) {
+  const endOfToday = startOfDay(new Date());
+  endOfToday.setDate(endOfToday.getDate() + 1);
+
+  const [duePromises, escalations, callbacks] = await Promise.all([
+    db.promiseToPay.findMany({
+      where: { organizationId, status: "pending", promisedDate: { lt: endOfToday } },
+      include: { debtor: { select: { id: true, firstName: true, lastName: true } } },
+      orderBy: { promisedDate: "asc" },
+      take: 8,
+    }),
+    db.escalation
+      .findMany({
+        where: { organizationId, status: { in: ["open", "in_review"] } },
+        include: { debtor: { select: { id: true, firstName: true, lastName: true } } },
+        orderBy: { createdAt: "asc" },
+        take: 24,
+      })
+      .then((rows) => {
+        const rank: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
+        return rows.sort((a, b) => (rank[a.priority] ?? 4) - (rank[b.priority] ?? 4)).slice(0, 6);
+      }),
+    db.callAnalysis.findMany({
+      where: {
+        organizationId,
+        outcome: "callback_requested",
+        createdAt: { gte: new Date(Date.now() - 5 * 86_400_000) },
+      },
+      include: {
+        call: {
+          select: {
+            startedAt: true,
+            debtor: { select: { id: true, firstName: true, lastName: true, lastContactAt: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 12,
+    }),
+  ]);
+
+  // A callback is still actionable only when that call is the debtor's most
+  // recent contact (nothing has happened since).
+  const seenDebtors = new Set<string>();
+  const pendingCallbacks = callbacks
+    .filter((a) => {
+      const debtor = a.call.debtor;
+      if (seenDebtors.has(debtor.id)) return false;
+      seenDebtors.add(debtor.id);
+      return (
+        !debtor.lastContactAt || debtor.lastContactAt.getTime() <= a.call.startedAt.getTime()
+      );
+    })
+    .slice(0, 5);
+
+  return { duePromises, escalations, callbacks: pendingCallbacks };
 }

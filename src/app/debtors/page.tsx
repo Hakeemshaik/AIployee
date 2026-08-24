@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Upload } from "lucide-react";
 import { getContext } from "@/lib/auth";
 import { label } from "@/lib/domain";
 import { formatDate, money } from "@/lib/format";
@@ -49,6 +50,11 @@ export default async function DebtorsPage({
       <PageHeader
         title="Debtors"
         description={`${rows.length} account${rows.length === 1 ? "" : "s"} · ${money(totalOutstanding)} outstanding in view`}
+        actions={
+          <Link href="/debtors/import" className="btn btn-primary">
+            <Upload size={14} /> Import debtors
+          </Link>
+        }
       />
       <DebtorFilters campaigns={campaigns} />
       <GlassCard pad={false}>

@@ -1,6 +1,8 @@
+import { z } from "zod";
 import { db } from "@/lib/db";
+import { audit } from "@/lib/audit";
 import { riskBand } from "@/lib/domain";
-import { startOfDay } from "@/lib/format";
+import { daysBetween, startOfDay } from "@/lib/format";
 
 // ---------------------------------------------------------------------------
 // Debtor service. All queries are organization-scoped. List filtering that
@@ -217,6 +219,155 @@ export async function getDebtorProfile(organizationId: string, debtorId: string)
       openPromise: debtor.promises.find((p) => p.status === "pending") ?? null,
     },
   };
+}
+
+// ---------------------------------------------------------------------------
+// Import & campaign assignment
+// ---------------------------------------------------------------------------
+
+/** Normalize a South African phone number to E.164 where possible. */
+export function normalizePhone(raw: string): string | null {
+  const digits = raw.replace(/[^\d+]/g, "");
+  if (/^\+27\d{9}$/.test(digits)) return digits;
+  if (/^27\d{9}$/.test(digits)) return `+${digits}`;
+  if (/^0\d{9}$/.test(digits)) return `+27${digits.slice(1)}`;
+  if (/^\+\d{8,15}$/.test(digits)) return digits; // other international
+  return null;
+}
+
+export const importRowSchema = z.object({
+  firstName: z.string().min(1).max(80),
+  lastName: z.string().min(1).max(80),
+  accountNumber: z.string().min(2).max(60),
+  phone: z.string().min(6).max(30),
+  email: z.string().email().optional().or(z.literal("")),
+  city: z.string().max(80).optional(),
+  province: z.string().max(80).optional(),
+  creditorName: z.string().min(1).max(120),
+  originalBalance: z.coerce.number().positive().max(100_000_000),
+  currentBalance: z.coerce.number().min(0).max(100_000_000).optional(),
+  dueDate: z.coerce.date().optional(),
+  daysOverdue: z.coerce.number().int().min(0).max(3650).optional(),
+});
+export type ImportRow = z.infer<typeof importRowSchema>;
+
+export type ImportResult = {
+  created: number;
+  skipped: { row: number; reason: string }[];
+};
+
+export async function importDebtors(
+  organizationId: string,
+  userId: string,
+  rows: unknown[],
+  campaignId?: string,
+): Promise<ImportResult> {
+  if (campaignId) {
+    const campaign = await db.campaign.findFirst({ where: { id: campaignId, organizationId } });
+    if (!campaign) throw new Error("Campaign not found in this organization");
+  }
+
+  const existing = await db.debtor.findMany({
+    where: { organizationId },
+    select: { accountNumber: true },
+  });
+  const seen = new Set(existing.map((d) => d.accountNumber));
+
+  const result: ImportResult = { created: 0, skipped: [] };
+  for (let i = 0; i < rows.length; i++) {
+    const rowNumber = i + 2; // 1-based + header row
+    const parsed = importRowSchema.safeParse(rows[i]);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      result.skipped.push({
+        row: rowNumber,
+        reason: `${issue?.path.join(".") || "row"}: ${issue?.message || "invalid"}`,
+      });
+      continue;
+    }
+    const data = parsed.data;
+    if (seen.has(data.accountNumber)) {
+      result.skipped.push({ row: rowNumber, reason: `account ${data.accountNumber} already exists` });
+      continue;
+    }
+    const phone = normalizePhone(data.phone);
+    if (!phone) {
+      result.skipped.push({ row: rowNumber, reason: `phone "${data.phone}" is not a valid number` });
+      continue;
+    }
+    seen.add(data.accountNumber);
+
+    const dueDate =
+      data.dueDate ?? new Date(Date.now() - (data.daysOverdue ?? 0) * 86_400_000);
+    const daysOverdue =
+      data.daysOverdue ?? Math.max(0, daysBetween(dueDate, new Date()));
+    const currentBalance = data.currentBalance ?? data.originalBalance;
+
+    const debtor = await db.debtor.create({
+      data: {
+        organizationId,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        accountNumber: data.accountNumber,
+        phone,
+        email: data.email || null,
+        city: data.city || null,
+        province: data.province || null,
+        campaignId,
+        riskScore: Math.min(95, Math.max(10, Math.round(daysOverdue / 3 + 25))),
+      },
+    });
+    await db.debtAccount.create({
+      data: {
+        organizationId,
+        debtorId: debtor.id,
+        reference: data.accountNumber,
+        creditorName: data.creditorName,
+        originalBalance: data.originalBalance,
+        currentBalance,
+        amountPaid: Math.max(0, data.originalBalance - currentBalance),
+        dueDate,
+        daysOverdue,
+      },
+    });
+    result.created++;
+  }
+
+  await audit({
+    organizationId,
+    actorType: "user",
+    actorId: userId,
+    action: "debtors.imported",
+    entityType: "debtor",
+    entityId: campaignId ?? "batch",
+    detail: { created: result.created, skipped: result.skipped.length, campaignId: campaignId ?? null },
+  });
+  return result;
+}
+
+export async function assignDebtorCampaign(
+  organizationId: string,
+  userId: string,
+  debtorId: string,
+  campaignId: string | null,
+) {
+  const debtor = await db.debtor.findFirst({ where: { id: debtorId, organizationId } });
+  if (!debtor) throw new Error("Debtor not found");
+  if (campaignId) {
+    const campaign = await db.campaign.findFirst({ where: { id: campaignId, organizationId } });
+    if (!campaign) throw new Error("Campaign not found in this organization");
+  }
+  const updated = await db.debtor.update({ where: { id: debtorId }, data: { campaignId } });
+  await audit({
+    organizationId,
+    actorType: "user",
+    actorId: userId,
+    action: "debtor.campaign_assigned",
+    entityType: "debtor",
+    entityId: debtorId,
+    detail: { from: debtor.campaignId, to: campaignId },
+  });
+  return updated;
 }
 
 /** Distinct campaigns for filter dropdowns. */

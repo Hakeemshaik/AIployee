@@ -16,6 +16,8 @@ export type CampaignMetrics = {
   connected: number;
   promises: number;
   promiseValue: number;
+  promisedDebtors: number;
+  paidDebtors: number;
   payments: number;
   recovered: number;
   recoveryRate: number;
@@ -24,8 +26,8 @@ export type CampaignMetrics = {
 function computeMetrics(campaign: {
   debtors: { accounts: { currentBalance: number }[] }[];
   calls: { status: string; debtorId: string }[];
-  promises: { amount: number }[];
-  payments: { amount: number }[];
+  promises: { amount: number; debtorId: string }[];
+  payments: { amount: number; debtorId: string }[];
 }): CampaignMetrics {
   const totalDebt = campaign.debtors.reduce(
     (s, d) => s + d.accounts.reduce((s2, a) => s2 + a.currentBalance, 0),
@@ -39,6 +41,8 @@ function computeMetrics(campaign: {
     connected: new Set(campaign.calls.filter((c) => c.status === "completed").map((c) => c.debtorId)).size,
     promises: campaign.promises.length,
     promiseValue: campaign.promises.reduce((s, p) => s + p.amount, 0),
+    promisedDebtors: new Set(campaign.promises.map((p) => p.debtorId)).size,
+    paidDebtors: new Set(campaign.payments.map((p) => p.debtorId)).size,
     payments: campaign.payments.length,
     recovered,
     recoveryRate: totalDebt + recovered > 0 ? recovered / (totalDebt + recovered) : 0,
@@ -49,8 +53,8 @@ const CAMPAIGN_INCLUDE = {
   agent: { select: { id: true, name: true } },
   debtors: { select: { id: true, accounts: { select: { currentBalance: true } } } },
   calls: { select: { status: true, debtorId: true } },
-  promises: { select: { amount: true } },
-  payments: { where: { status: "completed" }, select: { amount: true } },
+  promises: { select: { amount: true, debtorId: true } },
+  payments: { where: { status: "completed" }, select: { amount: true, debtorId: true } },
 } as const;
 
 export async function listCampaigns(organizationId: string) {

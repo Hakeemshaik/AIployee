@@ -79,6 +79,19 @@ body {
     0 10px 30px -18px rgba(0, 0, 0, 0.8);
 }
 
+/* Opaque variant for floating dialogs — keeps the glass edge treatment but
+   stays readable over busy content. */
+.glass-solid {
+  background: linear-gradient(180deg, rgba(30, 34, 44, 0.97), rgba(19, 22, 30, 0.97));
+  border: 1px solid var(--color-line);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 14px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 24px 60px -24px rgba(0, 0, 0, 0.9);
+}
+
 .glass-subtle {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--color-line-2);
@@ -228,6 +241,51 @@ input.field[type="date"]::-webkit-calendar-picker-indicator {
     animation: none;
   }
 }
+/* --- print (report export) --- */
+@media print {
+  :root {
+    --color-base: #ffffff;
+    --color-plane: #ffffff;
+    --color-panel: #ffffff;
+    --color-raised: #f4f4f2;
+    --color-ink: #111111;
+    --color-ink-2: #333333;
+    --color-ink-3: #666666;
+    --color-line: rgba(0, 0, 0, 0.18);
+    --color-line-2: rgba(0, 0, 0, 0.09);
+    --color-accent: #1c5cab;
+    --color-accent-soft: rgba(28, 92, 171, 0.08);
+  }
+  html {
+    color-scheme: light;
+  }
+  body {
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #111111 !important;
+  }
+  aside,
+  header,
+  .btn,
+  .no-print {
+    display: none !important;
+  }
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+  .glass,
+  .glass-subtle {
+    background: #ffffff !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    break-inside: avoid;
+  }
+  .page-in {
+    animation: none;
+  }
+}
+
 .skeleton {
   border-radius: 8px;
   background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.04) 75%);

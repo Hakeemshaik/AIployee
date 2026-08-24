@@ -35,7 +35,15 @@ Open http://localhost:3000. The seed creates the demo organization **Meridian Re
 with 47 debtors, 5 campaigns, 3 voice agents, ~115 calls with transcripts and analyses,
 promises, payments, escalations, reports and insights.
 
-`npm run db:reset` rebuilds the database from scratch.
+`npm run db:reset` rebuilds the database from scratch. `npm test` runs the unit tests
+(transcript extraction rules, promise status derivation, CSV parsing, phone normalization).
+
+Useful entry points once running:
+
+- **⌘K / Ctrl-K** — command palette: search debtors, campaigns and agents, or jump to any page
+- **Debtors → Import debtors** — CSV import with per-row validation and campaign assignment
+- **Dashboard → Work queue** — promises due/overdue, waiting escalations and requested callbacks
+- **Reports → Export PDF** — print-optimised report export
 
 ## AI provider architecture
 
@@ -96,7 +104,8 @@ The response returns the extraction result (`outcome`, `promiseId`, `escalationI
 
 The demo seed prints a working API key (`aip_demo_k3y_meridian_voice_2026`). Keys are
 stored as SHA-256 hashes; the organization is always derived from the key, never from the
-payload.
+payload. The endpoint is rate limited per key (120 requests/minute, in-memory — swap for
+Redis when running multiple instances).
 
 ## Event architecture
 

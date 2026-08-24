@@ -230,6 +230,34 @@ export function HBarChart({
   );
 }
 
+/** Book by account age — outstanding vs recovered per aging bucket. */
+export function AgingChart({
+  data,
+}: {
+  data: { bucket: string; outstanding: number; recovered: number }[];
+}) {
+  return (
+    <div>
+      <ChartLegend
+        items={[
+          { label: "Outstanding", color: C.s1 },
+          { label: "Recovered", color: C.s2 },
+        ]}
+      />
+      <ResponsiveContainer width="100%" height={224}>
+        <BarChart data={data} margin={{ top: 6, right: 6, left: 0, bottom: 0 }} barCategoryGap="28%" barGap={2}>
+          <CartesianGrid stroke={C.grid} vertical={false} />
+          <XAxis dataKey="bucket" {...axisProps} />
+          <YAxis {...axisProps} tickFormatter={(v: number) => moneyCompact(v)} width={52} />
+          <Tooltip content={<GlassTooltip money />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+          <Bar dataKey="outstanding" name="Outstanding" fill={C.s1} radius={[4, 4, 0, 0]} />
+          <Bar dataKey="recovered" name="Recovered" fill={C.s2} radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 /** Campaign detail — daily attempts / connected / promises. */
 export function CampaignActivityChart({
   data,

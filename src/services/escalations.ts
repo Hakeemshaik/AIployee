@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
-import { ESCALATION_STATUSES } from "@/lib/domain";
+import { emitEvent } from "@/lib/events";
+import { ESCALATION_PRIORITIES, ESCALATION_REASONS, ESCALATION_STATUSES } from "@/lib/domain";
 
 // ---------------------------------------------------------------------------
 // Escalation service — the human hand-off queue.
@@ -40,6 +41,54 @@ export async function getEscalationStats(organizationId: string) {
     resolved: escalations.filter((e) => e.status === "resolved").length,
     urgent: escalations.filter((e) => e.priority === "urgent" && e.status !== "resolved").length,
   };
+}
+
+export const createEscalationSchema = z.object({
+  debtorId: z.string().min(1),
+  reason: z.enum(ESCALATION_REASONS),
+  priority: z.enum(ESCALATION_PRIORITIES).default("medium"),
+  notes: z.string().max(2000).optional(),
+});
+
+/** Manually escalate a debtor to a human collector. */
+export async function createEscalation(
+  organizationId: string,
+  userId: string,
+  input: z.infer<typeof createEscalationSchema>,
+) {
+  const data = createEscalationSchema.parse(input);
+  const debtor = await db.debtor.findFirst({ where: { id: data.debtorId, organizationId } });
+  if (!debtor) throw new Error("Debtor not found");
+
+  const escalation = await db.escalation.create({
+    data: {
+      organizationId,
+      debtorId: debtor.id,
+      campaignId: debtor.campaignId,
+      reason: data.reason,
+      priority: data.priority,
+      status: "open",
+      notes: data.notes,
+    },
+  });
+  await db.debtor.update({ where: { id: debtor.id }, data: { status: "escalated" } });
+  await emitEvent({
+    type: "debtor.escalated",
+    organizationId,
+    entityType: "escalation",
+    entityId: escalation.id,
+    payload: { debtorId: debtor.id, reason: data.reason, manual: true },
+  });
+  await audit({
+    organizationId,
+    actorType: "user",
+    actorId: userId,
+    action: "escalation.created",
+    entityType: "escalation",
+    entityId: escalation.id,
+    detail: { reason: data.reason, priority: data.priority },
+  });
+  return escalation;
 }
 
 export const updateEscalationSchema = z.object({

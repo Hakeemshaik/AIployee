@@ -23,11 +23,6 @@ export function ReportActions({ reportId }: { reportId: string }) {
     }
   }
 
-  function placeholder(what: string) {
-    setNote(`${what} is coming soon — reports will export as PDF and share via a secure link.`);
-    setTimeout(() => setNote(null), 3500);
-  }
-
   return (
     <div className="flex flex-wrap items-center gap-2">
       {note && <span className="max-w-xs text-[0.6875rem] text-ink-3">{note}</span>}
@@ -35,10 +30,16 @@ export function ReportActions({ reportId }: { reportId: string }) {
         <RefreshCw size={13} className={busy ? "animate-spin" : ""} />
         {busy ? "Regenerating…" : "Regenerate"}
       </button>
-      <button onClick={() => placeholder("Export")} className="btn btn-ghost">
-        <Download size={13} /> Export
+      <button onClick={() => window.print()} className="btn btn-ghost" title="Print or save as PDF">
+        <Download size={13} /> Export PDF
       </button>
-      <button onClick={() => placeholder("Sharing")} className="btn btn-ghost">
+      <button
+        onClick={() => {
+          setNote("Secure share links are coming soon — export a PDF in the meantime.");
+          setTimeout(() => setNote(null), 3500);
+        }}
+        className="btn btn-ghost"
+      >
         <Share2 size={13} /> Share
       </button>
     </div>

@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
+import { AlertTriangle, CalendarClock, PhoneCall, Sparkles } from "lucide-react";
 import { getContext } from "@/lib/auth";
 import { label } from "@/lib/domain";
-import { formatDateTime, money, percent } from "@/lib/format";
-import { getDashboardData } from "@/services/dashboard";
-import { GlassCard, PageHeader, StatCard } from "@/components/ui";
+import { formatDateTime, money, percent, relativeDays } from "@/lib/format";
+import { getDashboardData, getWorkQueue } from "@/services/dashboard";
+import { Badge, GlassCard, PageHeader, StatCard } from "@/components/ui";
 import {
+  AgingChart,
   ContactActivityChart,
   HBarChart,
   PaymentsBarChart,
@@ -18,9 +19,13 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const ctx = await getContext();
-  const data = await getDashboardData(ctx.organizationId);
+  const [data, queue] = await Promise.all([
+    getDashboardData(ctx.organizationId),
+    getWorkQueue(ctx.organizationId),
+  ]);
   const m = data.metrics;
   const insight = data.insight;
+  const queueSize = queue.duePromises.length + queue.escalations.length + queue.callbacks.length;
 
   return (
     <div className="page-in">
@@ -118,6 +123,97 @@ export default async function DashboardPage() {
           </p>
         )}
       </GlassCard>
+
+      {/* Work queue + aging */}
+      <div className="mb-5 grid gap-4 xl:grid-cols-3">
+        <GlassCard
+          className="xl:col-span-2"
+          title="Work queue"
+          subtitle={
+            queueSize === 0
+              ? "Nothing needs a human touch right now"
+              : `${queueSize} item${queueSize === 1 ? "" : "s"} need attention today`
+          }
+        >
+          {queueSize === 0 ? (
+            <p className="py-6 text-center text-[0.8125rem] text-ink-3">
+              All clear — promises are on schedule and no escalations are waiting.
+            </p>
+          ) : (
+            <div className="grid gap-5 md:grid-cols-3">
+              <div>
+                <h3 className="mb-2 flex items-center gap-1.5 text-[0.6875rem] font-medium uppercase tracking-[0.07em] text-ink-3">
+                  <CalendarClock size={12} /> Promises to chase
+                </h3>
+                {queue.duePromises.length === 0 ? (
+                  <p className="text-[0.75rem] text-ink-3">None due or overdue.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {queue.duePromises.map((p) => (
+                      <li key={p.id} className="flex items-center justify-between gap-2 text-[0.78125rem]">
+                        <Link href={`/debtors/${p.debtor.id}`} className="truncate text-ink-2 hover:text-accent">
+                          {p.debtor.firstName} {p.debtor.lastName}
+                        </Link>
+                        <span className="num shrink-0 text-ink">
+                          {money(p.amount)}{" "}
+                          <span className="text-[0.6875rem] text-ink-3">{relativeDays(p.promisedDate)}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div>
+                <h3 className="mb-2 flex items-center gap-1.5 text-[0.6875rem] font-medium uppercase tracking-[0.07em] text-ink-3">
+                  <AlertTriangle size={12} /> Escalations waiting
+                </h3>
+                {queue.escalations.length === 0 ? (
+                  <p className="text-[0.75rem] text-ink-3">Queue is clear.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {queue.escalations.map((e) => (
+                      <li key={e.id} className="flex items-center justify-between gap-2 text-[0.78125rem]">
+                        <Link href={`/debtors/${e.debtor.id}`} className="truncate text-ink-2 hover:text-accent">
+                          {e.debtor.firstName} {e.debtor.lastName}
+                        </Link>
+                        <Badge value={e.reason} label={label(e.reason)} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div>
+                <h3 className="mb-2 flex items-center gap-1.5 text-[0.6875rem] font-medium uppercase tracking-[0.07em] text-ink-3">
+                  <PhoneCall size={12} /> Callbacks requested
+                </h3>
+                {queue.callbacks.length === 0 ? (
+                  <p className="text-[0.75rem] text-ink-3">No callbacks pending.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {queue.callbacks.map((c) => (
+                      <li key={c.id} className="flex items-center justify-between gap-2 text-[0.78125rem]">
+                        <Link href={`/debtors/${c.call.debtor.id}`} className="truncate text-ink-2 hover:text-accent">
+                          {c.call.debtor.firstName} {c.call.debtor.lastName}
+                        </Link>
+                        <span className="shrink-0 text-[0.6875rem] text-ink-3">
+                          asked {relativeDays(c.call.startedAt)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+          <div className="mt-4 flex gap-3 border-t border-line-2 pt-3 text-[0.71875rem]">
+            <Link href="/promises?status=overdue" className="text-accent hover:underline">All overdue promises</Link>
+            <Link href="/escalations?status=open" className="text-accent hover:underline">Escalation queue</Link>
+          </div>
+        </GlassCard>
+        <GlassCard title="Book by account age" subtitle="Outstanding vs recovered per aging bucket">
+          <AgingChart data={data.agingSeries} />
+        </GlassCard>
+      </div>
 
       {/* Charts */}
       <div className="grid gap-4 lg:grid-cols-2">
