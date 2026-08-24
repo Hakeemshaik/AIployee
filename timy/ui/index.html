@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Timy.ai</title>
+<link rel="stylesheet" href="/static/styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐦</text></svg>">
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">T</div>
+      <div class="brand-text">
+        <strong>Timy<span class="dim">.ai</span></strong>
+        <small id="tagline">Your private AI assistant</small>
+      </div>
+    </div>
+
+    <button class="btn-new" id="newChat">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      New conversation
+    </button>
+
+    <div class="convo-list" id="convoList" role="list"></div>
+
+    <div class="sidebar-foot">
+      <div class="status" id="status">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">checking…</span>
+      </div>
+      <div class="kb-line" id="kbLine"></div>
+      <button class="btn-ghost" id="themeToggle" title="Toggle theme">
+        <span id="themeLabel">Dark</span>
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="btn-icon only-mobile" id="menuToggle" aria-label="Menu">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="controls">
+        <label class="field">
+          <span>Model</span>
+          <select id="modelSelect"></select>
+        </label>
+        <label class="toggle" title="Ground answers in your knowledge base">
+          <input type="checkbox" id="useKnowledge" checked>
+          <span>Use knowledge</span>
+        </label>
+      </div>
+    </header>
+
+    <div class="thread" id="thread">
+      <div class="welcome" id="welcome">
+        <div class="welcome-mark">T</div>
+        <h1>Timy.ai</h1>
+        <p>Running entirely on your own hardware. Nothing you type leaves the building.</p>
+        <div class="suggestions" id="suggestions">
+          <button data-q="What can you help me with?">What can you help me with?</button>
+          <button data-q="Summarise what is in your knowledge base.">Summarise your knowledge base</button>
+          <button data-q="Explain what you are and where you run, in plain terms.">What are you, exactly?</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="composer">
+      <div class="composer-inner">
+        <textarea id="input" rows="1" placeholder="Ask Timy anything…"
+                  autocomplete="off" spellcheck="true"></textarea>
+        <button id="send" class="btn-send" aria-label="Send">
+          <svg viewBox="0 0 24 24" width="18" height="18"><path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        </button>
+        <button id="stop" class="btn-stop hidden" aria-label="Stop">
+          <svg viewBox="0 0 24 24" width="16" height="16"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg>
+        </button>
+      </div>
+      <p class="disclaimer">Timy runs a smaller local model. Check anything important.</p>
+    </div>
+  </main>
+</div>
+<script src="/static/app.js"></script>
+</body>
+</html>
