@@ -14,3 +14,4 @@ which workloads this cluster is and is not suited to.
 - [Live voice: the latency arithmetic](llm-lab/docs/03-voice-latency-reality.md)
 - [GPU upgrade path](llm-lab/docs/04-gpu-upgrade-path.md)
 - [Operations](llm-lab/docs/05-operations.md)
+- [Giving Claude access to the cluster](llm-lab/docs/06-giving-claude-access.md)

@@ -69,7 +69,8 @@ make voice-check      # tells you whether your measured numbers can hold a call
 ## Layout
 
 ```
-docs/       Architecture, model selection, the voice latency math, GPU upgrade path
+docs/       Architecture, model selection, the voice latency math, GPU upgrade
+            path, and how to give Claude access to the cluster
 proxmox/    Container/VM provisioning scripts to run on a PVE host
 inference/  llama.cpp build, tuning, systemd units, model downloads
 gateway/    LiteLLM proxy + load balancing across workers, observability
