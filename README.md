@@ -45,6 +45,64 @@ Useful entry points once running:
 - **Dashboard → Work queue** — promises due/overdue, waiting escalations and requested callbacks
 - **Reports → Export PDF** — print-optimised report export
 
+## Launching with Jobix (or any voice platform)
+
+The platform is the system of record and command centre; Jobix stays the dialler. Go-live
+checklist:
+
+**1. Run it in production mode**
+
+```bash
+npm ci
+npm run db:push
+npm run db:seed        # or skip and import your real book (step 3)
+npm run build
+npm start              # serves on :3000 — put HTTPS in front (Caddy/nginx/host platform)
+```
+
+SQLite needs a host with a persistent disk (a VM, Railway/Render/Fly volume). For
+serverless hosts (Vercel), switch the Prisma datasource to PostgreSQL first — the schema
+ports as-is. Set production env vars: `DATABASE_URL`, and `AI_PROVIDER=claude` +
+`ANTHROPIC_API_KEY` for Claude-generated analysis and reports (server-side only).
+
+**2. Create the Jobix API key**
+
+```bash
+npm run key:create -- "Jobix production"
+```
+
+Copy the printed key once. It authorizes only `voice:ingest`.
+
+**3. Import your book and set up the campaign**
+
+Debtors → **Import debtors** (CSV per the template — phone numbers are normalized to
+`+27…` E.164, the same format your Jobix imports use). Create the matching campaign,
+assign the debtors and the agent, and set it **Active**. To link agents to Jobix, set each
+agent's `externalId` to the Jobix agent id (`npx prisma studio` → AIAgent) and pass it as
+`externalAgentId` on the webhook.
+
+**4. Point Jobix at the webhook**
+
+Configure Jobix (webhook/automation, or a small relay script if your plan only exposes
+exports) to send each finished call to:
+
+```
+POST https://<your-domain>/api/integrations/voice/call-completed
+Authorization: Bearer <key from step 2>
+```
+
+Debtor matching works on `accountNumber` **or** `phone` — Jobix always knows the number it
+dialled, so `phone` alone is enough. The endpoint is idempotent on `externalCallId`
+(re-sending a call is safe) and rate limited at 120 req/min per key.
+
+**5. Confirm the loop**
+
+Send one test call (see the payload below or Settings → Voice platform integration) and
+check: the call appears under Calls with an AI analysis → a promise appears under Promises
+to Pay (if one was made) → the debtor's timeline and campaign metrics update → the
+dashboard work queue picks up the follow-up. Record the payment when it lands and the
+promise resolves to Fulfilled.
+
 ## AI provider architecture
 
 All AI work goes through `src/services/ai` — an `AIProvider` interface with three methods:

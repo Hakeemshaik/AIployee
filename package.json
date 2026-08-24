@@ -10,7 +10,8 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma db push --force-reset && tsx prisma/seed.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "key:create": "tsx scripts/create-api-key.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",
