@@ -16,12 +16,19 @@ export default function Error({
         </p>
         <p className="mt-2 text-[0.8125rem] leading-relaxed text-ink-2">
           {needsSeed
-            ? "Run `npm run db:push` and `npm run db:seed` to load the demo organization, then reload."
+            ? "This deployment hasn't been initialised. Run the one-time setup to create your organization."
             : "An unexpected error occurred while loading this page. The details have been logged on the server."}
         </p>
-        <button onClick={reset} className="btn btn-primary mt-4">
-          Try again
-        </button>
+        <div className="mt-4 flex justify-center gap-2">
+          {needsSeed && (
+            <a href="/setup" className="btn btn-primary">
+              Run setup
+            </a>
+          )}
+          <button onClick={reset} className="btn">
+            Try again
+          </button>
+        </div>
       </div>
     </div>
   );

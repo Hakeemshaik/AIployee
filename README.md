@@ -76,15 +76,17 @@ checklist:
 Serverless note: the webhook rate limiter is in-memory per instance — fine at Jobix call
 volumes; move it to Redis/Upstash if you ever fan out to very high concurrency.
 
-**2. Create the Jobix API key**
+**2. Open `/setup` on your live URL**
 
-Run locally against the production database:
+Visit `https://<your-app>.vercel.app/setup` in a browser. The one-time setup page creates your
+organization and shows your Jobix webhook API key (once — copy it). Choose:
 
-```bash
-DATABASE_URL=<direct-url> DIRECT_DATABASE_URL=<direct-url> npm run key:create -- "Jobix production"
-```
+- **Load the demo dataset** — see the whole platform working immediately, or
+- **Start clean** — empty platform ready for your real book.
 
-Copy the printed key once. It authorizes only `voice:ingest`.
+The page locks itself permanently after first use. (CLI alternative:
+`npm run key:create -- "Jobix production"` and `npm run db:seed` against the production
+database.)
 
 **3. Import your book and set up the campaign**
 
