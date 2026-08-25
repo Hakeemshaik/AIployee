@@ -160,14 +160,48 @@ wrong numbers, so each is pinned by tests in `src/services/analytics/classify.te
 - **Dead numbers get a repair export, not a call button** — they need new phone numbers,
   not more attempts.
 
+### Account drawer
+
+Clicking an account name (in either table) opens its full history, so every number on the
+page can be traced to the evidence behind it:
+
+- **Each call carries its own reach verdict and the reasoning** — "Tenant spoke 22 words —
+  a real conversation", "Tenant audio matched a machine greeting (“Please leave”) in only 7
+  words", "No talk time and no transcript — the call never connected". A test asserts these
+  verdicts never disagree with the engine that drives the metrics.
+- **Attempts are numbered by time**, so "attempt 3" is the third call actually made, not the
+  third row the provider returned.
+- **The provider's voicemail flag is shown beside the verdict, never used to produce it.**
+  Seeing the two disagree is the point; the fixture deliberately contains disagreements in
+  both directions and a test requires them.
+- **Transcripts render inline**, tenant turns visually distinct from the agent's, with the
+  call that decided the outcome expanded by default.
+- **Messaging steps (WhatsApp/SMS) come from flow node history.** Those rows carry only
+  `customer_name` — no phone, no account id — so the match is by normalised name and the
+  drawer says so. Where two accounts share a name the events are still shown but flagged
+  `ambiguous`, never presented as belonging to one account.
+
 ### Ingestion
 
 `POST /api/ingest` (progress on `GET`). Conversations page cheaply; transcripts are one
 request each, so they are fetched at concurrency 12, checkpointed every 25, cached in
 `JobixTranscript` by conversation uuid and **never re-fetched**. Customers are stale-filtered
 on `_modify_time` and deduped by phone (skipping this produced 5,608 "records" for 660
-phones). Ingestion is **blocked by a workspace assertion**: if the expected agent names are
-absent the run aborts with a clear error rather than importing another workspace's data.
+phones). A fourth phase pulls flow **node history** (WhatsApp/SMS sends and filter branches)
+when `JOBIX_FLOW_UUID` is set; without a flow there is no endpoint to ask, so the phase is
+skipped and reports zero rather than inventing state. Jobix issues no event id for these, so
+identity is the event's content and a repeat is ignored as the same event seen again.
+
+Ingestion is **blocked by a workspace assertion**: if the expected agent names are absent the
+run aborts with a clear error rather than importing another workspace's data.
+
+The control lives at the top of `/analytics`: phase stepper, live counters (new vs cached vs
+failed transcripts, customers, messaging events), and the last run's outcome. It polls `GET
+/api/ingest` while a run is in flight. Runs are resumable — cached transcripts are never
+re-fetched — so pressing Run after an interrupted run continues rather than restarts, and the
+panel says so. Configuration failures are reported as configuration, not bugs: **501** when
+Jobix credentials are absent from the server, **403** in demo mode, **409** on a workspace
+mismatch. Only the *presence* of credentials is sent to the browser, never a value.
 
 ### Jobix API traps, encoded as guards
 
@@ -393,6 +427,16 @@ src/
 prisma/schema.prisma    # multi-tenant relational model
 prisma/seed.ts          # realistic fictional demo data (clearly mock)
 ```
+
+### Currency and time are formatted deterministically
+
+`src/lib/format.ts` does not delegate ZAR or date formatting to `Intl`. Fixing the locale is
+not enough: Node's ICU groups `en-ZA` thousands with a no-break space and uses a comma for
+cents, Chromium groups with a comma and uses a full stop, so server and client HTML disagreed
+and React discarded the server-rendered tree on load. Times were worse — the server runs in
+UTC, so a 20:30 SAST call rendered as 18:30 until the browser took over. Money is now grouped
+here, and dates are pinned to `Africa/Johannesburg` and assembled from numeric parts. Both
+are pinned by tests in `src/lib/format.test.ts`, including the SAST-midnight rollover.
 
 ## Multi-tenancy & security
 

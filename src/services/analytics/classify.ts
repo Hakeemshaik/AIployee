@@ -62,6 +62,50 @@ export function summariseTranscript(
   };
 }
 
+/** Tenant words needed before a reach counts as a real conversation. */
+const CONVERSATION_WORD_FLOOR = 8;
+
+/**
+ * Why a single call did or did not count as a reach.
+ *
+ * The account-level bucket is the number people act on, but a collector
+ * looking at one call needs to see the reasoning — especially where the
+ * platform's own voicemail flag disagrees. Every branch names the evidence.
+ */
+export type ReachVerdict = { reached: boolean; reason: string };
+
+export function reachVerdict(call: {
+  durationSeconds: number;
+  transcript?: TranscriptSummary | null;
+}): ReachVerdict {
+  const t = call.transcript;
+  if (!t) {
+    return call.durationSeconds > 0
+      ? {
+          reached: false,
+          reason: `Connected for ${call.durationSeconds}s but no transcript has been fetched, so a reach cannot be verified.`,
+        }
+      : { reached: false, reason: "No talk time and no transcript — the call never connected." };
+  }
+  if (t.userTurns === 0) {
+    return { reached: false, reason: "Transcript has no tenant turns — only the agent spoke." };
+  }
+  const machineMatch = MACHINE_PATTERN.exec(t.userText);
+  if (machineMatch && t.userWords < 15) {
+    return {
+      reached: false,
+      reason: `Tenant audio matched a machine greeting (“${machineMatch[0]}”) in only ${t.userWords} words — treated as a machine, not a person.`,
+    };
+  }
+  if (t.userWords >= CONVERSATION_WORD_FLOOR) {
+    return { reached: true, reason: `Tenant spoke ${t.userWords} words — a real conversation.` };
+  }
+  return {
+    reached: true,
+    reason: `Tenant spoke ${t.userWords} words — reached, but under the ${CONVERSATION_WORD_FLOOR}-word conversation floor.`,
+  };
+}
+
 // --- buckets ----------------------------------------------------------------
 
 export const ACCOUNT_BUCKETS = [
@@ -125,8 +169,6 @@ export type ClassifiedAccount = {
   firstReachAttempt: number | null;
   firstReachAt: Date | null;
 };
-
-const CONVERSATION_WORD_FLOOR = 8;
 
 export function classifyAccount(account: ClassifiableAccount): ClassifiedAccount {
   // Attempt order is by time, never by the provider's returned order.
@@ -222,7 +264,6 @@ export function sastHour(utc: Date): number {
 
 export function computeCampaignAnalytics(accounts: ClassifiableAccount[]): CampaignAnalytics {
   const classified = accounts.map(classifyAccount);
-  const byId = new Map(classified.map((c) => [c.accountId, c]));
 
   const buckets = Object.fromEntries(ACCOUNT_BUCKETS.map((b) => [b, 0])) as Record<AccountBucket, number>;
   for (const c of classified) buckets[c.bucket] += 1;

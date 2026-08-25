@@ -51,6 +51,7 @@ model Organization {
   jobixConversations JobixConversation[]
   jobixTranscripts   JobixTranscript[]
   ingestionRuns      IngestionRun[]
+  jobixNodeEvents    JobixNodeEvent[]
 }
 
 model User {
@@ -328,6 +329,7 @@ model IngestionRun {
   customersFound     Int   @default(0)
   droppedStale       Int   @default(0)
   droppedDuplicate   Int   @default(0)
+  messagingEvents    Int   @default(0)
   /** Newest conversation already ingested — the resume point. */
   cursor         String?
   workspaceNote  String?
@@ -603,4 +605,41 @@ model ApiKey {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
+}
+
+/// Flow node-history events from Jobix — the only record of non-voice steps
+/// (WhatsApp/SMS sends, filter branches) that a flow performed.
+///
+/// Jobix exposes no phone number or account key on these rows, only
+/// `customer_name`, so accounts are matched on a normalised name. That match is
+/// weaker than the phone match used for calls and the UI says so explicitly
+/// rather than presenting it as authoritative.
+model JobixNodeEvent {
+  id             String   @id @default(cuid())
+  organizationId String
+  flowUuid       String
+  companyNodeId  Int
+  /// Node name from the flow definition, when it could be resolved.
+  nodeName       String?
+  /// whatsapp | sms | email | filter | other — derived from the node name.
+  channel        String   @default("other")
+  /// Raw Jobix status: 13 = success, 98 = failed.
+  status         Int
+  succeeded      Boolean  @default(false)
+  failed         Boolean  @default(false)
+  /// For filter nodes: "_0" = matched/Yes, "_1" = not matched.
+  outputSocketId String?
+  matchedFilter  Boolean?
+  customerName   String?
+  /// Normalised customer name used for matching. Never a unique key.
+  customerKey    String?
+  occurredAt     DateTime
+  ingestedAt     DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  /// Jobix returns no event id, so identity is the content of the event.
+  @@unique([organizationId, flowUuid, companyNodeId, customerKey, occurredAt])
+  @@index([organizationId, customerKey])
+  @@index([organizationId, occurredAt])
 }

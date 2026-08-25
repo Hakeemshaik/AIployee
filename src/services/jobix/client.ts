@@ -95,6 +95,11 @@ export type PagedMeta = {
 export class JobixClient {
   constructor(private env: JobixEnv) {}
 
+  /** The configured flow, when one is set. Never exposes the token. */
+  get flowUuid(): string | undefined {
+    return this.env.flowUuid;
+  }
+
   /**
    * GET against the dashboard API with retry + backoff. These endpoints time
    * out under sustained paging, so transient failures are retried rather than

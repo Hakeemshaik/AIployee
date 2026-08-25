@@ -31,8 +31,10 @@ export async function setGuest(enabled: boolean): Promise<void> {
 }
 
 export class GuestBlockedError extends Error {
+  // The action is named so the message fits whatever was refused — the guard
+  // covers ingestion as well as calling.
   constructor(action = "trigger calls") {
-    super(`Calling is disabled in the demo — sign in to ${action}.`);
+    super(`Not available in the demo — sign in to ${action}.`);
     this.name = "GuestBlockedError";
   }
 }

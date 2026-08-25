@@ -1,29 +1,38 @@
 // Formatting helpers — ZAR currency, dates and durations.
-// Locale is fixed to en-ZA so server and client render identically.
+//
+// Currency is formatted here rather than by Intl, because Intl's en-ZA
+// separators differ between ICU builds: Node groups with a no-break space and
+// uses a comma for cents, Chromium groups with a comma and uses a full stop.
+// Fixing the locale is not enough — server and client HTML disagreed, so React
+// threw away the server-rendered tree and re-rendered on every load. These
+// helpers produce the same string everywhere: "R 271 950" and "R 1 250,50",
+// which is what the server has always rendered.
 
-const zar = new Intl.NumberFormat("en-ZA", {
-  style: "currency",
-  currency: "ZAR",
-  maximumFractionDigits: 0,
-});
-
-const zarCents = new Intl.NumberFormat("en-ZA", {
-  style: "currency",
-  currency: "ZAR",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
-/** R184 500 — whole-rand display for dashboards and tables. */
-export function money(amount: number | null | undefined): string {
-  if (amount == null) return "—";
-  return zar.format(Math.round(amount)).replace(/ /g, " ");
+/** Insert a space every three digits, from the right. */
+function groupDigits(digits: string): string {
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 }
 
-/** R1 250.50 — cents shown, for payment records. */
+function formatZar(amount: number, decimals: 0 | 2): string {
+  const negative = amount < 0;
+  const absolute = Math.abs(amount);
+  const fixed = absolute.toFixed(decimals);
+  const [whole, cents] = fixed.split(".");
+  const body = cents ? `${groupDigits(whole)},${cents}` : groupDigits(whole);
+  return `${negative ? "-" : ""}R ${body}`;
+}
+
+/** R 184 500 — whole-rand display for dashboards and tables. */
+export function money(amount: number | null | undefined): string {
+  if (amount == null) return "—";
+  // Round first, so 999.6 groups as "1 000" rather than "999" + carry.
+  return formatZar(Math.round(amount), 0);
+}
+
+/** R 1 250,50 — cents shown, for payment records. */
 export function moneyExact(amount: number | null | undefined): string {
   if (amount == null) return "—";
-  return zarCents.format(amount).replace(/ /g, " ");
+  return formatZar(amount, 2);
 }
 
 /** Compact money for chart axes: R1.2m / R840k / R950. */
@@ -39,22 +48,69 @@ export function percent(value: number | null | undefined, digits = 1): string {
   return `${(value * 100).toFixed(digits)}%`;
 }
 
+// Dates are rendered in South African time, whatever the machine is set to.
+//
+// Timestamps are stored in UTC and the server runs in UTC, so relying on the
+// local zone showed a 20:30 SAST call as 18:30 on a server-rendered page and
+// 20:30 once the browser took over — wrong for a collections team, and a
+// hydration mismatch besides. The zone is pinned instead, and the string is
+// assembled from numeric parts so no locale pattern can vary between ICU
+// builds.
+const SAST_ZONE = "Africa/Johannesburg";
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const sastParts = new Intl.DateTimeFormat("en-GB", {
+  timeZone: SAST_ZONE,
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+type Wall = { day: number; month: number; year: number; hour: string; minute: string };
+
+function wallClock(d: Date): Wall | null {
+  if (Number.isNaN(d.getTime())) return null;
+  const parts = new Map(sastParts.formatToParts(d).map((p) => [p.type, p.value]));
+  const hour = parts.get("hour") ?? "00";
+  return {
+    day: Number(parts.get("day")),
+    month: Number(parts.get("month")),
+    year: Number(parts.get("year")),
+    // Some ICU builds render midnight as "24" under hour12: false.
+    hour: hour === "24" ? "00" : hour.padStart(2, "0"),
+    minute: (parts.get("minute") ?? "00").padStart(2, "0"),
+  };
+}
+
+function toDate(date: Date | string): Date {
+  return typeof date === "string" ? new Date(date) : date;
+}
+
+/** 17 Aug 2026, in SAST. */
 export function formatDate(date: Date | string | null | undefined): string {
   if (!date) return "—";
-  const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
+  const w = wallClock(toDate(date));
+  if (!w) return "—";
+  return `${w.day} ${MONTHS[w.month - 1]} ${w.year}`;
 }
 
+/** 17 Aug 2026, 09:26 — SAST. */
 export function formatDateTime(date: Date | string | null | undefined): string {
   if (!date) return "—";
-  const d = typeof date === "string" ? new Date(date) : date;
-  return `${formatDate(d)}, ${d.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
+  const w = wallClock(toDate(date));
+  if (!w) return "—";
+  return `${w.day} ${MONTHS[w.month - 1]} ${w.year}, ${w.hour}:${w.minute}`;
 }
 
+/** 09:26 — SAST. */
 export function formatTime(date: Date | string | null | undefined): string {
   if (!date) return "—";
-  const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit", hour12: false });
+  const w = wallClock(toDate(date));
+  if (!w) return "—";
+  return `${w.hour}:${w.minute}`;
 }
 
 /** 4:05 for 245 seconds. */

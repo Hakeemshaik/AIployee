@@ -35,6 +35,7 @@ const TENANT_LINES = {
 const accounts = [];
 const conversations = [];
 const transcripts = {};
+const nodeEvents = [];
 let convSeq = 1_300_000;
 
 const campaignStart = "2026-08-17T06:00:00.000Z";
@@ -110,6 +111,35 @@ for (let i = 0; i < 120; i++) {
   });
 }
 
+// Non-voice flow steps, as Jobix records them in node history: keyed only by
+// customer name, with no phone number or account id on the row. Generated from
+// an independent random stream so the account data above stays stable.
+const FLOW_NODES = [
+  { companyNodeId: 8801, nodeName: "Send WhatsApp reminder" },
+  { companyNodeId: 8802, nodeName: "WhatsApp payment link" },
+  { companyNodeId: 8803, nodeName: "SMS payment link" },
+  { companyNodeId: 8810, nodeName: "Filter: reached on first attempt" },
+];
+const nrand = mulberry32(77120260825);
+const npick = (a) => a[Math.floor(nrand() * a.length)];
+const nint = (lo, hi) => Math.floor(lo + nrand() * (hi - lo + 1));
+
+for (const account of accounts) {
+  if (account.calls.length === 0) continue;
+  if (nrand() >= 0.7) continue;
+  const node = npick(FLOW_NODES);
+  const sent = nrand() < 0.82;
+  nodeEvents.push({
+    companyNodeId: node.companyNodeId,
+    nodeName: node.nodeName,
+    status: sent ? 13 : 98,
+    outputSocketId:
+      node.companyNodeId === 8810 ? `${node.companyNodeId}_${nrand() < 0.5 ? 0 : 1}` : null,
+    customerName: account.name,
+    createdAt: `2026-08-${17 + nint(0, 6)}T${String(nint(6, 15)).padStart(2, "0")}:${String(nint(0, 59)).padStart(2, "0")}:00.000Z`,
+  });
+}
+
 const fixture = {
   meta: {
     campaignName: "Waterkloof Collections — August",
@@ -118,9 +148,11 @@ const fixture = {
     generated: "deterministic fixture, no live accounts",
     accountCount: accounts.length,
   },
-  accounts, conversations, transcripts,
+  accounts, conversations, transcripts, nodeEvents,
 };
 
 mkdirSync("src/fixtures", { recursive: true });
 writeFileSync("src/fixtures/demo-campaign.json", JSON.stringify(fixture, null, 2));
-console.log(`fixture written: ${accounts.length} accounts, ${conversations.length} conversations`);
+console.log(
+  `fixture written: ${accounts.length} accounts, ${conversations.length} conversations, ${nodeEvents.length} node events`,
+);

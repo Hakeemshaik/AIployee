@@ -6,6 +6,7 @@ import { money, percent } from "@/lib/format";
 import { Badge, GlassCard } from "@/components/ui";
 import { FunnelStep, Metric } from "@/components/Metric";
 import { CumulativeReachChart, ReachByHourChart } from "@/components/charts";
+import { AccountDrawer } from "./AccountDrawer";
 
 type Bucket =
   | "conversation"
@@ -82,6 +83,7 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [openAccount, setOpenAccount] = useState<string | null>(null);
 
   const chips: Chip[] = useMemo(() => {
     const flag = (key: string, label: string, pred: (r: AnalyticsPayload["rows"][number]) => boolean, title: string) => ({
@@ -275,7 +277,15 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
               <tbody>
                 {deadRows.slice(0, 60).map((r) => (
                   <tr key={r.accountId}>
-                    <td className="text-ink">{r.name}</td>
+                    <td>
+                      <button
+                        onClick={() => setOpenAccount(r.accountId)}
+                        className="text-left text-ink hover:text-accent hover:underline"
+                        title="Open call history and transcripts"
+                      >
+                        {r.name}
+                      </button>
+                    </td>
                     <td className="text-ink-3">{r.unit ?? "—"}</td>
                     <td className="num text-ink-3">{maskPhone(r.phone)}</td>
                     <td className="num text-right">{money(r.balance)}</td>
@@ -345,7 +355,15 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
                       aria-label={`Select ${r.name}`}
                     />
                   </td>
-                  <td className="font-medium text-ink">{r.name}</td>
+                  <td>
+                    <button
+                      onClick={() => setOpenAccount(r.accountId)}
+                      className="text-left font-medium text-ink hover:text-accent hover:underline"
+                      title="Open call history and transcripts"
+                    >
+                      {r.name}
+                    </button>
+                  </td>
                   <td className="text-ink-3">{r.unit ?? "—"}</td>
                   <td className="max-w-[150px] truncate text-ink-3">{r.building ?? "—"}</td>
                   <td className="num text-ink-3">{maskPhone(r.phone)}</td>
@@ -407,6 +425,13 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
           </p>
         )}
       </GlassCard>
+
+      <AccountDrawer
+        accountId={openAccount}
+        onClose={() => setOpenAccount(null)}
+        bucketLabels={payload.bucketLabels}
+        bucketExplanations={payload.bucketExplanations}
+      />
 
       {/* sticky bulk action bar */}
       {selectedRows.length > 0 && (

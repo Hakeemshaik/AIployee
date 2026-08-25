@@ -2,12 +2,15 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { sastHour } from "@/services/analytics/classify";
 import {
+  fetchFlowNodes,
   fetchTranscript,
   pullConversations,
   pullCustomers,
+  pullNodeHistory,
   requireWorkspace,
   type JobixConversation,
 } from "./api";
+import { messagingChannel, nameKey } from "./messaging";
 import { JobixClient, JobixError, loadJobixEnv } from "./client";
 
 // ---------------------------------------------------------------------------
@@ -49,6 +52,7 @@ export type IngestProgress = {
   customersFound: number;
   droppedStale: number;
   droppedDuplicate: number;
+  messagingEvents: number;
   workspaceNote: string | null;
   error: string | null;
   startedAt: Date;
@@ -108,6 +112,72 @@ async function pool<T>(items: T[], limit: number, worker: (item: T) => Promise<v
     }
   });
   await Promise.all(runners);
+}
+
+/**
+ * Pull and store flow node-history events (WhatsApp/SMS sends, filter
+ * branches).
+ *
+ * Requires a configured flow — without JOBIX_FLOW_UUID there is no endpoint to
+ * ask, so the phase is skipped and reports zero rather than inventing state.
+ * Node names come from the flow definition so a send can be labelled by
+ * channel; when the definition cannot be read the events are still stored with
+ * channel "other".
+ */
+async function ingestNodeHistory(
+  organizationId: string,
+  client: JobixClient,
+  since: Date | undefined,
+  update: (data: Record<string, unknown>) => Promise<unknown>,
+): Promise<number> {
+  const flowUuid = client.flowUuid;
+  if (!flowUuid) return 0;
+
+  let nodeNames = new Map<number, string | null>();
+  try {
+    const nodes = await fetchFlowNodes(client, flowUuid);
+    nodeNames = new Map(nodes.map((n) => [n.companyNodeId, n.name]));
+  } catch (err) {
+    // A missing flow definition costs labels, not data.
+    console.warn("[jobix/ingest] flow nodes unavailable, channels default to other:", err);
+  }
+
+  const events = await pullNodeHistory(client, flowUuid, { since });
+  let stored = 0;
+  let sinceCheckpoint = 0;
+
+  for (const event of events) {
+    const nodeName = nodeNames.get(event.companyNodeId) ?? null;
+    try {
+      await db.jobixNodeEvent.create({
+        data: {
+          organizationId,
+          flowUuid,
+          companyNodeId: event.companyNodeId,
+          nodeName,
+          channel: messagingChannel(nodeName),
+          status: event.status,
+          succeeded: event.succeeded,
+          failed: event.failed,
+          outputSocketId: event.outputSocketId,
+          matchedFilter: event.matchedFilter,
+          customerName: event.customerName,
+          customerKey: nameKey(event.customerName),
+          occurredAt: event.createdAt,
+        },
+      });
+      stored += 1;
+    } catch {
+      // Unique violation: Jobix issues no event ids, so identity is the event's
+      // content. A repeat is the same event seen again, not new activity.
+    }
+    sinceCheckpoint += 1;
+    if (sinceCheckpoint >= 100) {
+      sinceCheckpoint = 0;
+      await update({ messagingEvents: stored });
+    }
+  }
+  return stored;
 }
 
 export async function runIngestion(options: IngestOptions): Promise<IngestProgress> {
@@ -204,6 +274,15 @@ export async function runIngestion(options: IngestOptions): Promise<IngestProgre
       customersFound: customers.length,
       droppedStale,
       droppedDuplicate,
+      phase: "messaging",
+    });
+
+    // --- messaging: non-voice flow steps (WhatsApp/SMS) from node history ---
+    // Only possible when a flow is configured; skipped, never faked, otherwise.
+    const messagingEvents = await ingestNodeHistory(organizationId, client, options.since, update);
+
+    await update({
+      messagingEvents,
       phase: "done",
       status: "completed",
       finishedAt: new Date(),
@@ -224,6 +303,7 @@ export async function runIngestion(options: IngestOptions): Promise<IngestProgre
         customers: customers.length,
         droppedStale,
         droppedDuplicate,
+        messagingEvents,
       },
     });
 
@@ -255,6 +335,7 @@ export async function getIngestProgress(
     customersFound: run.customersFound,
     droppedStale: run.droppedStale,
     droppedDuplicate: run.droppedDuplicate,
+    messagingEvents: run.messagingEvents,
     workspaceNote: run.workspaceNote,
     error: run.error,
     startedAt: run.startedAt,

@@ -6354,5 +6354,615 @@
         "text": "The subscriber you have dialled is not available"
       }
     ]
-  }
+  },
+  "nodeEvents": [
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 98,
+      "outputSocketId": null,
+      "customerName": "Andile Sithole",
+      "createdAt": "2026-08-21T12:07:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Mandla Jacobs",
+      "createdAt": "2026-08-20T11:44:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Tumelo Mahlangu",
+      "createdAt": "2026-08-20T07:44:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 98,
+      "outputSocketId": null,
+      "customerName": "Riaan Cele",
+      "createdAt": "2026-08-18T08:29:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Rajesh Ndlovu",
+      "createdAt": "2026-08-17T10:57:00.000Z"
+    },
+    {
+      "companyNodeId": 8810,
+      "nodeName": "Filter: reached on first attempt",
+      "status": 13,
+      "outputSocketId": "8810_0",
+      "customerName": "Xolani Petersen",
+      "createdAt": "2026-08-21T07:33:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Sipho Pretorius",
+      "createdAt": "2026-08-22T13:32:00.000Z"
+    },
+    {
+      "companyNodeId": 8803,
+      "nodeName": "SMS payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Mandla Botha",
+      "createdAt": "2026-08-21T07:57:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 98,
+      "outputSocketId": null,
+      "customerName": "Zanele du Plessis",
+      "createdAt": "2026-08-19T13:36:00.000Z"
+    },
+    {
+      "companyNodeId": 8810,
+      "nodeName": "Filter: reached on first attempt",
+      "status": 98,
+      "outputSocketId": "8810_1",
+      "customerName": "Precious Pillay",
+      "createdAt": "2026-08-19T14:48:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Marike Naidoo",
+      "createdAt": "2026-08-17T07:44:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 98,
+      "outputSocketId": null,
+      "customerName": "Andile Mthembu",
+      "createdAt": "2026-08-20T08:22:00.000Z"
+    },
+    {
+      "companyNodeId": 8810,
+      "nodeName": "Filter: reached on first attempt",
+      "status": 98,
+      "outputSocketId": "8810_0",
+      "customerName": "Ayanda Nkosi",
+      "createdAt": "2026-08-19T14:44:00.000Z"
+    },
+    {
+      "companyNodeId": 8803,
+      "nodeName": "SMS payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Busisiwe Petersen",
+      "createdAt": "2026-08-19T07:01:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Xolani Pillay",
+      "createdAt": "2026-08-22T06:01:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Andile du Plessis",
+      "createdAt": "2026-08-21T11:12:00.000Z"
+    },
+    {
+      "companyNodeId": 8810,
+      "nodeName": "Filter: reached on first attempt",
+      "status": 13,
+      "outputSocketId": "8810_1",
+      "customerName": "Tumelo Mahlangu",
+      "createdAt": "2026-08-23T12:43:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Pieter Nkosi",
+      "createdAt": "2026-08-20T14:13:00.000Z"
+    },
+    {
+      "companyNodeId": 8803,
+      "nodeName": "SMS payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Thandi du Plessis",
+      "createdAt": "2026-08-20T09:46:00.000Z"
+    },
+    {
+      "companyNodeId": 8803,
+      "nodeName": "SMS payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Kevin Mokoena",
+      "createdAt": "2026-08-23T13:15:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 98,
+      "outputSocketId": null,
+      "customerName": "Fatima Pretorius",
+      "createdAt": "2026-08-23T11:42:00.000Z"
+    },
+    {
+      "companyNodeId": 8803,
+      "nodeName": "SMS payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Karabo Jacobs",
+      "createdAt": "2026-08-23T12:06:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Kevin Mokoena",
+      "createdAt": "2026-08-19T14:05:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Bongani Ismail",
+      "createdAt": "2026-08-20T09:32:00.000Z"
+    },
+    {
+      "companyNodeId": 8803,
+      "nodeName": "SMS payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Bongani Petersen",
+      "createdAt": "2026-08-21T14:06:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Marike Botha",
+      "createdAt": "2026-08-20T12:25:00.000Z"
+    },
+    {
+      "companyNodeId": 8810,
+      "nodeName": "Filter: reached on first attempt",
+      "status": 13,
+      "outputSocketId": "8810_1",
+      "customerName": "Thandi Dlamini",
+      "createdAt": "2026-08-18T08:32:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Mandla Botha",
+      "createdAt": "2026-08-17T15:25:00.000Z"
+    },
+    {
+      "companyNodeId": 8803,
+      "nodeName": "SMS payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Xolani Maharaj",
+      "createdAt": "2026-08-21T12:22:00.000Z"
+    },
+    {
+      "companyNodeId": 8810,
+      "nodeName": "Filter: reached on first attempt",
+      "status": 13,
+      "outputSocketId": "8810_1",
+      "customerName": "Pieter Fourie",
+      "createdAt": "2026-08-18T13:20:00.000Z"
+    },
+    {
+      "companyNodeId": 8803,
+      "nodeName": "SMS payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Riaan Ndlovu",
+      "createdAt": "2026-08-22T06:18:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Naledi Adams",
+      "createdAt": "2026-08-19T15:37:00.000Z"
+    },
+    {
+      "companyNodeId": 8803,
+      "nodeName": "SMS payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Pieter Sibiya",
+      "createdAt": "2026-08-21T14:05:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 98,
+      "outputSocketId": null,
+      "customerName": "Yusuf du Plessis",
+      "createdAt": "2026-08-19T06:35:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Nomvula Venter",
+      "createdAt": "2026-08-21T06:05:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Charmaine Radebe",
+      "createdAt": "2026-08-18T08:00:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 98,
+      "outputSocketId": null,
+      "customerName": "Nomvula Fourie",
+      "createdAt": "2026-08-18T10:47:00.000Z"
+    },
+    {
+      "companyNodeId": 8803,
+      "nodeName": "SMS payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Johan Adams",
+      "createdAt": "2026-08-17T07:16:00.000Z"
+    },
+    {
+      "companyNodeId": 8803,
+      "nodeName": "SMS payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Andile Mokoena",
+      "createdAt": "2026-08-17T14:55:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Fatima Adams",
+      "createdAt": "2026-08-22T13:18:00.000Z"
+    },
+    {
+      "companyNodeId": 8803,
+      "nodeName": "SMS payment link",
+      "status": 98,
+      "outputSocketId": null,
+      "customerName": "Johan Nkosi",
+      "createdAt": "2026-08-20T06:56:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Fatima Maharaj",
+      "createdAt": "2026-08-19T06:28:00.000Z"
+    },
+    {
+      "companyNodeId": 8803,
+      "nodeName": "SMS payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Yusuf Jacobs",
+      "createdAt": "2026-08-20T07:15:00.000Z"
+    },
+    {
+      "companyNodeId": 8810,
+      "nodeName": "Filter: reached on first attempt",
+      "status": 13,
+      "outputSocketId": "8810_0",
+      "customerName": "Bongani Mahlangu",
+      "createdAt": "2026-08-20T12:11:00.000Z"
+    },
+    {
+      "companyNodeId": 8803,
+      "nodeName": "SMS payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Naledi Botha",
+      "createdAt": "2026-08-21T15:10:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Riaan van der Merwe",
+      "createdAt": "2026-08-21T11:36:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Annelie Jacobs",
+      "createdAt": "2026-08-18T14:36:00.000Z"
+    },
+    {
+      "companyNodeId": 8803,
+      "nodeName": "SMS payment link",
+      "status": 98,
+      "outputSocketId": null,
+      "customerName": "Priya Dlamini",
+      "createdAt": "2026-08-19T11:06:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 98,
+      "outputSocketId": null,
+      "customerName": "Charmaine Molefe",
+      "createdAt": "2026-08-18T06:58:00.000Z"
+    },
+    {
+      "companyNodeId": 8810,
+      "nodeName": "Filter: reached on first attempt",
+      "status": 13,
+      "outputSocketId": "8810_1",
+      "customerName": "Charmaine Naidoo",
+      "createdAt": "2026-08-19T10:01:00.000Z"
+    },
+    {
+      "companyNodeId": 8810,
+      "nodeName": "Filter: reached on first attempt",
+      "status": 13,
+      "outputSocketId": "8810_1",
+      "customerName": "Sipho Molefe",
+      "createdAt": "2026-08-18T06:37:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Johan Adams",
+      "createdAt": "2026-08-21T06:07:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Precious Sithole",
+      "createdAt": "2026-08-19T07:30:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 98,
+      "outputSocketId": null,
+      "customerName": "Charmaine van der Merwe",
+      "createdAt": "2026-08-23T07:36:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Nomvula du Plessis",
+      "createdAt": "2026-08-19T11:41:00.000Z"
+    },
+    {
+      "companyNodeId": 8803,
+      "nodeName": "SMS payment link",
+      "status": 98,
+      "outputSocketId": null,
+      "customerName": "Dineo Ismail",
+      "createdAt": "2026-08-21T06:15:00.000Z"
+    },
+    {
+      "companyNodeId": 8810,
+      "nodeName": "Filter: reached on first attempt",
+      "status": 98,
+      "outputSocketId": "8810_0",
+      "customerName": "Karabo Ndlovu",
+      "createdAt": "2026-08-22T11:05:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 98,
+      "outputSocketId": null,
+      "customerName": "Sipho Sithole",
+      "createdAt": "2026-08-17T09:15:00.000Z"
+    },
+    {
+      "companyNodeId": 8803,
+      "nodeName": "SMS payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Rajesh Ismail",
+      "createdAt": "2026-08-18T11:43:00.000Z"
+    },
+    {
+      "companyNodeId": 8810,
+      "nodeName": "Filter: reached on first attempt",
+      "status": 98,
+      "outputSocketId": "8810_1",
+      "customerName": "Mandla Radebe",
+      "createdAt": "2026-08-19T07:38:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Nomvula Maharaj",
+      "createdAt": "2026-08-19T10:15:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Mandla Mahlangu",
+      "createdAt": "2026-08-21T10:50:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 98,
+      "outputSocketId": null,
+      "customerName": "Priya Ismail",
+      "createdAt": "2026-08-19T13:29:00.000Z"
+    },
+    {
+      "companyNodeId": 8810,
+      "nodeName": "Filter: reached on first attempt",
+      "status": 13,
+      "outputSocketId": "8810_0",
+      "customerName": "Karabo Petersen",
+      "createdAt": "2026-08-20T08:10:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 98,
+      "outputSocketId": null,
+      "customerName": "Johan Mokoena",
+      "createdAt": "2026-08-18T07:39:00.000Z"
+    },
+    {
+      "companyNodeId": 8803,
+      "nodeName": "SMS payment link",
+      "status": 98,
+      "outputSocketId": null,
+      "customerName": "Priya Petersen",
+      "createdAt": "2026-08-19T12:27:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Sipho Cele",
+      "createdAt": "2026-08-22T07:12:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Dineo Nkosi",
+      "createdAt": "2026-08-20T06:56:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Charmaine Sithole",
+      "createdAt": "2026-08-18T06:30:00.000Z"
+    },
+    {
+      "companyNodeId": 8810,
+      "nodeName": "Filter: reached on first attempt",
+      "status": 98,
+      "outputSocketId": "8810_0",
+      "customerName": "Bongani Fourie",
+      "createdAt": "2026-08-23T10:15:00.000Z"
+    },
+    {
+      "companyNodeId": 8801,
+      "nodeName": "Send WhatsApp reminder",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Naledi Nkosi",
+      "createdAt": "2026-08-17T11:55:00.000Z"
+    },
+    {
+      "companyNodeId": 8803,
+      "nodeName": "SMS payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Rajesh Mokoena",
+      "createdAt": "2026-08-21T09:17:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Charmaine Ismail",
+      "createdAt": "2026-08-18T13:50:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Dineo Venter",
+      "createdAt": "2026-08-19T13:40:00.000Z"
+    },
+    {
+      "companyNodeId": 8802,
+      "nodeName": "WhatsApp payment link",
+      "status": 13,
+      "outputSocketId": null,
+      "customerName": "Bongani Mthembu",
+      "createdAt": "2026-08-18T09:03:00.000Z"
+    },
+    {
+      "companyNodeId": 8810,
+      "nodeName": "Filter: reached on first attempt",
+      "status": 98,
+      "outputSocketId": "8810_1",
+      "customerName": "Ayanda Khumalo",
+      "createdAt": "2026-08-18T13:11:00.000Z"
+    }
+  ]
 }

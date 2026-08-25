@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Eye } from "lucide-react";
-import { getContext } from "@/lib/auth";
+import { getContext, hasRole } from "@/lib/auth";
 import { isGuest } from "@/lib/session";
 import {
   BUCKET_EXPLANATIONS,
@@ -10,8 +10,11 @@ import {
 } from "@/services/analytics/classify";
 import { demoAccountRows, demoAnalytics, demoClassifiableAccounts, demoMeta } from "@/services/analytics/demo";
 import { buildLiveAnalytics } from "@/services/analytics/live";
+import { getIngestProgress } from "@/services/jobix/ingest";
+import { loadJobixEnv } from "@/services/jobix/client";
 import { PageHeader } from "@/components/ui";
 import { AnalyticsView, type AnalyticsPayload } from "./AnalyticsView";
+import { IngestionPanel, type Progress } from "./IngestionPanel";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Call analytics" };
@@ -20,6 +23,7 @@ export default async function AnalyticsPage() {
   const guest = await isGuest();
 
   let payload: AnalyticsPayload;
+  let ingestion: { initial: Progress | null; configured: boolean; disabledReason?: string };
 
   if (guest) {
     const meta = demoMeta();
@@ -27,6 +31,13 @@ export default async function AnalyticsPage() {
     const accounts = demoClassifiableAccounts();
     const classifiedById = new Map(accounts.map((a) => [a.accountId, classifyAccount(a)]));
     const rowMeta = new Map(demoAccountRows().map((r) => [r.accountId, r]));
+
+    // A guest cannot ingest — the control is shown, disabled, with the reason.
+    ingestion = {
+      initial: null,
+      configured: false,
+      disabledReason: "Ingestion is disabled in the demo — sign in to pull live Jobix data.",
+    };
 
     payload = {
       source: "demo",
@@ -61,6 +72,17 @@ export default async function AnalyticsPage() {
   } else {
     const ctx = await getContext();
     const { result, rows } = await buildLiveAnalytics(ctx.organizationId);
+    const lastRun = await getIngestProgress(ctx.organizationId);
+    ingestion = {
+      // Only the presence of credentials crosses to the client, never a value.
+      configured: !!loadJobixEnv(),
+      disabledReason: hasRole(ctx, ["admin", "manager"])
+        ? undefined
+        : "Only an admin or manager can run ingestion.",
+      initial: lastRun
+        ? (JSON.parse(JSON.stringify(lastRun)) as Progress)
+        : null,
+    };
     const classifiedById = new Map(result.classified.map((c) => [c.accountId, c]));
     payload = {
       source: "live",
@@ -106,6 +128,11 @@ export default async function AnalyticsPage() {
       <PageHeader
         title="Call analytics"
         description={`${payload.campaignName} · workspace: ${payload.workspace} — every account classified by whether a real human conversation happened.`}
+      />
+      <IngestionPanel
+        initial={ingestion.initial}
+        configured={ingestion.configured}
+        disabledReason={ingestion.disabledReason}
       />
       <AnalyticsView payload={JSON.parse(JSON.stringify(payload))} canCall={payload.source === "live"} />
     </div>
