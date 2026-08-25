@@ -42,15 +42,15 @@ export async function GET() {
   try {
     const session = await getSession();
     const claim = await claimState();
+    // Nothing here is account-specific: this endpoint is reachable without a
+    // session, so it must not name users or the organization.
     return NextResponse.json({
       session: session ? { kind: session.kind, expiresAt: session.expiresAt } : null,
       unclaimed: claim.unclaimed,
-      suggestedEmail: claim.suggestedEmail,
-      organizationName: claim.organizationName,
     });
   } catch {
     // The database is unreachable; report no session rather than a broken page.
-    return NextResponse.json({ session: null, unclaimed: false, suggestedEmail: null });
+    return NextResponse.json({ session: null, unclaimed: false });
   }
 }
 

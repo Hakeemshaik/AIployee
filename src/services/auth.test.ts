@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { hashPassword, verifyPassword } from "@/lib/password";
 
@@ -42,5 +43,43 @@ describe("password round trip through the claim flow", () => {
     const stored = await hashPassword(chosen);
     expect(await verifyPassword(chosen, stored)).toBe(true);
     expect(await verifyPassword(chosen.toLowerCase(), stored)).toBe(false);
+  });
+});
+
+describe("the sign-in page discloses nothing", () => {
+  // /login and GET /api/session are both reachable without a session. An
+  // earlier version returned the first user's email and the organization name,
+  // which printed a real account address on a public page — and read as
+  // invented filler, because on a seeded deployment those are demo people.
+  it("ClaimState carries a boolean and nothing else", () => {
+    const source = readFileSync("src/services/auth.ts", "utf8");
+    const declaration = /export type ClaimState = \{([^}]*)\}/.exec(source)?.[1] ?? "";
+    expect(declaration).toContain("unclaimed");
+    for (const leak of ["email", "Email", "name", "Name", "organization", "Organization"]) {
+      expect(declaration, `ClaimState must not expose ${leak}`).not.toContain(leak);
+    }
+  });
+
+  it("the session endpoint returns no account or organization fields", () => {
+    const source = readFileSync("src/app/api/session/route.ts", "utf8");
+    const get = source.slice(source.indexOf("export async function GET"), source.indexOf("export async function POST"));
+    for (const leak of ["suggestedEmail", "organizationName", "userName"]) {
+      expect(get, `GET /api/session must not return ${leak}`).not.toContain(leak);
+    }
+  });
+
+  it("the login card holds no pre-filled values or placeholder text", () => {
+    const source = readFileSync("src/app/login/LoginCard.tsx", "utf8");
+    // A placeholder or defaultValue on these fields is how demo credentials
+    // creep back onto the page.
+    expect(source).not.toMatch(/placeholder=[{"]/);
+    expect(source).not.toContain("defaultValue");
+    expect(source).not.toMatch(/@[a-z0-9-]+\.(co\.za|com)/i);
+  });
+
+  it("the setup form holds no example person, company or address", () => {
+    const source = readFileSync("src/app/setup/SetupForm.tsx", "utf8");
+    expect(source).not.toMatch(/placeholder=[{"]/);
+    expect(source).not.toMatch(/@[a-z0-9-]+\.(co\.za|com)/i);
   });
 });

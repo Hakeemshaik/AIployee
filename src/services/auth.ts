@@ -94,36 +94,23 @@ const PLACEHOLDER_HASH =
   "3c8f1d5b9a2e7460f8c3b1d6a9e25740f1c8b3d6a9e2574018c3b6d9a2e5740f" +
   "1c8b3d6a9e2574018c3b6d9a2e5740f1c8b3d6a9e2574018c3b6d9a2e5740f18";
 
-export type ClaimState = {
-  /** True when the deployment has users but none can sign in yet. */
-  unclaimed: boolean;
-  /** An existing account address, offered only as a convenience. */
-  suggestedEmail: string | null;
-  organizationName: string | null;
-};
-
 /**
  * Whether this deployment still needs its first password.
  *
- * True only while an organization exists and NO user has a password. Once any
- * password is set the window is closed for good.
+ * Deliberately just a boolean. An earlier version also returned the existing
+ * admin's email address and the organization name, and the sign-in page is
+ * unauthenticated — so anyone who loaded it was handed a real account address
+ * and the company's name. Neither is needed: the claim form accepts any
+ * address, so there is nothing to suggest.
  */
+export type ClaimState = { unclaimed: boolean };
+
 export async function claimState(): Promise<ClaimState> {
-  const [withPassword, org] = await Promise.all([
+  const [withPassword, users] = await Promise.all([
     db.user.count({ where: { NOT: { passwordHash: null } } }),
-    db.organization.findFirst({
-      orderBy: { createdAt: "asc" },
-      select: { name: true, users: { orderBy: { createdAt: "asc" }, take: 1, select: { email: true } } },
-    }),
+    db.user.count(),
   ]);
-  if (withPassword > 0 || !org || org.users.length === 0) {
-    return { unclaimed: false, suggestedEmail: null, organizationName: null };
-  }
-  return {
-    unclaimed: true,
-    suggestedEmail: org.users[0].email,
-    organizationName: org.name,
-  };
+  return { unclaimed: withPassword === 0 && users > 0 };
 }
 
 export type ClaimResult =

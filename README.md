@@ -470,6 +470,10 @@ signing key cannot be read, nobody is signed in.
   password set all return the same message, and an unknown email is still compared against a
   real hash so the timing does not reveal which accounts exist. Attempts are rate limited per
   account and per caller.
+- **The sign-in page discloses nothing.** It is reachable without a session, so it names no
+  user, no organization, and carries no pre-filled value or placeholder text. An earlier
+  version suggested the existing admin's address, which printed a real account email on a
+  public page — pinned shut by tests now.
 - **First-run claim.** A database seeded outside `/setup` has users but no passwords. Rather
   than leave it unreachable, `/login` offers to set the first password — and that window
   closes permanently the moment any password exists. `/setup` now requires a password up

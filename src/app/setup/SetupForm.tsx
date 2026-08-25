@@ -147,11 +147,11 @@ export function SetupForm() {
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="orgName">Organization name</label>
-            <input id="orgName" name="orgName" className="field w-full" placeholder="Your company name" />
+            <input id="orgName" name="orgName" className="field w-full" />
           </div>
           <div>
             <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="adminName">Your name</label>
-            <input id="adminName" name="adminName" className="field w-full" placeholder="Hakeem Shaik" />
+            <input id="adminName" name="adminName" className="field w-full" />
           </div>
         </div>
       )}
@@ -169,7 +169,6 @@ export function SetupForm() {
             required
             autoComplete="username"
             className="field w-full"
-            placeholder="you@company.co.za"
           />
         </div>
         <div>

@@ -10,10 +10,14 @@ import { ArrowRight, Eye, KeyRound, PlayCircle, ShieldAlert } from "lucide-react
 // Three ways in, and the card only offers the ones that apply:
 //
 //  * Continue as guest — a read-only demo session over fixture data.
-//  * Sign in — email and password. Both fields start empty, with autofill off;
-//    no demo credentials are ever pre-filled here.
+//  * Sign in — email and password. Both fields start empty, with autofill off
+//    and no placeholder text: nothing on this page is pre-filled or suggested.
 //  * Claim — shown only while the deployment has users but no password at all
 //    (a seeded database). It sets the first password and closes for good.
+//
+// Nothing account-specific is rendered here. The page is reachable without a
+// session, so naming a user or the organization would disclose both to anyone
+// who loaded it.
 // ---------------------------------------------------------------------------
 
 /**
@@ -28,11 +32,7 @@ function enter(router: { push: (href: string) => void; refresh: () => void }, to
   router.refresh();
 }
 
-type SessionInfo = {
-  unclaimed: boolean;
-  suggestedEmail: string | null;
-  organizationName: string | null;
-};
+type SessionInfo = { unclaimed: boolean };
 
 export function LoginCard() {
   const router = useRouter();
@@ -121,9 +121,8 @@ export function LoginCard() {
             No password is set on this deployment
           </p>
           <p className="mt-1 pl-[1.375rem] text-[0.75rem] leading-relaxed text-ink-2">
-            Set one now to secure {info.organizationName ?? "it"}. Use your own email — an admin
-            account is created if it does not exist yet. Until you do this, the same offer is open to
-            anyone who finds the URL.
+            Set one now with your own email and password. Until you do, the same offer is open to
+            anyone who finds this URL.
           </p>
         </div>
       )}
@@ -149,20 +148,7 @@ export function LoginCard() {
           <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="email">
             Email
           </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="off"
-            className="field w-full"
-            placeholder={claiming ? "you@company.co.za" : undefined}
-          />
-          {claiming && info?.suggestedEmail && (
-            <p className="mt-1 text-[0.6875rem] leading-relaxed text-ink-3">
-              Any address works. To take over the existing account instead, use{" "}
-              <span className="num text-ink-2">{info.suggestedEmail}</span>.
-            </p>
-          )}
+          <input id="email" name="email" type="email" autoComplete="off" className="field w-full" />
         </div>
         {claiming && (
           <div>
