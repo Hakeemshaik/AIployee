@@ -29,6 +29,11 @@ export default function Error({
             Try again
           </button>
         </div>
+        {!needsSeed && (
+          <p className="mt-3 text-[0.6875rem] text-ink-3">
+            Fresh deployment? <a href="/setup" className="text-accent hover:underline">Run the one-time setup</a>.
+          </p>
+        )}
       </div>
     </div>
   );

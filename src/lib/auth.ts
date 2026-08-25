@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 
 // ---------------------------------------------------------------------------
@@ -28,7 +29,8 @@ export const getContext = cache(async (): Promise<AppContext> => {
     include: { users: { orderBy: { createdAt: "asc" }, take: 1 } },
   });
   if (!org || org.users.length === 0) {
-    throw new Error("No organization found — run `npm run db:seed` first.");
+    // Fresh deployment — send the visitor to the one-time setup flow.
+    redirect("/setup");
   }
   const user = org.users[0];
   return {

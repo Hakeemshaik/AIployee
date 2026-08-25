@@ -1,4 +1,4 @@
-import { getContext } from "@/lib/auth";
+import { db } from "@/lib/db";
 import { Sparkles } from "lucide-react";
 import { CommandPalette } from "./CommandPalette";
 
@@ -7,12 +7,17 @@ export async function Topbar() {
   let userName = "";
   let userRole = "";
   try {
-    const ctx = await getContext();
-    orgName = ctx.organizationName;
-    userName = ctx.userName;
-    userRole = ctx.userRole;
+    const org = await db.organization.findFirst({
+      orderBy: { createdAt: "asc" },
+      include: { users: { orderBy: { createdAt: "asc" }, take: 1 } },
+    });
+    if (org && org.users[0]) {
+      orgName = org.name;
+      userName = org.users[0].name;
+      userRole = org.users[0].role;
+    }
   } catch {
-    // Rendered before the database is seeded — the pages surface the guidance.
+    // Database unreachable — the pages surface the guidance.
   }
   const aiLive = process.env.AI_PROVIDER === "claude" && !!process.env.ANTHROPIC_API_KEY;
   const initials = userName
