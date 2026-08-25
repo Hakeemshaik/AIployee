@@ -1,0 +1,6358 @@
+{
+  "meta": {
+    "campaignName": "Waterkloof Collections — August",
+    "workspace": "DEMO (fixture data)",
+    "campaignStart": "2026-08-17T06:00:00.000Z",
+    "generated": "deterministic fixture, no live accounts",
+    "accountCount": 120
+  },
+  "accounts": [
+    {
+      "accountId": "ACC-5000",
+      "name": "Andile Sithole",
+      "phone": "+27825845605",
+      "unit": "A2",
+      "building": "Rosebank Place",
+      "balance": 2530,
+      "calls": [
+        {
+          "uuid": "conv-1300000",
+          "startedAt": "2026-08-17T07:26:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300001",
+          "startedAt": "2026-08-19T09:25:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300002",
+          "startedAt": "2026-08-21T09:05:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5001",
+      "name": "Mandla Jacobs",
+      "phone": "+27824044363",
+      "unit": null,
+      "building": "Bryanston Villas",
+      "balance": 18560,
+      "calls": [
+        {
+          "uuid": "conv-1300003",
+          "startedAt": "2026-08-17T13:45:00.000Z",
+          "durationSeconds": 17
+        },
+        {
+          "uuid": "conv-1300004",
+          "startedAt": "2026-08-19T17:08:00.000Z",
+          "durationSeconds": 10
+        },
+        {
+          "uuid": "conv-1300005",
+          "startedAt": "2026-08-21T11:42:00.000Z",
+          "durationSeconds": 5
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5002",
+      "name": "Karabo Nkosi",
+      "phone": "+27826237688",
+      "unit": "B24",
+      "building": "Sandton Mews",
+      "balance": 21620,
+      "calls": [],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5003",
+      "name": "Tumelo Mahlangu",
+      "phone": "+27827345807",
+      "unit": "D22",
+      "building": "Bryanston Villas",
+      "balance": 18630,
+      "calls": [
+        {
+          "uuid": "conv-1300006",
+          "startedAt": "2026-08-17T09:07:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300007",
+          "startedAt": "2026-08-19T11:15:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300008",
+          "startedAt": "2026-08-21T11:10:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300009",
+          "startedAt": "2026-08-23T13:18:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5004",
+      "name": "Riaan Cele",
+      "phone": "+27826168237",
+      "unit": null,
+      "building": "Sandton Mews",
+      "balance": 32050,
+      "calls": [
+        {
+          "uuid": "conv-1300010",
+          "startedAt": "2026-08-17T13:18:00.000Z",
+          "durationSeconds": 126
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": true,
+        "ptpAmount": 2050,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5005",
+      "name": "Rajesh Ndlovu",
+      "phone": "+27826067863",
+      "unit": null,
+      "building": "Rosebank Place",
+      "balance": 10780,
+      "calls": [
+        {
+          "uuid": "conv-1300011",
+          "startedAt": "2026-08-17T13:31:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300012",
+          "startedAt": "2026-08-19T13:59:00.000Z",
+          "durationSeconds": 223
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": true,
+        "ptpAmount": 1750,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5006",
+      "name": "Bongani Molefe",
+      "phone": "+27821868656",
+      "unit": "D18",
+      "building": "Rosebank Place",
+      "balance": 24500,
+      "calls": [
+        {
+          "uuid": "conv-1300013",
+          "startedAt": "2026-08-17T09:38:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300014",
+          "startedAt": "2026-08-19T09:36:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300015",
+          "startedAt": "2026-08-21T17:51:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5007",
+      "name": "Dineo Venter",
+      "phone": "+27826566535",
+      "unit": "D17",
+      "building": "Killarney Gardens",
+      "balance": 24460,
+      "calls": [
+        {
+          "uuid": "conv-1300016",
+          "startedAt": "2026-08-17T07:26:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5008",
+      "name": "Xolani Petersen",
+      "phone": "+27823531995",
+      "unit": "D3",
+      "building": "Melrose Arch North",
+      "balance": 28040,
+      "calls": [
+        {
+          "uuid": "conv-1300017",
+          "startedAt": "2026-08-17T11:55:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300018",
+          "startedAt": "2026-08-19T09:00:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300019",
+          "startedAt": "2026-08-21T13:50:00.000Z",
+          "durationSeconds": 238
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5009",
+      "name": "Sipho Pretorius",
+      "phone": "+27828430907",
+      "unit": "A16",
+      "building": "Killarney Gardens",
+      "balance": 13790,
+      "calls": [
+        {
+          "uuid": "conv-1300020",
+          "startedAt": "2026-08-17T11:21:00.000Z",
+          "durationSeconds": 15
+        },
+        {
+          "uuid": "conv-1300021",
+          "startedAt": "2026-08-19T09:54:00.000Z",
+          "durationSeconds": 18
+        },
+        {
+          "uuid": "conv-1300022",
+          "startedAt": "2026-08-21T17:12:00.000Z",
+          "durationSeconds": 5
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5010",
+      "name": "Mandla Botha",
+      "phone": "+27828558303",
+      "unit": "C6",
+      "building": "Sandton Mews",
+      "balance": 16250,
+      "calls": [
+        {
+          "uuid": "conv-1300023",
+          "startedAt": "2026-08-17T15:12:00.000Z",
+          "durationSeconds": 98
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5011",
+      "name": "Lerato Ismail",
+      "phone": "+27822141762",
+      "unit": "A21",
+      "building": "Parktown Court",
+      "balance": 480,
+      "calls": [
+        {
+          "uuid": "conv-1300024",
+          "startedAt": "2026-08-17T13:02:00.000Z",
+          "durationSeconds": 16
+        },
+        {
+          "uuid": "conv-1300025",
+          "startedAt": "2026-08-19T07:05:00.000Z",
+          "durationSeconds": 10
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5012",
+      "name": "Zanele du Plessis",
+      "phone": "+27822465599",
+      "unit": "D22",
+      "building": "Rosebank Place",
+      "balance": 39380,
+      "calls": [
+        {
+          "uuid": "conv-1300026",
+          "startedAt": "2026-08-17T09:55:00.000Z",
+          "durationSeconds": 12
+        },
+        {
+          "uuid": "conv-1300027",
+          "startedAt": "2026-08-19T15:43:00.000Z",
+          "durationSeconds": 5
+        },
+        {
+          "uuid": "conv-1300028",
+          "startedAt": "2026-08-21T11:33:00.000Z",
+          "durationSeconds": 9
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5013",
+      "name": "Precious Pillay",
+      "phone": "+27827215939",
+      "unit": "C18",
+      "building": "Parktown Court",
+      "balance": 10090,
+      "calls": [
+        {
+          "uuid": "conv-1300029",
+          "startedAt": "2026-08-17T17:29:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300030",
+          "startedAt": "2026-08-19T13:07:00.000Z",
+          "durationSeconds": 70
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": true,
+        "ptpAmount": 7350,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": true,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5014",
+      "name": "Marike Naidoo",
+      "phone": "+27822681115",
+      "unit": "C24",
+      "building": "Parktown Court",
+      "balance": 29800,
+      "calls": [
+        {
+          "uuid": "conv-1300031",
+          "startedAt": "2026-08-17T13:39:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300032",
+          "startedAt": "2026-08-19T17:36:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300033",
+          "startedAt": "2026-08-21T15:11:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300034",
+          "startedAt": "2026-08-23T17:57:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5015",
+      "name": "Andile Mthembu",
+      "phone": "+27826796192",
+      "unit": "A23",
+      "building": "Norwood Terrace",
+      "balance": 29080,
+      "calls": [
+        {
+          "uuid": "conv-1300035",
+          "startedAt": "2026-08-17T17:03:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300036",
+          "startedAt": "2026-08-19T17:17:00.000Z",
+          "durationSeconds": 219
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": true,
+        "ptpAmount": 14400,
+        "disputed": true,
+        "paidClaimed": false,
+        "escalated": true,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5016",
+      "name": "Ayanda Nkosi",
+      "phone": "+27825262077",
+      "unit": "B9",
+      "building": "Bryanston Villas",
+      "balance": 36880,
+      "calls": [
+        {
+          "uuid": "conv-1300037",
+          "startedAt": "2026-08-17T17:49:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300038",
+          "startedAt": "2026-08-19T15:38:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5017",
+      "name": "Busisiwe Petersen",
+      "phone": "+27821708715",
+      "unit": "A13",
+      "building": "Bryanston Villas",
+      "balance": 27320,
+      "calls": [
+        {
+          "uuid": "conv-1300039",
+          "startedAt": "2026-08-17T17:17:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300040",
+          "startedAt": "2026-08-19T09:22:00.000Z",
+          "durationSeconds": 240
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": true,
+        "ptpAmount": 12350,
+        "disputed": false,
+        "paidClaimed": true,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5018",
+      "name": "Xolani Pillay",
+      "phone": "+27824553748",
+      "unit": "D20",
+      "building": "Norwood Terrace",
+      "balance": 29590,
+      "calls": [
+        {
+          "uuid": "conv-1300041",
+          "startedAt": "2026-08-17T13:59:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300042",
+          "startedAt": "2026-08-19T13:27:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": true,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5019",
+      "name": "Andile du Plessis",
+      "phone": "+27821931104",
+      "unit": "B11",
+      "building": "Killarney Gardens",
+      "balance": 4130,
+      "calls": [
+        {
+          "uuid": "conv-1300043",
+          "startedAt": "2026-08-17T13:53:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5020",
+      "name": "Tumelo Mahlangu",
+      "phone": "+27825017977",
+      "unit": "B15",
+      "building": "Killarney Gardens",
+      "balance": 5720,
+      "calls": [
+        {
+          "uuid": "conv-1300044",
+          "startedAt": "2026-08-17T11:40:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300045",
+          "startedAt": "2026-08-19T13:58:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300046",
+          "startedAt": "2026-08-21T13:32:00.000Z",
+          "durationSeconds": 84
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": true,
+        "ptpAmount": 3800,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5021",
+      "name": "Pieter Nkosi",
+      "phone": "+27822436808",
+      "unit": "D20",
+      "building": "Killarney Gardens",
+      "balance": 26200,
+      "calls": [
+        {
+          "uuid": "conv-1300047",
+          "startedAt": "2026-08-17T17:05:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300048",
+          "startedAt": "2026-08-19T15:51:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300049",
+          "startedAt": "2026-08-21T11:13:00.000Z",
+          "durationSeconds": 113
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": true,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": true,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5022",
+      "name": "Dineo Cele",
+      "phone": "+27824369118",
+      "unit": "A24",
+      "building": "Waterkloof Heights",
+      "balance": 2160,
+      "calls": [],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": true,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5023",
+      "name": "Thandi du Plessis",
+      "phone": "+27821427871",
+      "unit": "D1",
+      "building": "Melrose Arch North",
+      "balance": 3940,
+      "calls": [
+        {
+          "uuid": "conv-1300050",
+          "startedAt": "2026-08-17T07:03:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300051",
+          "startedAt": "2026-08-19T09:10:00.000Z",
+          "durationSeconds": 70
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": true,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5024",
+      "name": "Nonhlanhla Maharaj",
+      "phone": "+27829438324",
+      "unit": "A12",
+      "building": "Waterkloof Heights",
+      "balance": 26350,
+      "calls": [],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5025",
+      "name": "Lerato Fourie",
+      "phone": "+27826579711",
+      "unit": "C22",
+      "building": "Sandton Mews",
+      "balance": 1370,
+      "calls": [],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5026",
+      "name": "Kevin Mokoena",
+      "phone": "+27821582859",
+      "unit": "D7",
+      "building": "Sandton Mews",
+      "balance": 38940,
+      "calls": [
+        {
+          "uuid": "conv-1300052",
+          "startedAt": "2026-08-17T15:13:00.000Z",
+          "durationSeconds": 8
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5027",
+      "name": "Fatima Pretorius",
+      "phone": "+27829620758",
+      "unit": "C1",
+      "building": "Melrose Arch North",
+      "balance": 22700,
+      "calls": [
+        {
+          "uuid": "conv-1300053",
+          "startedAt": "2026-08-17T11:01:00.000Z",
+          "durationSeconds": 16
+        },
+        {
+          "uuid": "conv-1300054",
+          "startedAt": "2026-08-19T09:31:00.000Z",
+          "durationSeconds": 14
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5028",
+      "name": "Karabo Jacobs",
+      "phone": "+27828448577",
+      "unit": "A15",
+      "building": "Parktown Court",
+      "balance": 25610,
+      "calls": [
+        {
+          "uuid": "conv-1300055",
+          "startedAt": "2026-08-17T11:53:00.000Z",
+          "durationSeconds": 142
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5029",
+      "name": "Dineo van der Merwe",
+      "phone": "+27824079309",
+      "unit": "C11",
+      "building": "Sandton Mews",
+      "balance": 28160,
+      "calls": [
+        {
+          "uuid": "conv-1300056",
+          "startedAt": "2026-08-17T07:58:00.000Z",
+          "durationSeconds": 90
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5030",
+      "name": "Kevin Mokoena",
+      "phone": "+27822986948",
+      "unit": "D14",
+      "building": "Rosebank Place",
+      "balance": 21800,
+      "calls": [
+        {
+          "uuid": "conv-1300057",
+          "startedAt": "2026-08-17T13:17:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300058",
+          "startedAt": "2026-08-19T13:01:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300059",
+          "startedAt": "2026-08-21T13:32:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5031",
+      "name": "Bongani Ismail",
+      "phone": "+27827964873",
+      "unit": "D23",
+      "building": "Sandton Mews",
+      "balance": 10290,
+      "calls": [
+        {
+          "uuid": "conv-1300060",
+          "startedAt": "2026-08-17T13:30:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5032",
+      "name": "Bongani Petersen",
+      "phone": "+27827557736",
+      "unit": "B12",
+      "building": "Waterkloof Heights",
+      "balance": 29800,
+      "calls": [
+        {
+          "uuid": "conv-1300061",
+          "startedAt": "2026-08-17T07:26:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300062",
+          "startedAt": "2026-08-19T17:00:00.000Z",
+          "durationSeconds": 21
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5033",
+      "name": "Marike Botha",
+      "phone": "+27828014146",
+      "unit": "A3",
+      "building": "Waterkloof Heights",
+      "balance": 32120,
+      "calls": [
+        {
+          "uuid": "conv-1300063",
+          "startedAt": "2026-08-17T17:44:00.000Z",
+          "durationSeconds": 25
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5034",
+      "name": "Thandi Dlamini",
+      "phone": "+27822786217",
+      "unit": "D8",
+      "building": "Melrose Arch North",
+      "balance": 5030,
+      "calls": [
+        {
+          "uuid": "conv-1300064",
+          "startedAt": "2026-08-17T11:58:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300065",
+          "startedAt": "2026-08-19T17:20:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300066",
+          "startedAt": "2026-08-21T09:25:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5035",
+      "name": "Thandi Dlamini",
+      "phone": "+27821147860",
+      "unit": "B14",
+      "building": "Killarney Gardens",
+      "balance": 14500,
+      "calls": [
+        {
+          "uuid": "conv-1300067",
+          "startedAt": "2026-08-17T17:04:00.000Z",
+          "durationSeconds": 11
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5036",
+      "name": "Mandla Botha",
+      "phone": "+27824416382",
+      "unit": null,
+      "building": "Killarney Gardens",
+      "balance": 7720,
+      "calls": [
+        {
+          "uuid": "conv-1300068",
+          "startedAt": "2026-08-17T11:22:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5037",
+      "name": "Themba Petersen",
+      "phone": "+27826957930",
+      "unit": "D2",
+      "building": "Rosebank Place",
+      "balance": 9250,
+      "calls": [],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": true
+      }
+    },
+    {
+      "accountId": "ACC-5038",
+      "name": "Xolani Maharaj",
+      "phone": "+27827048574",
+      "unit": "D1",
+      "building": "Bryanston Villas",
+      "balance": 11120,
+      "calls": [
+        {
+          "uuid": "conv-1300069",
+          "startedAt": "2026-08-17T13:56:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300070",
+          "startedAt": "2026-08-19T09:33:00.000Z",
+          "durationSeconds": 222
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": true,
+        "ptpAmount": 2950,
+        "disputed": false,
+        "paidClaimed": true,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5039",
+      "name": "Pieter Fourie",
+      "phone": "+27822764637",
+      "unit": "C18",
+      "building": "Killarney Gardens",
+      "balance": 21820,
+      "calls": [
+        {
+          "uuid": "conv-1300071",
+          "startedAt": "2026-08-17T07:23:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5040",
+      "name": "Andile Ndlovu",
+      "phone": "+27826771004",
+      "unit": "A8",
+      "building": "Melrose Arch North",
+      "balance": 41430,
+      "calls": [
+        {
+          "uuid": "conv-1300072",
+          "startedAt": "2026-08-17T17:18:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300073",
+          "startedAt": "2026-08-19T13:49:00.000Z",
+          "durationSeconds": 10
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5041",
+      "name": "Zanele Naidoo",
+      "phone": "+27823310283",
+      "unit": null,
+      "building": "Norwood Terrace",
+      "balance": 6910,
+      "calls": [
+        {
+          "uuid": "conv-1300074",
+          "startedAt": "2026-08-17T13:10:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5042",
+      "name": "Riaan Ndlovu",
+      "phone": "+27825063435",
+      "unit": "A5",
+      "building": "Norwood Terrace",
+      "balance": 14350,
+      "calls": [
+        {
+          "uuid": "conv-1300075",
+          "startedAt": "2026-08-17T07:17:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300076",
+          "startedAt": "2026-08-19T17:44:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300077",
+          "startedAt": "2026-08-21T17:13:00.000Z",
+          "durationSeconds": 118
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": true,
+        "ptpAmount": 10150,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5043",
+      "name": "Kevin van der Merwe",
+      "phone": "+27827938082",
+      "unit": "B20",
+      "building": "Bryanston Villas",
+      "balance": 15810,
+      "calls": [
+        {
+          "uuid": "conv-1300078",
+          "startedAt": "2026-08-17T07:25:00.000Z",
+          "durationSeconds": 13
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": true
+      }
+    },
+    {
+      "accountId": "ACC-5044",
+      "name": "Pieter Pretorius",
+      "phone": "+27822909552",
+      "unit": null,
+      "building": "Bryanston Villas",
+      "balance": 20410,
+      "calls": [],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5045",
+      "name": "Mandla Molefe",
+      "phone": "+27829164595",
+      "unit": "D24",
+      "building": "Norwood Terrace",
+      "balance": 5140,
+      "calls": [
+        {
+          "uuid": "conv-1300079",
+          "startedAt": "2026-08-17T07:40:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300080",
+          "startedAt": "2026-08-19T07:06:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300081",
+          "startedAt": "2026-08-21T07:13:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300082",
+          "startedAt": "2026-08-23T17:00:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5046",
+      "name": "Naledi Adams",
+      "phone": "+27822747655",
+      "unit": "A19",
+      "building": "Waterkloof Heights",
+      "balance": 14300,
+      "calls": [
+        {
+          "uuid": "conv-1300083",
+          "startedAt": "2026-08-17T15:35:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300084",
+          "startedAt": "2026-08-19T13:57:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300085",
+          "startedAt": "2026-08-21T17:50:00.000Z",
+          "durationSeconds": 25
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5047",
+      "name": "Pieter Sibiya",
+      "phone": "+27829811950",
+      "unit": null,
+      "building": "Bryanston Villas",
+      "balance": 5610,
+      "calls": [
+        {
+          "uuid": "conv-1300086",
+          "startedAt": "2026-08-17T13:16:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300087",
+          "startedAt": "2026-08-19T07:54:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5048",
+      "name": "Yusuf du Plessis",
+      "phone": "+27825515507",
+      "unit": "B14",
+      "building": "Melrose Arch North",
+      "balance": 41660,
+      "calls": [
+        {
+          "uuid": "conv-1300088",
+          "startedAt": "2026-08-17T11:52:00.000Z",
+          "durationSeconds": 221
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": true,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5049",
+      "name": "Nomvula Venter",
+      "phone": "+27821071854",
+      "unit": "C15",
+      "building": "Parktown Court",
+      "balance": 8490,
+      "calls": [
+        {
+          "uuid": "conv-1300089",
+          "startedAt": "2026-08-17T11:28:00.000Z",
+          "durationSeconds": 5
+        },
+        {
+          "uuid": "conv-1300090",
+          "startedAt": "2026-08-19T11:20:00.000Z",
+          "durationSeconds": 10
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5050",
+      "name": "Charmaine Radebe",
+      "phone": "+27828001843",
+      "unit": "C21",
+      "building": "Sandton Mews",
+      "balance": 19320,
+      "calls": [
+        {
+          "uuid": "conv-1300091",
+          "startedAt": "2026-08-17T17:53:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300092",
+          "startedAt": "2026-08-19T15:20:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300093",
+          "startedAt": "2026-08-21T11:34:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300094",
+          "startedAt": "2026-08-23T17:04:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5051",
+      "name": "Nomvula Fourie",
+      "phone": "+27822672558",
+      "unit": "B12",
+      "building": "Rosebank Place",
+      "balance": 32940,
+      "calls": [
+        {
+          "uuid": "conv-1300095",
+          "startedAt": "2026-08-17T13:19:00.000Z",
+          "durationSeconds": 10
+        },
+        {
+          "uuid": "conv-1300096",
+          "startedAt": "2026-08-19T13:51:00.000Z",
+          "durationSeconds": 4
+        },
+        {
+          "uuid": "conv-1300097",
+          "startedAt": "2026-08-21T13:37:00.000Z",
+          "durationSeconds": 18
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5052",
+      "name": "Johan Adams",
+      "phone": "+27825015345",
+      "unit": "A22",
+      "building": "Norwood Terrace",
+      "balance": 24260,
+      "calls": [
+        {
+          "uuid": "conv-1300098",
+          "startedAt": "2026-08-17T17:33:00.000Z",
+          "durationSeconds": 13
+        },
+        {
+          "uuid": "conv-1300099",
+          "startedAt": "2026-08-19T13:20:00.000Z",
+          "durationSeconds": 6
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5053",
+      "name": "Andile Mokoena",
+      "phone": "+27826986658",
+      "unit": "A3",
+      "building": "Parktown Court",
+      "balance": 2880,
+      "calls": [
+        {
+          "uuid": "conv-1300100",
+          "startedAt": "2026-08-17T15:55:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300101",
+          "startedAt": "2026-08-19T07:35:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300102",
+          "startedAt": "2026-08-21T13:54:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300103",
+          "startedAt": "2026-08-23T15:30:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5054",
+      "name": "Rajesh Ismail",
+      "phone": "+27823913654",
+      "unit": "A14",
+      "building": "Sandton Mews",
+      "balance": 18440,
+      "calls": [
+        {
+          "uuid": "conv-1300104",
+          "startedAt": "2026-08-17T09:49:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5055",
+      "name": "Thandi Jacobs",
+      "phone": "+27822695755",
+      "unit": "B1",
+      "building": "Parktown Court",
+      "balance": 16740,
+      "calls": [
+        {
+          "uuid": "conv-1300105",
+          "startedAt": "2026-08-17T17:04:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300106",
+          "startedAt": "2026-08-19T09:12:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5056",
+      "name": "Fatima Adams",
+      "phone": "+27827094705",
+      "unit": "B12",
+      "building": "Waterkloof Heights",
+      "balance": 29910,
+      "calls": [
+        {
+          "uuid": "conv-1300107",
+          "startedAt": "2026-08-17T11:04:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300108",
+          "startedAt": "2026-08-19T09:38:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300109",
+          "startedAt": "2026-08-21T17:25:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5057",
+      "name": "Rajesh Petersen",
+      "phone": "+27827092516",
+      "unit": null,
+      "building": "Waterkloof Heights",
+      "balance": 2330,
+      "calls": [
+        {
+          "uuid": "conv-1300110",
+          "startedAt": "2026-08-17T15:42:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300111",
+          "startedAt": "2026-08-19T15:57:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300112",
+          "startedAt": "2026-08-21T09:43:00.000Z",
+          "durationSeconds": 11
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5058",
+      "name": "Annelie Mthembu",
+      "phone": "+27827553411",
+      "unit": "A18",
+      "building": "Norwood Terrace",
+      "balance": 32290,
+      "calls": [
+        {
+          "uuid": "conv-1300113",
+          "startedAt": "2026-08-17T13:54:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300114",
+          "startedAt": "2026-08-19T17:26:00.000Z",
+          "durationSeconds": 12
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5059",
+      "name": "Johan Nkosi",
+      "phone": "+27824385006",
+      "unit": "D13",
+      "building": "Bryanston Villas",
+      "balance": 7610,
+      "calls": [
+        {
+          "uuid": "conv-1300115",
+          "startedAt": "2026-08-17T09:37:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300116",
+          "startedAt": "2026-08-19T13:43:00.000Z",
+          "durationSeconds": 221
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5060",
+      "name": "Fatima Maharaj",
+      "phone": "+27827874327",
+      "unit": "A9",
+      "building": "Parktown Court",
+      "balance": 40350,
+      "calls": [
+        {
+          "uuid": "conv-1300117",
+          "startedAt": "2026-08-17T17:39:00.000Z",
+          "durationSeconds": 8
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5061",
+      "name": "Yusuf Jacobs",
+      "phone": "+27828312660",
+      "unit": null,
+      "building": "Killarney Gardens",
+      "balance": 8240,
+      "calls": [
+        {
+          "uuid": "conv-1300118",
+          "startedAt": "2026-08-17T17:15:00.000Z",
+          "durationSeconds": 5
+        },
+        {
+          "uuid": "conv-1300119",
+          "startedAt": "2026-08-19T11:42:00.000Z",
+          "durationSeconds": 15
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5062",
+      "name": "Bongani Mahlangu",
+      "phone": "+27824502151",
+      "unit": null,
+      "building": "Parktown Court",
+      "balance": 20980,
+      "calls": [
+        {
+          "uuid": "conv-1300120",
+          "startedAt": "2026-08-17T13:04:00.000Z",
+          "durationSeconds": 7
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5063",
+      "name": "Bongani Pillay",
+      "phone": "+27829847398",
+      "unit": "C16",
+      "building": "Parktown Court",
+      "balance": 4100,
+      "calls": [],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5064",
+      "name": "Zanele Radebe",
+      "phone": "+27824180754",
+      "unit": "C22",
+      "building": "Parktown Court",
+      "balance": 6280,
+      "calls": [],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5065",
+      "name": "Naledi Botha",
+      "phone": "+27826139651",
+      "unit": "C24",
+      "building": "Rosebank Place",
+      "balance": 9310,
+      "calls": [
+        {
+          "uuid": "conv-1300121",
+          "startedAt": "2026-08-17T17:24:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300122",
+          "startedAt": "2026-08-19T11:11:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5066",
+      "name": "Priya Jacobs",
+      "phone": "+27824322694",
+      "unit": "B14",
+      "building": "Sandton Mews",
+      "balance": 33580,
+      "calls": [
+        {
+          "uuid": "conv-1300123",
+          "startedAt": "2026-08-17T07:23:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300124",
+          "startedAt": "2026-08-19T09:35:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300125",
+          "startedAt": "2026-08-21T15:19:00.000Z",
+          "durationSeconds": 202
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5067",
+      "name": "Riaan van der Merwe",
+      "phone": "+27828105382",
+      "unit": "A13",
+      "building": "Bryanston Villas",
+      "balance": 8460,
+      "calls": [
+        {
+          "uuid": "conv-1300126",
+          "startedAt": "2026-08-17T17:27:00.000Z",
+          "durationSeconds": 256
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": true,
+        "ptpAmount": 5200,
+        "disputed": true,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5068",
+      "name": "Annelie Jacobs",
+      "phone": "+27824273599",
+      "unit": "A2",
+      "building": "Bryanston Villas",
+      "balance": 5640,
+      "calls": [
+        {
+          "uuid": "conv-1300127",
+          "startedAt": "2026-08-17T09:48:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300128",
+          "startedAt": "2026-08-19T13:14:00.000Z",
+          "durationSeconds": 113
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": true,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5069",
+      "name": "Sipho Petersen",
+      "phone": "+27825786166",
+      "unit": "D13",
+      "building": "Parktown Court",
+      "balance": 33550,
+      "calls": [],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5070",
+      "name": "Kagiso Ismail",
+      "phone": "+27823752941",
+      "unit": "C7",
+      "building": "Melrose Arch North",
+      "balance": 34600,
+      "calls": [
+        {
+          "uuid": "conv-1300129",
+          "startedAt": "2026-08-17T13:42:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300130",
+          "startedAt": "2026-08-19T07:28:00.000Z",
+          "durationSeconds": 125
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": true,
+        "ptpAmount": 12900,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5071",
+      "name": "Priya Dlamini",
+      "phone": "+27821687653",
+      "unit": "C13",
+      "building": "Parktown Court",
+      "balance": 21450,
+      "calls": [
+        {
+          "uuid": "conv-1300131",
+          "startedAt": "2026-08-17T07:29:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5072",
+      "name": "Charmaine Molefe",
+      "phone": "+27826874915",
+      "unit": "A13",
+      "building": "Waterkloof Heights",
+      "balance": 41650,
+      "calls": [
+        {
+          "uuid": "conv-1300132",
+          "startedAt": "2026-08-17T11:49:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300133",
+          "startedAt": "2026-08-19T07:42:00.000Z",
+          "durationSeconds": 17
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5073",
+      "name": "Charmaine Naidoo",
+      "phone": "+27821088773",
+      "unit": "C24",
+      "building": "Melrose Arch North",
+      "balance": 10870,
+      "calls": [
+        {
+          "uuid": "conv-1300134",
+          "startedAt": "2026-08-17T13:16:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300135",
+          "startedAt": "2026-08-19T11:44:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300136",
+          "startedAt": "2026-08-21T13:01:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5074",
+      "name": "Sipho Molefe",
+      "phone": "+27821666758",
+      "unit": "B16",
+      "building": "Melrose Arch North",
+      "balance": 19910,
+      "calls": [
+        {
+          "uuid": "conv-1300137",
+          "startedAt": "2026-08-17T15:28:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300138",
+          "startedAt": "2026-08-19T09:50:00.000Z",
+          "durationSeconds": 181
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": true,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5075",
+      "name": "Nonhlanhla Pretorius",
+      "phone": "+27822270610",
+      "unit": "B9",
+      "building": "Norwood Terrace",
+      "balance": 8910,
+      "calls": [],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5076",
+      "name": "Zanele Botha",
+      "phone": "+27827892860",
+      "unit": "A16",
+      "building": "Bryanston Villas",
+      "balance": 14190,
+      "calls": [
+        {
+          "uuid": "conv-1300139",
+          "startedAt": "2026-08-17T07:37:00.000Z",
+          "durationSeconds": 10
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5077",
+      "name": "Fatima Khumalo",
+      "phone": "+27826674319",
+      "unit": "B24",
+      "building": "Bryanston Villas",
+      "balance": 4920,
+      "calls": [
+        {
+          "uuid": "conv-1300140",
+          "startedAt": "2026-08-17T11:53:00.000Z",
+          "durationSeconds": 7
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5078",
+      "name": "Johan Adams",
+      "phone": "+27823297619",
+      "unit": "D2",
+      "building": "Bryanston Villas",
+      "balance": 3120,
+      "calls": [
+        {
+          "uuid": "conv-1300141",
+          "startedAt": "2026-08-17T13:46:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300142",
+          "startedAt": "2026-08-19T11:42:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300143",
+          "startedAt": "2026-08-21T11:27:00.000Z",
+          "durationSeconds": 111
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5079",
+      "name": "Nomvula Venter",
+      "phone": "+27829703984",
+      "unit": "C14",
+      "building": "Rosebank Place",
+      "balance": 39450,
+      "calls": [
+        {
+          "uuid": "conv-1300144",
+          "startedAt": "2026-08-17T07:49:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300145",
+          "startedAt": "2026-08-19T17:33:00.000Z",
+          "durationSeconds": 212
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5080",
+      "name": "Mandla Fourie",
+      "phone": "+27827674765",
+      "unit": "A9",
+      "building": "Rosebank Place",
+      "balance": 21120,
+      "calls": [
+        {
+          "uuid": "conv-1300146",
+          "startedAt": "2026-08-17T09:29:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300147",
+          "startedAt": "2026-08-19T15:40:00.000Z",
+          "durationSeconds": 15
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5081",
+      "name": "Nonhlanhla Botha",
+      "phone": "+27828784634",
+      "unit": "C12",
+      "building": "Sandton Mews",
+      "balance": 31350,
+      "calls": [
+        {
+          "uuid": "conv-1300148",
+          "startedAt": "2026-08-17T09:56:00.000Z",
+          "durationSeconds": 18
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5082",
+      "name": "Johan Adams",
+      "phone": "+27824167300",
+      "unit": "C15",
+      "building": "Waterkloof Heights",
+      "balance": 15140,
+      "calls": [
+        {
+          "uuid": "conv-1300149",
+          "startedAt": "2026-08-17T17:15:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300150",
+          "startedAt": "2026-08-19T13:44:00.000Z",
+          "durationSeconds": 201
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5083",
+      "name": "Precious Sithole",
+      "phone": "+27821189802",
+      "unit": "A21",
+      "building": "Bryanston Villas",
+      "balance": 23580,
+      "calls": [
+        {
+          "uuid": "conv-1300151",
+          "startedAt": "2026-08-17T17:07:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300152",
+          "startedAt": "2026-08-19T13:21:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300153",
+          "startedAt": "2026-08-21T11:56:00.000Z",
+          "durationSeconds": 73
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": true,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5084",
+      "name": "Charmaine van der Merwe",
+      "phone": "+27828331624",
+      "unit": "B14",
+      "building": "Sandton Mews",
+      "balance": 39450,
+      "calls": [
+        {
+          "uuid": "conv-1300154",
+          "startedAt": "2026-08-17T17:24:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5085",
+      "name": "Charmaine Ndlovu",
+      "phone": "+27829757971",
+      "unit": "C19",
+      "building": "Waterkloof Heights",
+      "balance": 10660,
+      "calls": [
+        {
+          "uuid": "conv-1300155",
+          "startedAt": "2026-08-17T09:23:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300156",
+          "startedAt": "2026-08-19T15:00:00.000Z",
+          "durationSeconds": 9
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5086",
+      "name": "Nonhlanhla Naidoo",
+      "phone": "+27821479347",
+      "unit": "A10",
+      "building": "Norwood Terrace",
+      "balance": 8500,
+      "calls": [
+        {
+          "uuid": "conv-1300157",
+          "startedAt": "2026-08-17T17:50:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300158",
+          "startedAt": "2026-08-19T17:28:00.000Z",
+          "durationSeconds": 25
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": true,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5087",
+      "name": "Nomvula du Plessis",
+      "phone": "+27823566276",
+      "unit": "D10",
+      "building": "Parktown Court",
+      "balance": 33610,
+      "calls": [
+        {
+          "uuid": "conv-1300159",
+          "startedAt": "2026-08-17T17:20:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300160",
+          "startedAt": "2026-08-19T13:33:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300161",
+          "startedAt": "2026-08-21T09:40:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5088",
+      "name": "Kevin Pillay",
+      "phone": "+27824991264",
+      "unit": null,
+      "building": "Melrose Arch North",
+      "balance": 33620,
+      "calls": [
+        {
+          "uuid": "conv-1300162",
+          "startedAt": "2026-08-17T15:15:00.000Z",
+          "durationSeconds": 7
+        },
+        {
+          "uuid": "conv-1300163",
+          "startedAt": "2026-08-19T09:57:00.000Z",
+          "durationSeconds": 14
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5089",
+      "name": "Dineo Ismail",
+      "phone": "+27823329997",
+      "unit": "D3",
+      "building": "Melrose Arch North",
+      "balance": 20300,
+      "calls": [
+        {
+          "uuid": "conv-1300164",
+          "startedAt": "2026-08-17T17:50:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300165",
+          "startedAt": "2026-08-19T11:19:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300166",
+          "startedAt": "2026-08-21T11:15:00.000Z",
+          "durationSeconds": 15
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5090",
+      "name": "Karabo Ndlovu",
+      "phone": "+27823297899",
+      "unit": "B8",
+      "building": "Melrose Arch North",
+      "balance": 1770,
+      "calls": [
+        {
+          "uuid": "conv-1300167",
+          "startedAt": "2026-08-17T09:25:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300168",
+          "startedAt": "2026-08-19T17:41:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300169",
+          "startedAt": "2026-08-21T07:07:00.000Z",
+          "durationSeconds": 162
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": true,
+        "ptpAmount": 1000,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5091",
+      "name": "Sipho Sithole",
+      "phone": "+27829804052",
+      "unit": "D23",
+      "building": "Bryanston Villas",
+      "balance": 1400,
+      "calls": [
+        {
+          "uuid": "conv-1300170",
+          "startedAt": "2026-08-17T09:32:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300171",
+          "startedAt": "2026-08-19T17:43:00.000Z",
+          "durationSeconds": 156
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5092",
+      "name": "Rajesh Ismail",
+      "phone": "+27824930220",
+      "unit": "D6",
+      "building": "Norwood Terrace",
+      "balance": 15000,
+      "calls": [
+        {
+          "uuid": "conv-1300172",
+          "startedAt": "2026-08-17T09:18:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300173",
+          "startedAt": "2026-08-19T09:48:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300174",
+          "startedAt": "2026-08-21T09:39:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5093",
+      "name": "Lerato Naidoo",
+      "phone": "+27824364046",
+      "unit": null,
+      "building": "Sandton Mews",
+      "balance": 23580,
+      "calls": [
+        {
+          "uuid": "conv-1300175",
+          "startedAt": "2026-08-17T09:02:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5094",
+      "name": "Mandla Radebe",
+      "phone": "+27825931090",
+      "unit": "B19",
+      "building": "Killarney Gardens",
+      "balance": 39840,
+      "calls": [
+        {
+          "uuid": "conv-1300176",
+          "startedAt": "2026-08-17T11:27:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300177",
+          "startedAt": "2026-08-19T15:44:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300178",
+          "startedAt": "2026-08-21T11:35:00.000Z",
+          "durationSeconds": 19
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5095",
+      "name": "Nomvula Maharaj",
+      "phone": "+27824734981",
+      "unit": "C4",
+      "building": "Sandton Mews",
+      "balance": 31130,
+      "calls": [
+        {
+          "uuid": "conv-1300179",
+          "startedAt": "2026-08-17T17:51:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300180",
+          "startedAt": "2026-08-19T11:47:00.000Z",
+          "durationSeconds": 10
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5096",
+      "name": "Mandla Mahlangu",
+      "phone": "+27826599128",
+      "unit": "C22",
+      "building": "Melrose Arch North",
+      "balance": 13380,
+      "calls": [
+        {
+          "uuid": "conv-1300181",
+          "startedAt": "2026-08-17T15:26:00.000Z",
+          "durationSeconds": 22
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5097",
+      "name": "Priya Ismail",
+      "phone": "+27825743243",
+      "unit": "B12",
+      "building": "Parktown Court",
+      "balance": 37190,
+      "calls": [
+        {
+          "uuid": "conv-1300182",
+          "startedAt": "2026-08-17T07:18:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300183",
+          "startedAt": "2026-08-19T15:47:00.000Z",
+          "durationSeconds": 97
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5098",
+      "name": "Karabo Petersen",
+      "phone": "+27825315718",
+      "unit": "A18",
+      "building": "Rosebank Place",
+      "balance": 6910,
+      "calls": [
+        {
+          "uuid": "conv-1300184",
+          "startedAt": "2026-08-17T07:23:00.000Z",
+          "durationSeconds": 11
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": true,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5099",
+      "name": "Rajesh Nkosi",
+      "phone": "+27823141166",
+      "unit": "C23",
+      "building": "Waterkloof Heights",
+      "balance": 39110,
+      "calls": [
+        {
+          "uuid": "conv-1300185",
+          "startedAt": "2026-08-17T07:42:00.000Z",
+          "durationSeconds": 10
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5100",
+      "name": "Johan Mokoena",
+      "phone": "+27829906320",
+      "unit": "B16",
+      "building": "Waterkloof Heights",
+      "balance": 27580,
+      "calls": [
+        {
+          "uuid": "conv-1300186",
+          "startedAt": "2026-08-17T13:40:00.000Z",
+          "durationSeconds": 8
+        },
+        {
+          "uuid": "conv-1300187",
+          "startedAt": "2026-08-19T13:54:00.000Z",
+          "durationSeconds": 10
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5101",
+      "name": "Priya Petersen",
+      "phone": "+27823186689",
+      "unit": null,
+      "building": "Rosebank Place",
+      "balance": 24660,
+      "calls": [
+        {
+          "uuid": "conv-1300188",
+          "startedAt": "2026-08-17T13:32:00.000Z",
+          "durationSeconds": 8
+        },
+        {
+          "uuid": "conv-1300189",
+          "startedAt": "2026-08-19T11:53:00.000Z",
+          "durationSeconds": 18
+        },
+        {
+          "uuid": "conv-1300190",
+          "startedAt": "2026-08-21T17:11:00.000Z",
+          "durationSeconds": 10
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5102",
+      "name": "Sipho Cele",
+      "phone": "+27823624704",
+      "unit": "D19",
+      "building": "Waterkloof Heights",
+      "balance": 8050,
+      "calls": [
+        {
+          "uuid": "conv-1300191",
+          "startedAt": "2026-08-17T11:06:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300192",
+          "startedAt": "2026-08-19T11:39:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5103",
+      "name": "Dineo Nkosi",
+      "phone": "+27829984333",
+      "unit": "C9",
+      "building": "Rosebank Place",
+      "balance": 37040,
+      "calls": [
+        {
+          "uuid": "conv-1300193",
+          "startedAt": "2026-08-17T13:12:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300194",
+          "startedAt": "2026-08-19T15:27:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5104",
+      "name": "Andile Mahlangu",
+      "phone": "+27829213688",
+      "unit": null,
+      "building": "Rosebank Place",
+      "balance": 12120,
+      "calls": [],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5105",
+      "name": "Charmaine Sithole",
+      "phone": "+27822148032",
+      "unit": "C18",
+      "building": "Melrose Arch North",
+      "balance": 18540,
+      "calls": [
+        {
+          "uuid": "conv-1300195",
+          "startedAt": "2026-08-17T15:05:00.000Z",
+          "durationSeconds": 4
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5106",
+      "name": "Johan Dlamini",
+      "phone": "+27828851794",
+      "unit": "D7",
+      "building": "Bryanston Villas",
+      "balance": 9230,
+      "calls": [],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5107",
+      "name": "Zanele Botha",
+      "phone": "+27821614569",
+      "unit": "C13",
+      "building": "Bryanston Villas",
+      "balance": 20030,
+      "calls": [],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5108",
+      "name": "Bongani Fourie",
+      "phone": "+27827249059",
+      "unit": "A8",
+      "building": "Rosebank Place",
+      "balance": 30650,
+      "calls": [
+        {
+          "uuid": "conv-1300196",
+          "startedAt": "2026-08-17T09:16:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300197",
+          "startedAt": "2026-08-19T15:53:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300198",
+          "startedAt": "2026-08-21T13:49:00.000Z",
+          "durationSeconds": 208
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": true,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5109",
+      "name": "Themba Mthembu",
+      "phone": "+27828787879",
+      "unit": "C20",
+      "building": "Parktown Court",
+      "balance": 30670,
+      "calls": [
+        {
+          "uuid": "conv-1300199",
+          "startedAt": "2026-08-17T07:03:00.000Z",
+          "durationSeconds": 13
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5110",
+      "name": "Themba Maharaj",
+      "phone": "+27829532931",
+      "unit": "C14",
+      "building": "Rosebank Place",
+      "balance": 510,
+      "calls": [],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5111",
+      "name": "Naledi Nkosi",
+      "phone": "+27825977295",
+      "unit": "C8",
+      "building": "Waterkloof Heights",
+      "balance": 26270,
+      "calls": [
+        {
+          "uuid": "conv-1300200",
+          "startedAt": "2026-08-17T15:45:00.000Z",
+          "durationSeconds": 7
+        },
+        {
+          "uuid": "conv-1300201",
+          "startedAt": "2026-08-19T17:49:00.000Z",
+          "durationSeconds": 4
+        },
+        {
+          "uuid": "conv-1300202",
+          "startedAt": "2026-08-21T07:08:00.000Z",
+          "durationSeconds": 13
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5112",
+      "name": "Rajesh Mokoena",
+      "phone": "+27826096638",
+      "unit": "B20",
+      "building": "Parktown Court",
+      "balance": 21590,
+      "calls": [
+        {
+          "uuid": "conv-1300203",
+          "startedAt": "2026-08-17T11:53:00.000Z",
+          "durationSeconds": 13
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": true,
+        "doNotCall": true
+      }
+    },
+    {
+      "accountId": "ACC-5113",
+      "name": "Charmaine Ismail",
+      "phone": "+27827385839",
+      "unit": "A3",
+      "building": "Parktown Court",
+      "balance": 37240,
+      "calls": [
+        {
+          "uuid": "conv-1300204",
+          "startedAt": "2026-08-17T13:15:00.000Z",
+          "durationSeconds": 217
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": true,
+        "ptpAmount": 20200,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5114",
+      "name": "Dineo Venter",
+      "phone": "+27829274462",
+      "unit": null,
+      "building": "Parktown Court",
+      "balance": 1220,
+      "calls": [
+        {
+          "uuid": "conv-1300205",
+          "startedAt": "2026-08-17T07:38:00.000Z",
+          "durationSeconds": 111
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5115",
+      "name": "Busisiwe Mahlangu",
+      "phone": "+27821153325",
+      "unit": null,
+      "building": "Parktown Court",
+      "balance": 22440,
+      "calls": [],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5116",
+      "name": "Zanele Sithole",
+      "phone": "+27827607307",
+      "unit": "C9",
+      "building": "Waterkloof Heights",
+      "balance": 29730,
+      "calls": [
+        {
+          "uuid": "conv-1300206",
+          "startedAt": "2026-08-17T11:12:00.000Z",
+          "durationSeconds": 17
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5117",
+      "name": "Bongani Mthembu",
+      "phone": "+27822086051",
+      "unit": "C8",
+      "building": "Killarney Gardens",
+      "balance": 10590,
+      "calls": [
+        {
+          "uuid": "conv-1300207",
+          "startedAt": "2026-08-17T13:30:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300208",
+          "startedAt": "2026-08-19T15:57:00.000Z",
+          "durationSeconds": 0
+        },
+        {
+          "uuid": "conv-1300209",
+          "startedAt": "2026-08-21T17:39:00.000Z",
+          "durationSeconds": 0
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": true,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5118",
+      "name": "Ayanda Khumalo",
+      "phone": "+27826604496",
+      "unit": "C14",
+      "building": "Waterkloof Heights",
+      "balance": 1740,
+      "calls": [
+        {
+          "uuid": "conv-1300210",
+          "startedAt": "2026-08-17T09:27:00.000Z",
+          "durationSeconds": 18
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    },
+    {
+      "accountId": "ACC-5119",
+      "name": "Xolani Mokoena",
+      "phone": "+27826330244",
+      "unit": "B9",
+      "building": "Parktown Court",
+      "balance": 11390,
+      "calls": [
+        {
+          "uuid": "conv-1300211",
+          "startedAt": "2026-08-17T13:34:00.000Z",
+          "durationSeconds": 18
+        },
+        {
+          "uuid": "conv-1300212",
+          "startedAt": "2026-08-19T15:11:00.000Z",
+          "durationSeconds": 6
+        }
+      ],
+      "outcome": {
+        "ptpConfirmed": false,
+        "ptpAmount": null,
+        "disputed": false,
+        "paidClaimed": false,
+        "escalated": false,
+        "doNotCall": false
+      }
+    }
+  ],
+  "conversations": [
+    {
+      "uuid": "conv-1300000",
+      "phone": "+27825845605",
+      "contactName": "Andile Sithole",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T07:26:00.000Z"
+    },
+    {
+      "uuid": "conv-1300001",
+      "phone": "+27825845605",
+      "contactName": "Andile Sithole",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T09:25:00.000Z"
+    },
+    {
+      "uuid": "conv-1300002",
+      "phone": "+27825845605",
+      "contactName": "Andile Sithole",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-21T09:05:00.000Z"
+    },
+    {
+      "uuid": "conv-1300003",
+      "phone": "+27824044363",
+      "contactName": "Mandla Jacobs",
+      "durationSeconds": 17,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T13:45:00.000Z"
+    },
+    {
+      "uuid": "conv-1300004",
+      "phone": "+27824044363",
+      "contactName": "Mandla Jacobs",
+      "durationSeconds": 10,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T17:08:00.000Z"
+    },
+    {
+      "uuid": "conv-1300005",
+      "phone": "+27824044363",
+      "contactName": "Mandla Jacobs",
+      "durationSeconds": 5,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T11:42:00.000Z"
+    },
+    {
+      "uuid": "conv-1300006",
+      "phone": "+27827345807",
+      "contactName": "Tumelo Mahlangu",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T09:07:00.000Z"
+    },
+    {
+      "uuid": "conv-1300007",
+      "phone": "+27827345807",
+      "contactName": "Tumelo Mahlangu",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T11:15:00.000Z"
+    },
+    {
+      "uuid": "conv-1300008",
+      "phone": "+27827345807",
+      "contactName": "Tumelo Mahlangu",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-21T11:10:00.000Z"
+    },
+    {
+      "uuid": "conv-1300009",
+      "phone": "+27827345807",
+      "contactName": "Tumelo Mahlangu",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-23T13:18:00.000Z"
+    },
+    {
+      "uuid": "conv-1300010",
+      "phone": "+27826168237",
+      "contactName": "Riaan Cele",
+      "durationSeconds": 126,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T13:18:00.000Z"
+    },
+    {
+      "uuid": "conv-1300011",
+      "phone": "+27826067863",
+      "contactName": "Rajesh Ndlovu",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T13:31:00.000Z"
+    },
+    {
+      "uuid": "conv-1300012",
+      "phone": "+27826067863",
+      "contactName": "Rajesh Ndlovu",
+      "durationSeconds": 223,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T13:59:00.000Z"
+    },
+    {
+      "uuid": "conv-1300013",
+      "phone": "+27821868656",
+      "contactName": "Bongani Molefe",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T09:38:00.000Z"
+    },
+    {
+      "uuid": "conv-1300014",
+      "phone": "+27821868656",
+      "contactName": "Bongani Molefe",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T09:36:00.000Z"
+    },
+    {
+      "uuid": "conv-1300015",
+      "phone": "+27821868656",
+      "contactName": "Bongani Molefe",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-21T17:51:00.000Z"
+    },
+    {
+      "uuid": "conv-1300016",
+      "phone": "+27826566535",
+      "contactName": "Dineo Venter",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T07:26:00.000Z"
+    },
+    {
+      "uuid": "conv-1300017",
+      "phone": "+27823531995",
+      "contactName": "Xolani Petersen",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T11:55:00.000Z"
+    },
+    {
+      "uuid": "conv-1300018",
+      "phone": "+27823531995",
+      "contactName": "Xolani Petersen",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T09:00:00.000Z"
+    },
+    {
+      "uuid": "conv-1300019",
+      "phone": "+27823531995",
+      "contactName": "Xolani Petersen",
+      "durationSeconds": 238,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T13:50:00.000Z"
+    },
+    {
+      "uuid": "conv-1300020",
+      "phone": "+27828430907",
+      "contactName": "Sipho Pretorius",
+      "durationSeconds": 15,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T11:21:00.000Z"
+    },
+    {
+      "uuid": "conv-1300021",
+      "phone": "+27828430907",
+      "contactName": "Sipho Pretorius",
+      "durationSeconds": 18,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T09:54:00.000Z"
+    },
+    {
+      "uuid": "conv-1300022",
+      "phone": "+27828430907",
+      "contactName": "Sipho Pretorius",
+      "durationSeconds": 5,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T17:12:00.000Z"
+    },
+    {
+      "uuid": "conv-1300023",
+      "phone": "+27828558303",
+      "contactName": "Mandla Botha",
+      "durationSeconds": 98,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T15:12:00.000Z"
+    },
+    {
+      "uuid": "conv-1300024",
+      "phone": "+27822141762",
+      "contactName": "Lerato Ismail",
+      "durationSeconds": 16,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T13:02:00.000Z"
+    },
+    {
+      "uuid": "conv-1300025",
+      "phone": "+27822141762",
+      "contactName": "Lerato Ismail",
+      "durationSeconds": 10,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T07:05:00.000Z"
+    },
+    {
+      "uuid": "conv-1300026",
+      "phone": "+27822465599",
+      "contactName": "Zanele du Plessis",
+      "durationSeconds": 12,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T09:55:00.000Z"
+    },
+    {
+      "uuid": "conv-1300027",
+      "phone": "+27822465599",
+      "contactName": "Zanele du Plessis",
+      "durationSeconds": 5,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T15:43:00.000Z"
+    },
+    {
+      "uuid": "conv-1300028",
+      "phone": "+27822465599",
+      "contactName": "Zanele du Plessis",
+      "durationSeconds": 9,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T11:33:00.000Z"
+    },
+    {
+      "uuid": "conv-1300029",
+      "phone": "+27827215939",
+      "contactName": "Precious Pillay",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T17:29:00.000Z"
+    },
+    {
+      "uuid": "conv-1300030",
+      "phone": "+27827215939",
+      "contactName": "Precious Pillay",
+      "durationSeconds": 70,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T13:07:00.000Z"
+    },
+    {
+      "uuid": "conv-1300031",
+      "phone": "+27822681115",
+      "contactName": "Marike Naidoo",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T13:39:00.000Z"
+    },
+    {
+      "uuid": "conv-1300032",
+      "phone": "+27822681115",
+      "contactName": "Marike Naidoo",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-19T17:36:00.000Z"
+    },
+    {
+      "uuid": "conv-1300033",
+      "phone": "+27822681115",
+      "contactName": "Marike Naidoo",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T15:11:00.000Z"
+    },
+    {
+      "uuid": "conv-1300034",
+      "phone": "+27822681115",
+      "contactName": "Marike Naidoo",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-23T17:57:00.000Z"
+    },
+    {
+      "uuid": "conv-1300035",
+      "phone": "+27826796192",
+      "contactName": "Andile Mthembu",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T17:03:00.000Z"
+    },
+    {
+      "uuid": "conv-1300036",
+      "phone": "+27826796192",
+      "contactName": "Andile Mthembu",
+      "durationSeconds": 219,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T17:17:00.000Z"
+    },
+    {
+      "uuid": "conv-1300037",
+      "phone": "+27825262077",
+      "contactName": "Ayanda Nkosi",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T17:49:00.000Z"
+    },
+    {
+      "uuid": "conv-1300038",
+      "phone": "+27825262077",
+      "contactName": "Ayanda Nkosi",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T15:38:00.000Z"
+    },
+    {
+      "uuid": "conv-1300039",
+      "phone": "+27821708715",
+      "contactName": "Busisiwe Petersen",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T17:17:00.000Z"
+    },
+    {
+      "uuid": "conv-1300040",
+      "phone": "+27821708715",
+      "contactName": "Busisiwe Petersen",
+      "durationSeconds": 240,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T09:22:00.000Z"
+    },
+    {
+      "uuid": "conv-1300041",
+      "phone": "+27824553748",
+      "contactName": "Xolani Pillay",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T13:59:00.000Z"
+    },
+    {
+      "uuid": "conv-1300042",
+      "phone": "+27824553748",
+      "contactName": "Xolani Pillay",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T13:27:00.000Z"
+    },
+    {
+      "uuid": "conv-1300043",
+      "phone": "+27821931104",
+      "contactName": "Andile du Plessis",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T13:53:00.000Z"
+    },
+    {
+      "uuid": "conv-1300044",
+      "phone": "+27825017977",
+      "contactName": "Tumelo Mahlangu",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T11:40:00.000Z"
+    },
+    {
+      "uuid": "conv-1300045",
+      "phone": "+27825017977",
+      "contactName": "Tumelo Mahlangu",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T13:58:00.000Z"
+    },
+    {
+      "uuid": "conv-1300046",
+      "phone": "+27825017977",
+      "contactName": "Tumelo Mahlangu",
+      "durationSeconds": 84,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-21T13:32:00.000Z"
+    },
+    {
+      "uuid": "conv-1300047",
+      "phone": "+27822436808",
+      "contactName": "Pieter Nkosi",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T17:05:00.000Z"
+    },
+    {
+      "uuid": "conv-1300048",
+      "phone": "+27822436808",
+      "contactName": "Pieter Nkosi",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-19T15:51:00.000Z"
+    },
+    {
+      "uuid": "conv-1300049",
+      "phone": "+27822436808",
+      "contactName": "Pieter Nkosi",
+      "durationSeconds": 113,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T11:13:00.000Z"
+    },
+    {
+      "uuid": "conv-1300050",
+      "phone": "+27821427871",
+      "contactName": "Thandi du Plessis",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T07:03:00.000Z"
+    },
+    {
+      "uuid": "conv-1300051",
+      "phone": "+27821427871",
+      "contactName": "Thandi du Plessis",
+      "durationSeconds": 70,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T09:10:00.000Z"
+    },
+    {
+      "uuid": "conv-1300052",
+      "phone": "+27821582859",
+      "contactName": "Kevin Mokoena",
+      "durationSeconds": 8,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T15:13:00.000Z"
+    },
+    {
+      "uuid": "conv-1300053",
+      "phone": "+27829620758",
+      "contactName": "Fatima Pretorius",
+      "durationSeconds": 16,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T11:01:00.000Z"
+    },
+    {
+      "uuid": "conv-1300054",
+      "phone": "+27829620758",
+      "contactName": "Fatima Pretorius",
+      "durationSeconds": 14,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T09:31:00.000Z"
+    },
+    {
+      "uuid": "conv-1300055",
+      "phone": "+27828448577",
+      "contactName": "Karabo Jacobs",
+      "durationSeconds": 142,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T11:53:00.000Z"
+    },
+    {
+      "uuid": "conv-1300056",
+      "phone": "+27824079309",
+      "contactName": "Dineo van der Merwe",
+      "durationSeconds": 90,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T07:58:00.000Z"
+    },
+    {
+      "uuid": "conv-1300057",
+      "phone": "+27822986948",
+      "contactName": "Kevin Mokoena",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T13:17:00.000Z"
+    },
+    {
+      "uuid": "conv-1300058",
+      "phone": "+27822986948",
+      "contactName": "Kevin Mokoena",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-19T13:01:00.000Z"
+    },
+    {
+      "uuid": "conv-1300059",
+      "phone": "+27822986948",
+      "contactName": "Kevin Mokoena",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T13:32:00.000Z"
+    },
+    {
+      "uuid": "conv-1300060",
+      "phone": "+27827964873",
+      "contactName": "Bongani Ismail",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T13:30:00.000Z"
+    },
+    {
+      "uuid": "conv-1300061",
+      "phone": "+27827557736",
+      "contactName": "Bongani Petersen",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T07:26:00.000Z"
+    },
+    {
+      "uuid": "conv-1300062",
+      "phone": "+27827557736",
+      "contactName": "Bongani Petersen",
+      "durationSeconds": 21,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T17:00:00.000Z"
+    },
+    {
+      "uuid": "conv-1300063",
+      "phone": "+27828014146",
+      "contactName": "Marike Botha",
+      "durationSeconds": 25,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T17:44:00.000Z"
+    },
+    {
+      "uuid": "conv-1300064",
+      "phone": "+27822786217",
+      "contactName": "Thandi Dlamini",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T11:58:00.000Z"
+    },
+    {
+      "uuid": "conv-1300065",
+      "phone": "+27822786217",
+      "contactName": "Thandi Dlamini",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T17:20:00.000Z"
+    },
+    {
+      "uuid": "conv-1300066",
+      "phone": "+27822786217",
+      "contactName": "Thandi Dlamini",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T09:25:00.000Z"
+    },
+    {
+      "uuid": "conv-1300067",
+      "phone": "+27821147860",
+      "contactName": "Thandi Dlamini",
+      "durationSeconds": 11,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T17:04:00.000Z"
+    },
+    {
+      "uuid": "conv-1300068",
+      "phone": "+27824416382",
+      "contactName": "Mandla Botha",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T11:22:00.000Z"
+    },
+    {
+      "uuid": "conv-1300069",
+      "phone": "+27827048574",
+      "contactName": "Xolani Maharaj",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T13:56:00.000Z"
+    },
+    {
+      "uuid": "conv-1300070",
+      "phone": "+27827048574",
+      "contactName": "Xolani Maharaj",
+      "durationSeconds": 222,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T09:33:00.000Z"
+    },
+    {
+      "uuid": "conv-1300071",
+      "phone": "+27822764637",
+      "contactName": "Pieter Fourie",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T07:23:00.000Z"
+    },
+    {
+      "uuid": "conv-1300072",
+      "phone": "+27826771004",
+      "contactName": "Andile Ndlovu",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T17:18:00.000Z"
+    },
+    {
+      "uuid": "conv-1300073",
+      "phone": "+27826771004",
+      "contactName": "Andile Ndlovu",
+      "durationSeconds": 10,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T13:49:00.000Z"
+    },
+    {
+      "uuid": "conv-1300074",
+      "phone": "+27823310283",
+      "contactName": "Zanele Naidoo",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T13:10:00.000Z"
+    },
+    {
+      "uuid": "conv-1300075",
+      "phone": "+27825063435",
+      "contactName": "Riaan Ndlovu",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T07:17:00.000Z"
+    },
+    {
+      "uuid": "conv-1300076",
+      "phone": "+27825063435",
+      "contactName": "Riaan Ndlovu",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-19T17:44:00.000Z"
+    },
+    {
+      "uuid": "conv-1300077",
+      "phone": "+27825063435",
+      "contactName": "Riaan Ndlovu",
+      "durationSeconds": 118,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T17:13:00.000Z"
+    },
+    {
+      "uuid": "conv-1300078",
+      "phone": "+27827938082",
+      "contactName": "Kevin van der Merwe",
+      "durationSeconds": 13,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T07:25:00.000Z"
+    },
+    {
+      "uuid": "conv-1300079",
+      "phone": "+27829164595",
+      "contactName": "Mandla Molefe",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T07:40:00.000Z"
+    },
+    {
+      "uuid": "conv-1300080",
+      "phone": "+27829164595",
+      "contactName": "Mandla Molefe",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T07:06:00.000Z"
+    },
+    {
+      "uuid": "conv-1300081",
+      "phone": "+27829164595",
+      "contactName": "Mandla Molefe",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-21T07:13:00.000Z"
+    },
+    {
+      "uuid": "conv-1300082",
+      "phone": "+27829164595",
+      "contactName": "Mandla Molefe",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-23T17:00:00.000Z"
+    },
+    {
+      "uuid": "conv-1300083",
+      "phone": "+27822747655",
+      "contactName": "Naledi Adams",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T15:35:00.000Z"
+    },
+    {
+      "uuid": "conv-1300084",
+      "phone": "+27822747655",
+      "contactName": "Naledi Adams",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T13:57:00.000Z"
+    },
+    {
+      "uuid": "conv-1300085",
+      "phone": "+27822747655",
+      "contactName": "Naledi Adams",
+      "durationSeconds": 25,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T17:50:00.000Z"
+    },
+    {
+      "uuid": "conv-1300086",
+      "phone": "+27829811950",
+      "contactName": "Pieter Sibiya",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T13:16:00.000Z"
+    },
+    {
+      "uuid": "conv-1300087",
+      "phone": "+27829811950",
+      "contactName": "Pieter Sibiya",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T07:54:00.000Z"
+    },
+    {
+      "uuid": "conv-1300088",
+      "phone": "+27825515507",
+      "contactName": "Yusuf du Plessis",
+      "durationSeconds": 221,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T11:52:00.000Z"
+    },
+    {
+      "uuid": "conv-1300089",
+      "phone": "+27821071854",
+      "contactName": "Nomvula Venter",
+      "durationSeconds": 5,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T11:28:00.000Z"
+    },
+    {
+      "uuid": "conv-1300090",
+      "phone": "+27821071854",
+      "contactName": "Nomvula Venter",
+      "durationSeconds": 10,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T11:20:00.000Z"
+    },
+    {
+      "uuid": "conv-1300091",
+      "phone": "+27828001843",
+      "contactName": "Charmaine Radebe",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T17:53:00.000Z"
+    },
+    {
+      "uuid": "conv-1300092",
+      "phone": "+27828001843",
+      "contactName": "Charmaine Radebe",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T15:20:00.000Z"
+    },
+    {
+      "uuid": "conv-1300093",
+      "phone": "+27828001843",
+      "contactName": "Charmaine Radebe",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T11:34:00.000Z"
+    },
+    {
+      "uuid": "conv-1300094",
+      "phone": "+27828001843",
+      "contactName": "Charmaine Radebe",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-23T17:04:00.000Z"
+    },
+    {
+      "uuid": "conv-1300095",
+      "phone": "+27822672558",
+      "contactName": "Nomvula Fourie",
+      "durationSeconds": 10,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T13:19:00.000Z"
+    },
+    {
+      "uuid": "conv-1300096",
+      "phone": "+27822672558",
+      "contactName": "Nomvula Fourie",
+      "durationSeconds": 4,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T13:51:00.000Z"
+    },
+    {
+      "uuid": "conv-1300097",
+      "phone": "+27822672558",
+      "contactName": "Nomvula Fourie",
+      "durationSeconds": 18,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-21T13:37:00.000Z"
+    },
+    {
+      "uuid": "conv-1300098",
+      "phone": "+27825015345",
+      "contactName": "Johan Adams",
+      "durationSeconds": 13,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T17:33:00.000Z"
+    },
+    {
+      "uuid": "conv-1300099",
+      "phone": "+27825015345",
+      "contactName": "Johan Adams",
+      "durationSeconds": 6,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-19T13:20:00.000Z"
+    },
+    {
+      "uuid": "conv-1300100",
+      "phone": "+27826986658",
+      "contactName": "Andile Mokoena",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T15:55:00.000Z"
+    },
+    {
+      "uuid": "conv-1300101",
+      "phone": "+27826986658",
+      "contactName": "Andile Mokoena",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T07:35:00.000Z"
+    },
+    {
+      "uuid": "conv-1300102",
+      "phone": "+27826986658",
+      "contactName": "Andile Mokoena",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T13:54:00.000Z"
+    },
+    {
+      "uuid": "conv-1300103",
+      "phone": "+27826986658",
+      "contactName": "Andile Mokoena",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-23T15:30:00.000Z"
+    },
+    {
+      "uuid": "conv-1300104",
+      "phone": "+27823913654",
+      "contactName": "Rajesh Ismail",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T09:49:00.000Z"
+    },
+    {
+      "uuid": "conv-1300105",
+      "phone": "+27822695755",
+      "contactName": "Thandi Jacobs",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T17:04:00.000Z"
+    },
+    {
+      "uuid": "conv-1300106",
+      "phone": "+27822695755",
+      "contactName": "Thandi Jacobs",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T09:12:00.000Z"
+    },
+    {
+      "uuid": "conv-1300107",
+      "phone": "+27827094705",
+      "contactName": "Fatima Adams",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T11:04:00.000Z"
+    },
+    {
+      "uuid": "conv-1300108",
+      "phone": "+27827094705",
+      "contactName": "Fatima Adams",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T09:38:00.000Z"
+    },
+    {
+      "uuid": "conv-1300109",
+      "phone": "+27827094705",
+      "contactName": "Fatima Adams",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T17:25:00.000Z"
+    },
+    {
+      "uuid": "conv-1300110",
+      "phone": "+27827092516",
+      "contactName": "Rajesh Petersen",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T15:42:00.000Z"
+    },
+    {
+      "uuid": "conv-1300111",
+      "phone": "+27827092516",
+      "contactName": "Rajesh Petersen",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T15:57:00.000Z"
+    },
+    {
+      "uuid": "conv-1300112",
+      "phone": "+27827092516",
+      "contactName": "Rajesh Petersen",
+      "durationSeconds": 11,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-21T09:43:00.000Z"
+    },
+    {
+      "uuid": "conv-1300113",
+      "phone": "+27827553411",
+      "contactName": "Annelie Mthembu",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T13:54:00.000Z"
+    },
+    {
+      "uuid": "conv-1300114",
+      "phone": "+27827553411",
+      "contactName": "Annelie Mthembu",
+      "durationSeconds": 12,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-19T17:26:00.000Z"
+    },
+    {
+      "uuid": "conv-1300115",
+      "phone": "+27824385006",
+      "contactName": "Johan Nkosi",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T09:37:00.000Z"
+    },
+    {
+      "uuid": "conv-1300116",
+      "phone": "+27824385006",
+      "contactName": "Johan Nkosi",
+      "durationSeconds": 221,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T13:43:00.000Z"
+    },
+    {
+      "uuid": "conv-1300117",
+      "phone": "+27827874327",
+      "contactName": "Fatima Maharaj",
+      "durationSeconds": 8,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T17:39:00.000Z"
+    },
+    {
+      "uuid": "conv-1300118",
+      "phone": "+27828312660",
+      "contactName": "Yusuf Jacobs",
+      "durationSeconds": 5,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T17:15:00.000Z"
+    },
+    {
+      "uuid": "conv-1300119",
+      "phone": "+27828312660",
+      "contactName": "Yusuf Jacobs",
+      "durationSeconds": 15,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-19T11:42:00.000Z"
+    },
+    {
+      "uuid": "conv-1300120",
+      "phone": "+27824502151",
+      "contactName": "Bongani Mahlangu",
+      "durationSeconds": 7,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T13:04:00.000Z"
+    },
+    {
+      "uuid": "conv-1300121",
+      "phone": "+27826139651",
+      "contactName": "Naledi Botha",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T17:24:00.000Z"
+    },
+    {
+      "uuid": "conv-1300122",
+      "phone": "+27826139651",
+      "contactName": "Naledi Botha",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-19T11:11:00.000Z"
+    },
+    {
+      "uuid": "conv-1300123",
+      "phone": "+27824322694",
+      "contactName": "Priya Jacobs",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T07:23:00.000Z"
+    },
+    {
+      "uuid": "conv-1300124",
+      "phone": "+27824322694",
+      "contactName": "Priya Jacobs",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-19T09:35:00.000Z"
+    },
+    {
+      "uuid": "conv-1300125",
+      "phone": "+27824322694",
+      "contactName": "Priya Jacobs",
+      "durationSeconds": 202,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-21T15:19:00.000Z"
+    },
+    {
+      "uuid": "conv-1300126",
+      "phone": "+27828105382",
+      "contactName": "Riaan van der Merwe",
+      "durationSeconds": 256,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T17:27:00.000Z"
+    },
+    {
+      "uuid": "conv-1300127",
+      "phone": "+27824273599",
+      "contactName": "Annelie Jacobs",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T09:48:00.000Z"
+    },
+    {
+      "uuid": "conv-1300128",
+      "phone": "+27824273599",
+      "contactName": "Annelie Jacobs",
+      "durationSeconds": 113,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-19T13:14:00.000Z"
+    },
+    {
+      "uuid": "conv-1300129",
+      "phone": "+27823752941",
+      "contactName": "Kagiso Ismail",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T13:42:00.000Z"
+    },
+    {
+      "uuid": "conv-1300130",
+      "phone": "+27823752941",
+      "contactName": "Kagiso Ismail",
+      "durationSeconds": 125,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-19T07:28:00.000Z"
+    },
+    {
+      "uuid": "conv-1300131",
+      "phone": "+27821687653",
+      "contactName": "Priya Dlamini",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T07:29:00.000Z"
+    },
+    {
+      "uuid": "conv-1300132",
+      "phone": "+27826874915",
+      "contactName": "Charmaine Molefe",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T11:49:00.000Z"
+    },
+    {
+      "uuid": "conv-1300133",
+      "phone": "+27826874915",
+      "contactName": "Charmaine Molefe",
+      "durationSeconds": 17,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-19T07:42:00.000Z"
+    },
+    {
+      "uuid": "conv-1300134",
+      "phone": "+27821088773",
+      "contactName": "Charmaine Naidoo",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T13:16:00.000Z"
+    },
+    {
+      "uuid": "conv-1300135",
+      "phone": "+27821088773",
+      "contactName": "Charmaine Naidoo",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T11:44:00.000Z"
+    },
+    {
+      "uuid": "conv-1300136",
+      "phone": "+27821088773",
+      "contactName": "Charmaine Naidoo",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T13:01:00.000Z"
+    },
+    {
+      "uuid": "conv-1300137",
+      "phone": "+27821666758",
+      "contactName": "Sipho Molefe",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T15:28:00.000Z"
+    },
+    {
+      "uuid": "conv-1300138",
+      "phone": "+27821666758",
+      "contactName": "Sipho Molefe",
+      "durationSeconds": 181,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-19T09:50:00.000Z"
+    },
+    {
+      "uuid": "conv-1300139",
+      "phone": "+27827892860",
+      "contactName": "Zanele Botha",
+      "durationSeconds": 10,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T07:37:00.000Z"
+    },
+    {
+      "uuid": "conv-1300140",
+      "phone": "+27826674319",
+      "contactName": "Fatima Khumalo",
+      "durationSeconds": 7,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T11:53:00.000Z"
+    },
+    {
+      "uuid": "conv-1300141",
+      "phone": "+27823297619",
+      "contactName": "Johan Adams",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T13:46:00.000Z"
+    },
+    {
+      "uuid": "conv-1300142",
+      "phone": "+27823297619",
+      "contactName": "Johan Adams",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T11:42:00.000Z"
+    },
+    {
+      "uuid": "conv-1300143",
+      "phone": "+27823297619",
+      "contactName": "Johan Adams",
+      "durationSeconds": 111,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-21T11:27:00.000Z"
+    },
+    {
+      "uuid": "conv-1300144",
+      "phone": "+27829703984",
+      "contactName": "Nomvula Venter",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T07:49:00.000Z"
+    },
+    {
+      "uuid": "conv-1300145",
+      "phone": "+27829703984",
+      "contactName": "Nomvula Venter",
+      "durationSeconds": 212,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T17:33:00.000Z"
+    },
+    {
+      "uuid": "conv-1300146",
+      "phone": "+27827674765",
+      "contactName": "Mandla Fourie",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T09:29:00.000Z"
+    },
+    {
+      "uuid": "conv-1300147",
+      "phone": "+27827674765",
+      "contactName": "Mandla Fourie",
+      "durationSeconds": 15,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T15:40:00.000Z"
+    },
+    {
+      "uuid": "conv-1300148",
+      "phone": "+27828784634",
+      "contactName": "Nonhlanhla Botha",
+      "durationSeconds": 18,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T09:56:00.000Z"
+    },
+    {
+      "uuid": "conv-1300149",
+      "phone": "+27824167300",
+      "contactName": "Johan Adams",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T17:15:00.000Z"
+    },
+    {
+      "uuid": "conv-1300150",
+      "phone": "+27824167300",
+      "contactName": "Johan Adams",
+      "durationSeconds": 201,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T13:44:00.000Z"
+    },
+    {
+      "uuid": "conv-1300151",
+      "phone": "+27821189802",
+      "contactName": "Precious Sithole",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T17:07:00.000Z"
+    },
+    {
+      "uuid": "conv-1300152",
+      "phone": "+27821189802",
+      "contactName": "Precious Sithole",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-19T13:21:00.000Z"
+    },
+    {
+      "uuid": "conv-1300153",
+      "phone": "+27821189802",
+      "contactName": "Precious Sithole",
+      "durationSeconds": 73,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T11:56:00.000Z"
+    },
+    {
+      "uuid": "conv-1300154",
+      "phone": "+27828331624",
+      "contactName": "Charmaine van der Merwe",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T17:24:00.000Z"
+    },
+    {
+      "uuid": "conv-1300155",
+      "phone": "+27829757971",
+      "contactName": "Charmaine Ndlovu",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T09:23:00.000Z"
+    },
+    {
+      "uuid": "conv-1300156",
+      "phone": "+27829757971",
+      "contactName": "Charmaine Ndlovu",
+      "durationSeconds": 9,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T15:00:00.000Z"
+    },
+    {
+      "uuid": "conv-1300157",
+      "phone": "+27821479347",
+      "contactName": "Nonhlanhla Naidoo",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T17:50:00.000Z"
+    },
+    {
+      "uuid": "conv-1300158",
+      "phone": "+27821479347",
+      "contactName": "Nonhlanhla Naidoo",
+      "durationSeconds": 25,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T17:28:00.000Z"
+    },
+    {
+      "uuid": "conv-1300159",
+      "phone": "+27823566276",
+      "contactName": "Nomvula du Plessis",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T17:20:00.000Z"
+    },
+    {
+      "uuid": "conv-1300160",
+      "phone": "+27823566276",
+      "contactName": "Nomvula du Plessis",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T13:33:00.000Z"
+    },
+    {
+      "uuid": "conv-1300161",
+      "phone": "+27823566276",
+      "contactName": "Nomvula du Plessis",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T09:40:00.000Z"
+    },
+    {
+      "uuid": "conv-1300162",
+      "phone": "+27824991264",
+      "contactName": "Kevin Pillay",
+      "durationSeconds": 7,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T15:15:00.000Z"
+    },
+    {
+      "uuid": "conv-1300163",
+      "phone": "+27824991264",
+      "contactName": "Kevin Pillay",
+      "durationSeconds": 14,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T09:57:00.000Z"
+    },
+    {
+      "uuid": "conv-1300164",
+      "phone": "+27823329997",
+      "contactName": "Dineo Ismail",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T17:50:00.000Z"
+    },
+    {
+      "uuid": "conv-1300165",
+      "phone": "+27823329997",
+      "contactName": "Dineo Ismail",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T11:19:00.000Z"
+    },
+    {
+      "uuid": "conv-1300166",
+      "phone": "+27823329997",
+      "contactName": "Dineo Ismail",
+      "durationSeconds": 15,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-21T11:15:00.000Z"
+    },
+    {
+      "uuid": "conv-1300167",
+      "phone": "+27823297899",
+      "contactName": "Karabo Ndlovu",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T09:25:00.000Z"
+    },
+    {
+      "uuid": "conv-1300168",
+      "phone": "+27823297899",
+      "contactName": "Karabo Ndlovu",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T17:41:00.000Z"
+    },
+    {
+      "uuid": "conv-1300169",
+      "phone": "+27823297899",
+      "contactName": "Karabo Ndlovu",
+      "durationSeconds": 162,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-21T07:07:00.000Z"
+    },
+    {
+      "uuid": "conv-1300170",
+      "phone": "+27829804052",
+      "contactName": "Sipho Sithole",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T09:32:00.000Z"
+    },
+    {
+      "uuid": "conv-1300171",
+      "phone": "+27829804052",
+      "contactName": "Sipho Sithole",
+      "durationSeconds": 156,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T17:43:00.000Z"
+    },
+    {
+      "uuid": "conv-1300172",
+      "phone": "+27824930220",
+      "contactName": "Rajesh Ismail",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T09:18:00.000Z"
+    },
+    {
+      "uuid": "conv-1300173",
+      "phone": "+27824930220",
+      "contactName": "Rajesh Ismail",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T09:48:00.000Z"
+    },
+    {
+      "uuid": "conv-1300174",
+      "phone": "+27824930220",
+      "contactName": "Rajesh Ismail",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T09:39:00.000Z"
+    },
+    {
+      "uuid": "conv-1300175",
+      "phone": "+27824364046",
+      "contactName": "Lerato Naidoo",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T09:02:00.000Z"
+    },
+    {
+      "uuid": "conv-1300176",
+      "phone": "+27825931090",
+      "contactName": "Mandla Radebe",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T11:27:00.000Z"
+    },
+    {
+      "uuid": "conv-1300177",
+      "phone": "+27825931090",
+      "contactName": "Mandla Radebe",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T15:44:00.000Z"
+    },
+    {
+      "uuid": "conv-1300178",
+      "phone": "+27825931090",
+      "contactName": "Mandla Radebe",
+      "durationSeconds": 19,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T11:35:00.000Z"
+    },
+    {
+      "uuid": "conv-1300179",
+      "phone": "+27824734981",
+      "contactName": "Nomvula Maharaj",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T17:51:00.000Z"
+    },
+    {
+      "uuid": "conv-1300180",
+      "phone": "+27824734981",
+      "contactName": "Nomvula Maharaj",
+      "durationSeconds": 10,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T11:47:00.000Z"
+    },
+    {
+      "uuid": "conv-1300181",
+      "phone": "+27826599128",
+      "contactName": "Mandla Mahlangu",
+      "durationSeconds": 22,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T15:26:00.000Z"
+    },
+    {
+      "uuid": "conv-1300182",
+      "phone": "+27825743243",
+      "contactName": "Priya Ismail",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T07:18:00.000Z"
+    },
+    {
+      "uuid": "conv-1300183",
+      "phone": "+27825743243",
+      "contactName": "Priya Ismail",
+      "durationSeconds": 97,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-19T15:47:00.000Z"
+    },
+    {
+      "uuid": "conv-1300184",
+      "phone": "+27825315718",
+      "contactName": "Karabo Petersen",
+      "durationSeconds": 11,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T07:23:00.000Z"
+    },
+    {
+      "uuid": "conv-1300185",
+      "phone": "+27823141166",
+      "contactName": "Rajesh Nkosi",
+      "durationSeconds": 10,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T07:42:00.000Z"
+    },
+    {
+      "uuid": "conv-1300186",
+      "phone": "+27829906320",
+      "contactName": "Johan Mokoena",
+      "durationSeconds": 8,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T13:40:00.000Z"
+    },
+    {
+      "uuid": "conv-1300187",
+      "phone": "+27829906320",
+      "contactName": "Johan Mokoena",
+      "durationSeconds": 10,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T13:54:00.000Z"
+    },
+    {
+      "uuid": "conv-1300188",
+      "phone": "+27823186689",
+      "contactName": "Priya Petersen",
+      "durationSeconds": 8,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T13:32:00.000Z"
+    },
+    {
+      "uuid": "conv-1300189",
+      "phone": "+27823186689",
+      "contactName": "Priya Petersen",
+      "durationSeconds": 18,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T11:53:00.000Z"
+    },
+    {
+      "uuid": "conv-1300190",
+      "phone": "+27823186689",
+      "contactName": "Priya Petersen",
+      "durationSeconds": 10,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T17:11:00.000Z"
+    },
+    {
+      "uuid": "conv-1300191",
+      "phone": "+27823624704",
+      "contactName": "Sipho Cele",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T11:06:00.000Z"
+    },
+    {
+      "uuid": "conv-1300192",
+      "phone": "+27823624704",
+      "contactName": "Sipho Cele",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T11:39:00.000Z"
+    },
+    {
+      "uuid": "conv-1300193",
+      "phone": "+27829984333",
+      "contactName": "Dineo Nkosi",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T13:12:00.000Z"
+    },
+    {
+      "uuid": "conv-1300194",
+      "phone": "+27829984333",
+      "contactName": "Dineo Nkosi",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-19T15:27:00.000Z"
+    },
+    {
+      "uuid": "conv-1300195",
+      "phone": "+27822148032",
+      "contactName": "Charmaine Sithole",
+      "durationSeconds": 4,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T15:05:00.000Z"
+    },
+    {
+      "uuid": "conv-1300196",
+      "phone": "+27827249059",
+      "contactName": "Bongani Fourie",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T09:16:00.000Z"
+    },
+    {
+      "uuid": "conv-1300197",
+      "phone": "+27827249059",
+      "contactName": "Bongani Fourie",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T15:53:00.000Z"
+    },
+    {
+      "uuid": "conv-1300198",
+      "phone": "+27827249059",
+      "contactName": "Bongani Fourie",
+      "durationSeconds": 208,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T13:49:00.000Z"
+    },
+    {
+      "uuid": "conv-1300199",
+      "phone": "+27828787879",
+      "contactName": "Themba Mthembu",
+      "durationSeconds": 13,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T07:03:00.000Z"
+    },
+    {
+      "uuid": "conv-1300200",
+      "phone": "+27825977295",
+      "contactName": "Naledi Nkosi",
+      "durationSeconds": 7,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T15:45:00.000Z"
+    },
+    {
+      "uuid": "conv-1300201",
+      "phone": "+27825977295",
+      "contactName": "Naledi Nkosi",
+      "durationSeconds": 4,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T17:49:00.000Z"
+    },
+    {
+      "uuid": "conv-1300202",
+      "phone": "+27825977295",
+      "contactName": "Naledi Nkosi",
+      "durationSeconds": 13,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-21T07:08:00.000Z"
+    },
+    {
+      "uuid": "conv-1300203",
+      "phone": "+27826096638",
+      "contactName": "Rajesh Mokoena",
+      "durationSeconds": 13,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T11:53:00.000Z"
+    },
+    {
+      "uuid": "conv-1300204",
+      "phone": "+27827385839",
+      "contactName": "Charmaine Ismail",
+      "durationSeconds": 217,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T13:15:00.000Z"
+    },
+    {
+      "uuid": "conv-1300205",
+      "phone": "+27829274462",
+      "contactName": "Dineo Venter",
+      "durationSeconds": 111,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T07:38:00.000Z"
+    },
+    {
+      "uuid": "conv-1300206",
+      "phone": "+27827607307",
+      "contactName": "Zanele Sithole",
+      "durationSeconds": 17,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T11:12:00.000Z"
+    },
+    {
+      "uuid": "conv-1300207",
+      "phone": "+27822086051",
+      "contactName": "Bongani Mthembu",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T13:30:00.000Z"
+    },
+    {
+      "uuid": "conv-1300208",
+      "phone": "+27822086051",
+      "contactName": "Bongani Mthembu",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-19T15:57:00.000Z"
+    },
+    {
+      "uuid": "conv-1300209",
+      "phone": "+27822086051",
+      "contactName": "Bongani Mthembu",
+      "durationSeconds": 0,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-21T17:39:00.000Z"
+    },
+    {
+      "uuid": "conv-1300210",
+      "phone": "+27826604496",
+      "contactName": "Ayanda Khumalo",
+      "durationSeconds": 18,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": true,
+      "createdAt": "2026-08-17T09:27:00.000Z"
+    },
+    {
+      "uuid": "conv-1300211",
+      "phone": "+27826330244",
+      "contactName": "Xolani Mokoena",
+      "durationSeconds": 18,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-17T13:34:00.000Z"
+    },
+    {
+      "uuid": "conv-1300212",
+      "phone": "+27826330244",
+      "contactName": "Xolani Mokoena",
+      "durationSeconds": 6,
+      "agentName": "Siya 1st call MPM",
+      "flowName": "MPM Main",
+      "voicemailFlag": false,
+      "createdAt": "2026-08-19T15:11:00.000Z"
+    }
+  ],
+  "transcripts": {
+    "conv-1300000": [],
+    "conv-1300001": [],
+    "conv-1300002": [],
+    "conv-1300003": [
+      {
+        "role": "user",
+        "text": "The subscriber you have dialled is not available"
+      }
+    ],
+    "conv-1300004": [
+      {
+        "role": "user",
+        "text": "The subscriber you have dialled is not available"
+      }
+    ],
+    "conv-1300005": [
+      {
+        "role": "user",
+        "text": "Please leave a message after the tone"
+      }
+    ],
+    "conv-1300006": [],
+    "conv-1300007": [],
+    "conv-1300008": [],
+    "conv-1300009": [],
+    "conv-1300010": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "This is not my account. I moved out of that unit last year and I dispute the whole balance."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300011": [],
+    "conv-1300012": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "This is not my account. I moved out of that unit last year and I dispute the whole balance."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300013": [],
+    "conv-1300014": [],
+    "conv-1300015": [],
+    "conv-1300016": [],
+    "conv-1300017": [],
+    "conv-1300018": [],
+    "conv-1300019": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "Yes speaking. I know about the arrears, things have been tight but I can pay fifteen hundred rand on the twenty fifth."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300020": [
+      {
+        "role": "user",
+        "text": "Please leave a message after the tone"
+      }
+    ],
+    "conv-1300021": [
+      {
+        "role": "user",
+        "text": "mailbox is full"
+      }
+    ],
+    "conv-1300022": [
+      {
+        "role": "user",
+        "text": "The subscriber you have dialled is not available"
+      }
+    ],
+    "conv-1300023": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "Yes that is me. I can do two thousand this Friday and the rest at month end if that works."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300024": [
+      {
+        "role": "user",
+        "text": "Please leave a message after the tone"
+      }
+    ],
+    "conv-1300025": [
+      {
+        "role": "user",
+        "text": "The subscriber you have dialled is not available"
+      }
+    ],
+    "conv-1300026": [
+      {
+        "role": "user",
+        "text": "mailbox is full"
+      }
+    ],
+    "conv-1300027": [
+      {
+        "role": "user",
+        "text": "The subscriber you have dialled is not available"
+      }
+    ],
+    "conv-1300028": [
+      {
+        "role": "user",
+        "text": "Please leave a message after the tone"
+      }
+    ],
+    "conv-1300029": [],
+    "conv-1300030": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "This is not my account. I moved out of that unit last year and I dispute the whole balance."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300031": [],
+    "conv-1300032": [],
+    "conv-1300033": [],
+    "conv-1300034": [],
+    "conv-1300035": [],
+    "conv-1300036": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "I have been meaning to call you. I can settle three thousand rand next week Wednesday."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300037": [],
+    "conv-1300038": [],
+    "conv-1300039": [],
+    "conv-1300040": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "Yes speaking. I know about the arrears, things have been tight but I can pay fifteen hundred rand on the twenty fifth."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300041": [],
+    "conv-1300042": [],
+    "conv-1300043": [],
+    "conv-1300044": [],
+    "conv-1300045": [],
+    "conv-1300046": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "Look I lost my job in June so I honestly cannot afford the full amount right now, maybe five hundred a month."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300047": [],
+    "conv-1300048": [],
+    "conv-1300049": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "I have been meaning to call you. I can settle three thousand rand next week Wednesday."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300050": [],
+    "conv-1300051": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "Yes that is me. I can do two thousand this Friday and the rest at month end if that works."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300052": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "yes okay"
+      }
+    ],
+    "conv-1300053": [
+      {
+        "role": "user",
+        "text": "The subscriber you have dialled is not available"
+      }
+    ],
+    "conv-1300054": [
+      {
+        "role": "user",
+        "text": "Please leave a message after the tone"
+      }
+    ],
+    "conv-1300055": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "This is not my account. I moved out of that unit last year and I dispute the whole balance."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300056": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "This is not my account. I moved out of that unit last year and I dispute the whole balance."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300057": [],
+    "conv-1300058": [],
+    "conv-1300059": [],
+    "conv-1300060": [],
+    "conv-1300061": [],
+    "conv-1300062": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "not now"
+      }
+    ],
+    "conv-1300063": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "wrong number sorry"
+      }
+    ],
+    "conv-1300064": [],
+    "conv-1300065": [],
+    "conv-1300066": [],
+    "conv-1300067": [
+      {
+        "role": "user",
+        "text": "The subscriber you have dialled is not available"
+      }
+    ],
+    "conv-1300068": [],
+    "conv-1300069": [],
+    "conv-1300070": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "Yes speaking. I know about the arrears, things have been tight but I can pay fifteen hundred rand on the twenty fifth."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300071": [],
+    "conv-1300072": [],
+    "conv-1300073": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "not now"
+      }
+    ],
+    "conv-1300074": [],
+    "conv-1300075": [],
+    "conv-1300076": [],
+    "conv-1300077": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "This is not my account. I moved out of that unit last year and I dispute the whole balance."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300078": [
+      {
+        "role": "user",
+        "text": "mailbox is full"
+      }
+    ],
+    "conv-1300079": [],
+    "conv-1300080": [],
+    "conv-1300081": [],
+    "conv-1300082": [],
+    "conv-1300083": [],
+    "conv-1300084": [],
+    "conv-1300085": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "call me later"
+      }
+    ],
+    "conv-1300086": [],
+    "conv-1300087": [],
+    "conv-1300088": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "Yes speaking. I know about the arrears, things have been tight but I can pay fifteen hundred rand on the twenty fifth."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300089": [
+      {
+        "role": "user",
+        "text": "Please leave a message after the tone"
+      }
+    ],
+    "conv-1300090": [
+      {
+        "role": "user",
+        "text": "The subscriber you have dialled is not available"
+      }
+    ],
+    "conv-1300091": [],
+    "conv-1300092": [],
+    "conv-1300093": [],
+    "conv-1300094": [],
+    "conv-1300095": [
+      {
+        "role": "user",
+        "text": "The subscriber you have dialled is not available"
+      }
+    ],
+    "conv-1300096": [
+      {
+        "role": "user",
+        "text": "mailbox is full"
+      }
+    ],
+    "conv-1300097": [
+      {
+        "role": "user",
+        "text": "mailbox is full"
+      }
+    ],
+    "conv-1300098": [
+      {
+        "role": "user",
+        "text": "The subscriber you have dialled is not available"
+      }
+    ],
+    "conv-1300099": [
+      {
+        "role": "user",
+        "text": "The subscriber you have dialled is not available"
+      }
+    ],
+    "conv-1300100": [],
+    "conv-1300101": [],
+    "conv-1300102": [],
+    "conv-1300103": [],
+    "conv-1300104": [],
+    "conv-1300105": [],
+    "conv-1300106": [],
+    "conv-1300107": [],
+    "conv-1300108": [],
+    "conv-1300109": [],
+    "conv-1300110": [],
+    "conv-1300111": [],
+    "conv-1300112": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "wrong number sorry"
+      }
+    ],
+    "conv-1300113": [],
+    "conv-1300114": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "call me later"
+      }
+    ],
+    "conv-1300115": [],
+    "conv-1300116": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "Yes that is me. I can do two thousand this Friday and the rest at month end if that works."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300117": [
+      {
+        "role": "user",
+        "text": "Please leave a message after the tone"
+      }
+    ],
+    "conv-1300118": [
+      {
+        "role": "user",
+        "text": "The subscriber you have dialled is not available"
+      }
+    ],
+    "conv-1300119": [
+      {
+        "role": "user",
+        "text": "Please leave a message after the tone"
+      }
+    ],
+    "conv-1300120": [
+      {
+        "role": "user",
+        "text": "mailbox is full"
+      }
+    ],
+    "conv-1300121": [],
+    "conv-1300122": [],
+    "conv-1300123": [],
+    "conv-1300124": [],
+    "conv-1300125": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "I have been meaning to call you. I can settle three thousand rand next week Wednesday."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300126": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "I have been meaning to call you. I can settle three thousand rand next week Wednesday."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300127": [],
+    "conv-1300128": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "This is not my account. I moved out of that unit last year and I dispute the whole balance."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300129": [],
+    "conv-1300130": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "Look I lost my job in June so I honestly cannot afford the full amount right now, maybe five hundred a month."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300131": [],
+    "conv-1300132": [],
+    "conv-1300133": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "wrong number sorry"
+      }
+    ],
+    "conv-1300134": [],
+    "conv-1300135": [],
+    "conv-1300136": [],
+    "conv-1300137": [],
+    "conv-1300138": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "Look I lost my job in June so I honestly cannot afford the full amount right now, maybe five hundred a month."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300139": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "wrong number sorry"
+      }
+    ],
+    "conv-1300140": [
+      {
+        "role": "user",
+        "text": "Please leave a message after the tone"
+      }
+    ],
+    "conv-1300141": [],
+    "conv-1300142": [],
+    "conv-1300143": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "Look I lost my job in June so I honestly cannot afford the full amount right now, maybe five hundred a month."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300144": [],
+    "conv-1300145": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "This is not my account. I moved out of that unit last year and I dispute the whole balance."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300146": [],
+    "conv-1300147": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "wrong number sorry"
+      }
+    ],
+    "conv-1300148": [
+      {
+        "role": "user",
+        "text": "mailbox is full"
+      }
+    ],
+    "conv-1300149": [],
+    "conv-1300150": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "Look I lost my job in June so I honestly cannot afford the full amount right now, maybe five hundred a month."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300151": [],
+    "conv-1300152": [],
+    "conv-1300153": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "Yes that is me. I can do two thousand this Friday and the rest at month end if that works."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300154": [],
+    "conv-1300155": [],
+    "conv-1300156": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "call me later"
+      }
+    ],
+    "conv-1300157": [],
+    "conv-1300158": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "call me later"
+      }
+    ],
+    "conv-1300159": [],
+    "conv-1300160": [],
+    "conv-1300161": [],
+    "conv-1300162": [
+      {
+        "role": "user",
+        "text": "Please leave a message after the tone"
+      }
+    ],
+    "conv-1300163": [
+      {
+        "role": "user",
+        "text": "The subscriber you have dialled is not available"
+      }
+    ],
+    "conv-1300164": [],
+    "conv-1300165": [],
+    "conv-1300166": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "yes okay"
+      }
+    ],
+    "conv-1300167": [],
+    "conv-1300168": [],
+    "conv-1300169": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "Yes that is me. I can do two thousand this Friday and the rest at month end if that works."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300170": [],
+    "conv-1300171": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "Look I lost my job in June so I honestly cannot afford the full amount right now, maybe five hundred a month."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300172": [],
+    "conv-1300173": [],
+    "conv-1300174": [],
+    "conv-1300175": [],
+    "conv-1300176": [],
+    "conv-1300177": [],
+    "conv-1300178": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "wrong number sorry"
+      }
+    ],
+    "conv-1300179": [],
+    "conv-1300180": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "wrong number sorry"
+      }
+    ],
+    "conv-1300181": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "call me later"
+      }
+    ],
+    "conv-1300182": [],
+    "conv-1300183": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "I have been meaning to call you. I can settle three thousand rand next week Wednesday."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300184": [
+      {
+        "role": "user",
+        "text": "mailbox is full"
+      }
+    ],
+    "conv-1300185": [
+      {
+        "role": "user",
+        "text": "mailbox is full"
+      }
+    ],
+    "conv-1300186": [
+      {
+        "role": "user",
+        "text": "mailbox is full"
+      }
+    ],
+    "conv-1300187": [
+      {
+        "role": "user",
+        "text": "Please leave a message after the tone"
+      }
+    ],
+    "conv-1300188": [
+      {
+        "role": "user",
+        "text": "Please leave a message after the tone"
+      }
+    ],
+    "conv-1300189": [
+      {
+        "role": "user",
+        "text": "mailbox is full"
+      }
+    ],
+    "conv-1300190": [
+      {
+        "role": "user",
+        "text": "mailbox is full"
+      }
+    ],
+    "conv-1300191": [],
+    "conv-1300192": [],
+    "conv-1300193": [],
+    "conv-1300194": [],
+    "conv-1300195": [
+      {
+        "role": "user",
+        "text": "The subscriber you have dialled is not available"
+      }
+    ],
+    "conv-1300196": [],
+    "conv-1300197": [],
+    "conv-1300198": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "Look I lost my job in June so I honestly cannot afford the full amount right now, maybe five hundred a month."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300199": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "wrong number sorry"
+      }
+    ],
+    "conv-1300200": [
+      {
+        "role": "user",
+        "text": "Please leave a message after the tone"
+      }
+    ],
+    "conv-1300201": [
+      {
+        "role": "user",
+        "text": "mailbox is full"
+      }
+    ],
+    "conv-1300202": [
+      {
+        "role": "user",
+        "text": "mailbox is full"
+      }
+    ],
+    "conv-1300203": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "yes okay"
+      }
+    ],
+    "conv-1300204": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "Look I lost my job in June so I honestly cannot afford the full amount right now, maybe five hundred a month."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300205": [
+      {
+        "role": "assistant",
+        "text": "Good day, this call is recorded for quality and compliance purposes. Am I speaking to the account holder?"
+      },
+      {
+        "role": "user",
+        "text": "Yes speaking. I know about the arrears, things have been tight but I can pay fifteen hundred rand on the twenty fifth."
+      },
+      {
+        "role": "assistant",
+        "text": "Thank you, I have noted that and will send the payment details by SMS."
+      }
+    ],
+    "conv-1300206": [
+      {
+        "role": "user",
+        "text": "mailbox is full"
+      }
+    ],
+    "conv-1300207": [],
+    "conv-1300208": [],
+    "conv-1300209": [],
+    "conv-1300210": [
+      {
+        "role": "user",
+        "text": "mailbox is full"
+      }
+    ],
+    "conv-1300211": [
+      {
+        "role": "user",
+        "text": "Please leave a message after the tone"
+      }
+    ],
+    "conv-1300212": [
+      {
+        "role": "user",
+        "text": "The subscriber you have dialled is not available"
+      }
+    ]
+  }
+}

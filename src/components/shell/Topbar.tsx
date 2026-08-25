@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { isGuest } from "@/lib/session";
 import { Sparkles } from "lucide-react";
 import { CommandPalette } from "./CommandPalette";
 
@@ -6,7 +7,14 @@ export async function Topbar() {
   let orgName = "—";
   let userName = "";
   let userRole = "";
+  const guest = await isGuest();
+  if (guest) {
+    orgName = "DEMO (fixture data)";
+    userName = "Guest";
+    userRole = "read-only";
+  }
   try {
+    if (guest) throw new Error("guest");
     const org = await db.organization.findFirst({
       orderBy: { createdAt: "asc" },
       include: { users: { orderBy: { createdAt: "asc" }, take: 1 } },

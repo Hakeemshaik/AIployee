@@ -258,6 +258,62 @@ export function AgingChart({
   );
 }
 
+/** Reach rate by hour of day (SAST) — the most actionable chart on the page. */
+export function ReachByHourChart({
+  data,
+}: {
+  data: { hour: number; attempts: number; reached: number; rate: number }[];
+}) {
+  const rows = data.map((d) => ({
+    label: `${String(d.hour).padStart(2, "0")}:00`,
+    rate: Math.round(d.rate * 1000) / 10,
+    attempts: d.attempts,
+  }));
+  return (
+    <ResponsiveContainer width="100%" height={230}>
+      <BarChart data={rows} margin={{ top: 6, right: 6, left: 0, bottom: 0 }} barCategoryGap="26%">
+        <CartesianGrid stroke={C.grid} vertical={false} />
+        <XAxis dataKey="label" {...axisProps} />
+        <YAxis {...axisProps} width={40} tickFormatter={(v: number) => `${v}%`} />
+        <Tooltip
+          content={<GlassTooltip />}
+          cursor={{ fill: "rgba(255,255,255,0.04)" }}
+        />
+        <Bar dataKey="rate" name="Reach rate %" fill={C.s1} radius={[4, 4, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+/** Cumulative unique accounts reached, by attempt number. */
+export function CumulativeReachChart({
+  data,
+}: {
+  data: { attempt: number; firstReached: number; cumulative: number }[];
+}) {
+  const rows = data.map((d) => ({ label: `#${d.attempt}`, cumulative: d.cumulative, firstReached: d.firstReached }));
+  return (
+    <div>
+      <ChartLegend
+        items={[
+          { label: "Cumulative unique accounts reached", color: C.s1 },
+          { label: "First reached on this attempt", color: C.s2 },
+        ]}
+      />
+      <ResponsiveContainer width="100%" height={210}>
+        <BarChart data={rows} margin={{ top: 6, right: 6, left: 0, bottom: 0 }} barCategoryGap="26%" barGap={2}>
+          <CartesianGrid stroke={C.grid} vertical={false} />
+          <XAxis dataKey="label" {...axisProps} />
+          <YAxis {...axisProps} allowDecimals={false} width={36} />
+          <Tooltip content={<GlassTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+          <Bar dataKey="cumulative" name="Cumulative reached" fill={C.s1} radius={[4, 4, 0, 0]} />
+          <Bar dataKey="firstReached" name="First reached here" fill={C.s2} radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 /** Campaign detail — daily attempts / connected / promises. */
 export function CampaignActivityChart({
   data,

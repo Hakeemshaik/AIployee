@@ -30,7 +30,7 @@ const TIMEOUT_MS = 20_000;
 /** Redact anything credential-shaped before a message can reach a log or UI. */
 export function redact(text: string): string {
   return text
-    .replace(/(Bearer|api[_-]?key|token|secret)\s*[:=]?\s*[A-Za-z0-9._\-]{8,}/gi, "$1 [redacted]")
+    .replace(/(Bearer|api[_-]?key|token|company_key|secret)["']?\s*[:=]?\s*["']?[A-Za-z0-9._\-]{8,}/gi, "$1 [redacted]")
     .slice(0, 500);
 }
 

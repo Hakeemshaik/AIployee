@@ -1,0 +1,51 @@
+import { describe, expect, it } from "vitest";
+import { CALLING_WINDOWS, checkCallingWindow } from "./calling";
+
+// Times are given in UTC; SAST is UTC+2.
+const utc = (iso: string) => new Date(iso);
+
+describe("calling-hours hard gate", () => {
+  it("allows weekday mid-morning", () => {
+    // Tue 2026-08-18 08:00 UTC = 10:00 SAST
+    const check = checkCallingWindow(utc("2026-08-18T08:00:00Z"));
+    expect(check.allowed).toBe(true);
+    expect(check.sastTime).toBe("10:00 SAST");
+  });
+
+  it("blocks before 08:00 SAST on a weekday", () => {
+    // 05:30 UTC = 07:30 SAST
+    const check = checkCallingWindow(utc("2026-08-18T05:30:00Z"));
+    expect(check.allowed).toBe(false);
+    expect(check.reason).toMatch(/Tuesday calling window/);
+  });
+
+  it("blocks from 19:00 SAST on a weekday", () => {
+    // 17:00 UTC = 19:00 SAST — the window ends AT 19:00
+    expect(checkCallingWindow(utc("2026-08-18T17:00:00Z")).allowed).toBe(false);
+    // 16:59 UTC = 18:59 SAST is still allowed
+    expect(checkCallingWindow(utc("2026-08-18T16:45:00Z")).allowed).toBe(true);
+  });
+
+  it("allows Saturday morning only", () => {
+    // Sat 2026-08-22 08:00 UTC = 10:00 SAST
+    expect(checkCallingWindow(utc("2026-08-22T08:00:00Z")).allowed).toBe(true);
+    // Sat 12:00 UTC = 14:00 SAST — past the 13:00 cutoff
+    expect(checkCallingWindow(utc("2026-08-22T12:00:00Z")).allowed).toBe(false);
+    // Sat 06:00 UTC = 08:00 SAST — before the 09:00 start
+    expect(checkCallingWindow(utc("2026-08-22T06:00:00Z")).allowed).toBe(false);
+  });
+
+  it("never allows Sunday", () => {
+    for (const hour of [6, 8, 10, 12, 15, 18]) {
+      const check = checkCallingWindow(utc(`2026-08-23T${String(hour).padStart(2, "0")}:00:00Z`));
+      expect(check.allowed).toBe(false);
+      expect(check.reason).toMatch(/No calling on Sunday/);
+    }
+    expect(CALLING_WINDOWS[0]).toBeNull();
+  });
+
+  it("evaluates in SAST even when the server clock is UTC late evening", () => {
+    // 22:00 UTC Monday = 00:00 SAST Tuesday — must be blocked, not allowed
+    expect(checkCallingWindow(utc("2026-08-17T22:00:00Z")).allowed).toBe(false);
+  });
+});

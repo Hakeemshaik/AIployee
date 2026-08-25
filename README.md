@@ -127,6 +127,86 @@ to Pay (if one was made) → the debtor's timeline and campaign metrics update �
 dashboard work queue picks up the follow-up. Record the payment when it lands and the
 promise resolves to Fulfilled.
 
+## Call analytics (transcript-verified)
+
+`/analytics` classifies every account by whether a **real human conversation** happened, and
+is the screen an operator opens to see who was missed. Guest mode (`/login` → Continue as
+guest) runs the same engine over a 120-account fixture with calling disabled.
+
+### Rules that are easy to get wrong
+
+These were established against live production data; the naive version produces confidently
+wrong numbers, so each is pinned by tests in `src/services/analytics/classify.test.ts`.
+
+- **Reached is decided from transcript content, never platform flags.** The provider's
+  voicemail flag misfires badly (164 false positives in one campaign). An account is reached
+  only if a transcript has a genuine tenant turn; a short machine-sounding utterance
+  (under 15 words matching the machine phrase list) is not a person.
+- **Five mutually exclusive buckets that sum to the account total** (asserted by test):
+  conversation (reached, ≥8 tenant words) · answered, few words (reached, <8) · connected,
+  no conversation (not reached but talk time > 0) · never connected/dead (not reached, every
+  call zero duration) · never called.
+- **Every metric is per account, never per call.** Formulas are shown in each tile's
+  tooltip: penetration = attempted ÷ book · RPC rate = conversations ÷ book · dials per RPC
+  = calls ÷ conversations · **PTP rate = promises ÷ conversations (RPC denominator)** ·
+  data-quality fail = dead numbers ÷ dialled.
+- **Cash committed is a range, never one number.** Commitments with no stated amount carry
+  zero in the floor and their full balance in the ceiling. "Arrears under commitment" is
+  shown separately — conflating it with cash committed overstates pipeline roughly 3×.
+- **Cumulative reach counts unique accounts at first reach.** Summing per-round reached
+  columns double-counts and has already produced a wrong published figure.
+- **Hour-of-day is SAST (UTC+2).** Provider timestamps are UTC. Reach rate by hour varies
+  enormously and is the most actionable thing on the page.
+- **Dead numbers get a repair export, not a call button** — they need new phone numbers,
+  not more attempts.
+
+### Ingestion
+
+`POST /api/ingest` (progress on `GET`). Conversations page cheaply; transcripts are one
+request each, so they are fetched at concurrency 12, checkpointed every 25, cached in
+`JobixTranscript` by conversation uuid and **never re-fetched**. Customers are stale-filtered
+on `_modify_time` and deduped by phone (skipping this produced 5,608 "records" for 660
+phones). Ingestion is **blocked by a workspace assertion**: if the expected agent names are
+absent the run aborts with a clear error rather than importing another workspace's data.
+
+### Jobix API traps, encoded as guards
+
+`src/services/jobix/client.ts` + `api.ts` enforce these rather than documenting them:
+
+| Trap | Guard |
+|---|---|
+| `page_size=100` on `/api/conversations` → HTTP 500 | capped at 50 |
+| pages are 1-indexed | pulls start at page 1 |
+| sort order is not reliably newest-first | always sorted client-side by `created_at`; a page-boundary stop needs the *whole* page older than the floor |
+| unknown filters accepted and silently ignored | allow-list (`phone`, `agents`) + post-hoc row assertion that throws if the API ignored it |
+| `/transcription` needs `call_uuid` (same uuid) or 422 | always sent |
+| turn text is in `content` *or* `text` | both handled |
+| empty customer fields render as `"No data available"`; unset units as `{{ attributes.unit_number }}` | unwrapped to `null` (any unresolved placeholder too) |
+| customer records hold the last outcome from *any* campaign | `_modify_time` staleness filter + dedupe by phone |
+| `node_ids=` filter is broken | node history pulled unfiltered and filtered in code |
+| node `status` 13 = success, 98 = failed; socket `_0` = matched | typed as `succeeded` / `failed` / `matchedFilter` |
+| `customer/save` is asynchronous | dispatch waits, then verifies before triggering |
+| endpoints time out under sustained paging | retry with backoff + checkpointing |
+
+### Calling — guarded, and the one genuine gap
+
+Calling is last in the build order and off by default (`JOBIX_CALLING_ENABLED=false`).
+Both "call one" and "call all" take one path: filter → stamp a unique batch code via
+`customer/save` → wait and verify → trigger the flow with `call Equals <batchCode>`.
+
+Guardrails, all enforced server-side (a guest session is refused regardless of the UI):
+confirmation of exact account count and value; a hard SAST calling-hours gate
+(Mon–Fri 08:00–19:00, Sat 09:00–13:00, never Sunday — tested); exclusion of do-not-call,
+disputed, escalated, settled, opted-out and live-PTP accounts with the excluded count
+reported; an env deny-list for internal test numbers; and an audit entry for every dispatch
+(who, when, which accounts, which batch code).
+
+**The trigger endpoint is not implemented against a guessed path.** Capture it first:
+open the flow builder → the `Now` node → **Run**, with DevTools → Network recording, and note
+the method, URL and payload (also capture a node filter save). Set `JOBIX_TRIGGER_PATH` to
+that path. Until then a dispatch stamps the batch, verifies it, and reports the exact next
+action rather than pretending a run started.
+
 ## Live Jobix integration (campaign execution)
 
 The platform is the control centre; the voice platform executes the calls. The integration

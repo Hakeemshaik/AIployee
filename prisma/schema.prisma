@@ -48,6 +48,9 @@ model Organization {
   redialBatches      RedialBatch[]
   providerEvents     ProviderEvent[]
   integrationSettings IntegrationSettings?
+  jobixConversations JobixConversation[]
+  jobixTranscripts   JobixTranscript[]
+  ingestionRuns      IngestionRun[]
 }
 
 model User {
@@ -258,6 +261,83 @@ model ProviderEvent {
 
   @@unique([provider, externalEventId])
   @@index([organizationId, type, createdAt])
+}
+
+// Cached Jobix conversation. Conversations are cheap to page but transcripts
+// are one request each, so both are cached locally and never re-fetched.
+model JobixConversation {
+  id             String   @id @default(cuid())
+  organizationId String
+  uuid           String
+  externalId     Int?
+  phone          String
+  contactName    String?
+  agentUuid      String?
+  agentName      String?
+  flowName       String?
+  durationSeconds Int     @default(0)
+  status         Int?
+  conversion     Boolean  @default(false)
+  voicemailFlag  Boolean  @default(false)
+  startedAt      DateTime
+  /** SAST hour of day, precomputed for the hour-of-day analysis. */
+  sastHour       Int
+  ingestedAt     DateTime @default(now())
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  transcript   JobixTranscript?
+
+  @@unique([organizationId, uuid])
+  @@index([organizationId, startedAt])
+  @@index([organizationId, phone])
+}
+
+// Cached transcript plus the derived reach signals. Keyed by conversation
+// uuid so a completed fetch is never repeated.
+model JobixTranscript {
+  id             String   @id @default(cuid())
+  organizationId String
+  conversationId String   @unique
+  conversationUuid String @unique
+  /** JSON array of { role, text }. */
+  turns          String
+  userTurns      Int      @default(0)
+  userWords      Int      @default(0)
+  userText       String   @default("")
+  /** Transcript-derived right-party contact, never a platform flag. */
+  reached        Boolean  @default(false)
+  fetchedAt      DateTime @default(now())
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  conversation JobixConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, reached])
+}
+
+// One ingestion run: resumable, checkpointed, with progress for the UI.
+model IngestionRun {
+  id             String    @id @default(cuid())
+  organizationId String
+  campaignId     String?
+  status         String    @default("running") // running | completed | failed | cancelled
+  phase          String    @default("conversations") // conversations | transcripts | customers | done
+  conversationsFound Int   @default(0)
+  transcriptsFetched Int   @default(0)
+  transcriptsCached  Int   @default(0)
+  transcriptsFailed  Int   @default(0)
+  customersFound     Int   @default(0)
+  droppedStale       Int   @default(0)
+  droppedDuplicate   Int   @default(0)
+  /** Newest conversation already ingested — the resume point. */
+  cursor         String?
+  workspaceNote  String?
+  error          String?
+  startedAt      DateTime  @default(now())
+  finishedAt     DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, startedAt])
 }
 
 // Per-organization voice provider configuration. Endpoint paths are stored
