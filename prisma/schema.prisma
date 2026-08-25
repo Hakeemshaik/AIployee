@@ -1,0 +1,410 @@
+// AIployee — AI Debt Collection Command Centre
+//
+// Multi-tenant relational model. Every business entity carries an
+// organizationId and all service-layer queries are scoped by it.
+//
+// PostgreSQL (Neon / Vercel Postgres / any managed PG). Enumerated columns
+// are Strings validated with zod in the service layer — the canonical value
+// sets live in src/lib/domain.ts — which keeps values greppable and lets new
+// outcomes ship without a migration. Money columns are Float (double
+// precision); promote to Decimal if you ever need cent-exact ledger math.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // runtime — use the POOLED string on Vercel/Neon
+  directUrl = env("DIRECT_DATABASE_URL") // migrations — direct (non-pooled) connection
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  currency  String   @default("ZAR")
+  timezone  String   @default("Africa/Johannesburg")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users              User[]
+  debtors            Debtor[]
+  debtAccounts       DebtAccount[]
+  campaigns          Campaign[]
+  agents             AIAgent[]
+  calls              Call[]
+  callAnalyses       CallAnalysis[]
+  promises           PromiseToPay[]
+  payments           Payment[]
+  escalations        Escalation[]
+  reports            Report[]
+  insights           AIInsight[]
+  auditLogs          AuditLog[]
+  platformEvents     PlatformEvent[]
+  apiKeys            ApiKey[]
+  complianceSettings ComplianceSettings?
+}
+
+model User {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  email          String   @unique
+  role           String   @default("collector") // admin | manager | collector | viewer
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  escalations  Escalation[] @relation("AssignedEscalations")
+
+  @@index([organizationId])
+}
+
+// Per-organization compliance / guardrail configuration. Deliberately
+// configurable rather than hard-coded — debt collection rules differ by
+// jurisdiction and client policy.
+model ComplianceSettings {
+  id                       String  @id @default(cuid())
+  organizationId           String  @unique
+  callingHoursStart        String  @default("08:00")
+  callingHoursEnd          String  @default("20:00")
+  callingDays              String  @default("mon,tue,wed,thu,fri,sat") // csv of weekdays
+  maxAttemptsPerDebtor     Int     @default(10)
+  maxAttemptsPerDay        Int     @default(2)
+  retryIntervalHours       Int     @default(48)
+  recordingConsentRequired Boolean @default(true)
+  recordingDisclosure      String  @default("This call is recorded for quality and compliance purposes.")
+  escalateOnDispute        Boolean @default(true)
+  escalateOnHardship       Boolean @default(true)
+  escalateOnVulnerable     Boolean @default(true)
+  maxAIArrangementAmount   Float   @default(25000) // arrangements above this require a human
+  honourOptOut             Boolean @default(true)
+  freezeContactOnDispute   Boolean @default(true)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model Debtor {
+  id             String    @id @default(cuid())
+  organizationId String
+  firstName      String
+  lastName       String
+  accountNumber  String
+  phone          String
+  altPhone       String?
+  email          String?
+  city           String?
+  province       String?
+  status         String    @default("active") // active | arrangement | promise | paid | dispute | hardship | escalated | uncontactable | opted_out | legal
+  riskScore      Int       @default(50) // 0 (safe) – 100 (unlikely to recover)
+  doNotContact   Boolean   @default(false)
+  campaignId     String?
+  lastContactAt  DateTime?
+  lastOutcome    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaign     Campaign?      @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  accounts     DebtAccount[]
+  calls        Call[]
+  promises     PromiseToPay[]
+  payments     Payment[]
+  escalations  Escalation[]
+
+  @@unique([organizationId, accountNumber])
+  @@index([organizationId, status])
+  @@index([organizationId, campaignId])
+  @@index([organizationId, phone])
+}
+
+model DebtAccount {
+  id              String    @id @default(cuid())
+  organizationId  String
+  debtorId        String
+  reference       String
+  creditorName    String
+  originalBalance Float
+  currentBalance  Float
+  amountPaid      Float     @default(0)
+  dueDate         DateTime
+  daysOverdue     Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  debtor       Debtor       @relation(fields: [debtorId], references: [id], onDelete: Cascade)
+  payments     Payment[]
+
+  @@index([organizationId, debtorId])
+  @@index([organizationId, daysOverdue])
+}
+
+model Campaign {
+  id                 String    @id @default(cuid())
+  organizationId     String
+  name               String
+  description        String?
+  segment            String? // human-readable description of the target segment
+  agentId            String?
+  startDate          DateTime?
+  endDate            DateTime?
+  callingHoursStart  String    @default("09:00")
+  callingHoursEnd    String    @default("18:00")
+  maxAttempts        Int       @default(6)
+  retryIntervalHours Int       @default(48)
+  strategy           String    @default("standard") // standard | payment_plan_first | early_settlement | firm_reminder
+  status             String    @default("draft") // draft | scheduled | active | paused | completed
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agent        AIAgent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  debtors      Debtor[]
+  calls        Call[]
+  promises     PromiseToPay[]
+  payments     Payment[]
+  escalations  Escalation[]
+
+  @@index([organizationId, status])
+}
+
+model AIAgent {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  externalId     String? // id of the agent on the external voice platform
+  status         String   @default("active") // active | paused | offline
+  voiceConfig    String? // JSON: voice/telephony configuration placeholder (server-side only)
+  promptRef      String? // reference to the prompt on the voice platform — never the prompt itself
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaigns    Campaign[]
+  calls        Call[]
+
+  @@index([organizationId])
+}
+
+model Call {
+  id              String    @id @default(cuid())
+  organizationId  String
+  externalCallId  String? // id from the external voice platform
+  debtorId        String
+  campaignId      String?
+  agentId         String?
+  direction       String    @default("outbound") // outbound | inbound
+  startedAt       DateTime
+  endedAt         DateTime?
+  durationSeconds Int       @default(0)
+  status          String    @default("completed") // completed | no_answer | busy | voicemail | failed
+  outcome         String? // promise_to_pay | payment_arrangement | paid_in_full_claimed | dispute | financial_hardship | refused_to_pay | wrong_number | callback_requested | no_commitment | escalated | opted_out
+  transcript      String?
+  recordingUrl    String?
+  createdAt       DateTime  @default(now())
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  debtor       Debtor         @relation(fields: [debtorId], references: [id], onDelete: Cascade)
+  campaign     Campaign?      @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  agent        AIAgent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  analysis     CallAnalysis?
+  promises     PromiseToPay[]
+  escalations  Escalation[]
+
+  @@unique([organizationId, externalCallId])
+  @@index([organizationId, startedAt])
+  @@index([organizationId, debtorId])
+  @@index([organizationId, campaignId])
+}
+
+// Structured information extracted from a call transcript by the AI layer.
+model CallAnalysis {
+  id                  String   @id @default(cuid())
+  organizationId      String
+  callId              String   @unique
+  outcome             String
+  promisedAmount      Float?
+  promisedDate        DateTime?
+  paymentPlan         String? // JSON: { installments, amountPerInstallment, frequency }
+  reasonForNonpayment String?
+  sentiment           String   @default("neutral") // positive | neutral | negative
+  sentimentScore      Float? // -1 .. 1
+  requiresHuman       Boolean  @default(false)
+  escalationReason    String?
+  nextAction          String?
+  summary             String?
+  keyPoints           String? // JSON string[]
+  provider            String   @default("mock") // mock | claude
+  createdAt           DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  call         Call         @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, outcome])
+}
+
+model PromiseToPay {
+  id             String    @id @default(cuid())
+  organizationId String
+  debtorId       String
+  campaignId     String?
+  callId         String?
+  amount         Float
+  promisedDate   DateTime
+  paymentPlan    String? // JSON payment plan if the promise is an arrangement
+  status         String    @default("pending") // pending | fulfilled | broken | cancelled  (upcoming/due today/overdue derived from promisedDate)
+  fulfilledAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  debtor       Debtor       @relation(fields: [debtorId], references: [id], onDelete: Cascade)
+  campaign     Campaign?    @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  call         Call?        @relation(fields: [callId], references: [id], onDelete: SetNull)
+  payments     Payment[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, promisedDate])
+  @@index([organizationId, debtorId])
+}
+
+model Payment {
+  id             String   @id @default(cuid())
+  organizationId String
+  debtorId       String
+  debtAccountId  String?
+  campaignId     String?
+  promiseId      String?
+  amount         Float
+  paidAt         DateTime
+  method         String   @default("eft") // eft | debit_order | card | cash_deposit | payment_link
+  reference      String?
+  status         String   @default("completed") // completed | pending | reversed
+  createdAt      DateTime @default(now())
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  debtor       Debtor        @relation(fields: [debtorId], references: [id], onDelete: Cascade)
+  debtAccount  DebtAccount?  @relation(fields: [debtAccountId], references: [id], onDelete: SetNull)
+  campaign     Campaign?     @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  promise      PromiseToPay? @relation(fields: [promiseId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, paidAt])
+  @@index([organizationId, debtorId])
+}
+
+model Escalation {
+  id               String    @id @default(cuid())
+  organizationId   String
+  debtorId         String
+  callId           String?
+  campaignId       String?
+  reason           String // dispute | legal_request | financial_hardship | vulnerable_customer | angry_customer | identity_issue | ai_unable_to_resolve | arrangement_outside_authority
+  priority         String    @default("medium") // low | medium | high | urgent
+  status           String    @default("open") // open | in_review | assigned | resolved
+  assignedToUserId String?
+  notes            String?
+  resolutionNotes  String?
+  createdAt        DateTime  @default(now())
+  resolvedAt       DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  debtor       Debtor       @relation(fields: [debtorId], references: [id], onDelete: Cascade)
+  call         Call?        @relation(fields: [callId], references: [id], onDelete: SetNull)
+  campaign     Campaign?    @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  assignedTo   User?        @relation("AssignedEscalations", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, status])
+  @@index([organizationId, priority])
+}
+
+model Report {
+  id          String    @id @default(cuid())
+  organizationId String
+  type        String // daily | weekly | campaign | agent_performance | ptp | recovery | executive_summary
+  title       String
+  periodStart DateTime
+  periodEnd   DateTime
+  campaignId  String?
+  agentId     String?
+  status      String    @default("ready") // generating | ready | failed
+  content     String? // JSON: structured report sections (metrics, outcomes, AI insights, recommendations)
+  provider    String    @default("mock")
+  generatedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, type])
+  @@index([organizationId, createdAt])
+}
+
+model AIInsight {
+  id              String   @id @default(cuid())
+  organizationId  String
+  scope           String   @default("insights") // dashboard | insights | campaign
+  refId           String? // e.g. campaignId when scope=campaign
+  content         String // JSON: structured insight payload
+  provider        String   @default("mock") // mock | claude
+  dataWindowStart DateTime?
+  dataWindowEnd   DateTime?
+  generatedAt     DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, scope, generatedAt])
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  actorType      String   @default("system") // user | system | integration | ai
+  actorId        String?
+  action         String // e.g. call.ingested, promise.created, payment.recorded
+  entityType     String
+  entityId       String
+  detail         String? // JSON — never store transcripts/PII here
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, entityType, entityId])
+}
+
+// Persisted internal events (call.completed, promise.created, ...). The
+// in-process bus writes each event here so external systems can be attached
+// later (outbound webhooks, queues) with full replayability.
+model PlatformEvent {
+  id             String   @id @default(cuid())
+  organizationId String
+  type           String
+  entityType     String?
+  entityId       String?
+  payload        String? // JSON
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, type, createdAt])
+  @@index([organizationId, entityId])
+}
+
+// API keys for inbound integrations (e.g. the external voice platform).
+// Only a SHA-256 hash is stored; the plaintext is shown once at creation.
+model ApiKey {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  keyPrefix      String // first 8 chars, safe to display
+  hashedKey      String    @unique
+  scopes         String    @default("voice:ingest") // csv of scopes
+  lastUsedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}

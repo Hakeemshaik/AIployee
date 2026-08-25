@@ -1,0 +1,299 @@
+@import "tailwindcss";
+
+/*
+ * AIployee — dark, glass-panel design system.
+ * The product deliberately commits to a single dark look; every surface and
+ * ink is painted explicitly. Chart series colors come from the validated
+ * dark-mode data-viz palette.
+ */
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+
+  /* surfaces */
+  --color-base: #08090c;
+  --color-plane: #0d0f14;
+  --color-panel: #12151c;
+  --color-raised: #1a1e27;
+
+  /* ink */
+  --color-ink: #eef1f6;
+  --color-ink-2: #9aa3b2;
+  --color-ink-3: #667080;
+
+  /* hairlines */
+  --color-line: rgba(255, 255, 255, 0.08);
+  --color-line-2: rgba(255, 255, 255, 0.05);
+
+  /* accent */
+  --color-accent: #3987e5;
+  --color-accent-soft: rgba(57, 135, 229, 0.14);
+
+  /* validated dark-mode chart series */
+  --color-series-1: #3987e5;
+  --color-series-2: #d95926;
+  --color-series-3: #199e70;
+  --color-series-4: #c98500;
+  --color-series-5: #d55181;
+
+  /* status (reserved — never used as series colors) */
+  --color-good: #0ca30c;
+  --color-warning: #fab219;
+  --color-serious: #ec835a;
+  --color-critical: #d03b3b;
+
+  /* chart chrome */
+  --color-grid: #232630;
+  --color-axis: #3a3f4c;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-base);
+  background-image:
+    radial-gradient(1200px 500px at 15% -10%, rgba(57, 135, 229, 0.09), transparent 60%),
+    radial-gradient(900px 420px at 95% 0%, rgba(122, 92, 220, 0.06), transparent 55%);
+  background-attachment: fixed;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv02", "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(57, 135, 229, 0.35);
+}
+
+/* --- glass panels --- */
+.glass {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--color-line);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 14px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 10px 30px -18px rgba(0, 0, 0, 0.8);
+}
+
+/* Opaque variant for floating dialogs — keeps the glass edge treatment but
+   stays readable over busy content. */
+.glass-solid {
+  background: linear-gradient(180deg, rgba(30, 34, 44, 0.97), rgba(19, 22, 30, 0.97));
+  border: 1px solid var(--color-line);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 14px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 24px 60px -24px rgba(0, 0, 0, 0.9);
+}
+
+.glass-subtle {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-line-2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 12px;
+}
+
+/* --- data tables --- */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+.data-table thead th {
+  text-align: left;
+  font-weight: 500;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid var(--color-line);
+  white-space: nowrap;
+}
+.data-table tbody td {
+  padding: 0.6875rem 0.875rem;
+  border-bottom: 1px solid var(--color-line-2);
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
+.data-table tbody tr {
+  transition: background-color 120ms ease;
+}
+.data-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- form controls --- */
+.field {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--color-line);
+  border-radius: 9px;
+  color: var(--color-ink);
+  font-size: 0.8125rem;
+  padding: 0.4375rem 0.625rem;
+  outline: none;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+.field:hover {
+  background: rgba(255, 255, 255, 0.055);
+}
+.field:focus {
+  border-color: rgba(57, 135, 229, 0.55);
+  background: rgba(57, 135, 229, 0.07);
+}
+select.field option {
+  background: var(--color-raised);
+  color: var(--color-ink);
+}
+.field::placeholder {
+  color: var(--color-ink-3);
+}
+input.field[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+}
+
+/* --- buttons --- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 9px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.4375rem 0.875rem;
+  border: 1px solid var(--color-line);
+  color: var(--color-ink);
+  background: rgba(255, 255, 255, 0.05);
+  transition: background-color 130ms ease, border-color 130ms ease, transform 80ms ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
+}
+.btn-primary {
+  background: linear-gradient(180deg, #3f8de9, #2d6fc4);
+  border-color: rgba(97, 160, 235, 0.6);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: linear-gradient(180deg, #4d97ee, #3579cf);
+}
+.btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-ink-2);
+}
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-ink);
+}
+.btn-danger {
+  border-color: rgba(208, 59, 59, 0.4);
+  color: #f0908f;
+}
+.btn-danger:hover {
+  background: rgba(208, 59, 59, 0.12);
+}
+
+/* --- misc --- */
+.scroll-x {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+.page-in {
+  animation: page-in 260ms ease both;
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-in {
+    animation: none;
+  }
+}
+/* --- print (report export) --- */
+@media print {
+  :root {
+    --color-base: #ffffff;
+    --color-plane: #ffffff;
+    --color-panel: #ffffff;
+    --color-raised: #f4f4f2;
+    --color-ink: #111111;
+    --color-ink-2: #333333;
+    --color-ink-3: #666666;
+    --color-line: rgba(0, 0, 0, 0.18);
+    --color-line-2: rgba(0, 0, 0, 0.09);
+    --color-accent: #1c5cab;
+    --color-accent-soft: rgba(28, 92, 171, 0.08);
+  }
+  html {
+    color-scheme: light;
+  }
+  body {
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #111111 !important;
+  }
+  aside,
+  header,
+  .btn,
+  .no-print {
+    display: none !important;
+  }
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+  .glass,
+  .glass-subtle {
+    background: #ffffff !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    break-inside: avoid;
+  }
+  .page-in {
+    animation: none;
+  }
+}
+
+.skeleton {
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}

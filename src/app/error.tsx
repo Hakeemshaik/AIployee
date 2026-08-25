@@ -1,0 +1,28 @@
+"use client";
+
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  const needsSeed = error.message?.includes("No organization found");
+  return (
+    <div className="mx-auto mt-20 max-w-md">
+      <div className="glass p-6 text-center">
+        <p className="text-[0.9375rem] font-semibold text-ink">
+          {needsSeed ? "Database not seeded yet" : "Something went wrong"}
+        </p>
+        <p className="mt-2 text-[0.8125rem] leading-relaxed text-ink-2">
+          {needsSeed
+            ? "Run `npm run db:push` and `npm run db:seed` to load the demo organization, then reload."
+            : "An unexpected error occurred while loading this page. The details have been logged on the server."}
+        </p>
+        <button onClick={reset} className="btn btn-primary mt-4">
+          Try again
+        </button>
+      </div>
+    </div>
+  );
+}
