@@ -96,7 +96,16 @@ assign the debtors and the agent, and set it **Active**. To link agents to Jobix
 agent's `externalId` to the Jobix agent id (`npx prisma studio` → AIAgent) and pass it as
 `externalAgentId` on the webhook.
 
-**4. Point Jobix at the webhook**
+**4. Build the dialling list for Jobix**
+
+Open the campaign → **Build Jobix list**. It produces the 72-column import table Jobix
+expects, already cleaned (E.164 phone numbers, whole-rand amounts) and filtered to
+callable accounts only — opt-outs, do-not-contact flags, settled balances, open disputes
+and live escalations are held back and reported. **Copy for Jobix**, then paste into the
+Jobix dashboard → Database → paste box. (Or **Download CSV**, or call
+`GET /api/jobix-export?campaignId=…` from a script.)
+
+**5. Point Jobix at the webhook**
 
 Configure Jobix (webhook/automation, or a small relay script if your plan only exposes
 exports) to send each finished call to:
@@ -110,7 +119,7 @@ Debtor matching works on `accountNumber` **or** `phone` — Jobix always knows t
 dialled, so `phone` alone is enough. The endpoint is idempotent on `externalCallId`
 (re-sending a call is safe) and rate limited at 120 req/min per key.
 
-**5. Confirm the loop**
+**6. Confirm the loop**
 
 Send one test call (see the payload below or Settings → Voice platform integration) and
 check: the call appears under Calls with an AI analysis → a promise appears under Promises

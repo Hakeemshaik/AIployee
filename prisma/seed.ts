@@ -2,7 +2,12 @@
  * CLI wrapper for the demo dataset.
  * Run: npm run db:seed
  * The same data can be loaded on a fresh deployment via the /setup page.
+ *
+ * dotenv/config is imported first (side-effect import) so DATABASE_URL is in
+ * the environment before any module reads it — the CLI runs outside Next.js,
+ * which normally loads .env itself.
  */
+import "dotenv/config";
 import { db } from "../src/lib/db";
 import { seedDemoData } from "../src/services/demo-seed";
 

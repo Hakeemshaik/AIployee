@@ -8,6 +8,7 @@ import { listDebtors } from "@/services/debtors";
 import { BackLink, Badge, GlassCard, Meta, PageHeader, StatCard } from "@/components/ui";
 import { CampaignActivityChart, HBarChart, PaymentsBarChart } from "@/components/charts";
 import { StatusControls } from "./StatusControls";
+import { JobixExport } from "./JobixExport";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Campaign" };
@@ -33,6 +34,7 @@ export default async function CampaignDetailPage({
         actions={
           <div className="flex items-center gap-3">
             <Badge value={campaign.status} label={label(campaign.status)} />
+            <JobixExport campaignId={campaign.id} />
             <StatusControls campaignId={campaign.id} status={campaign.status} />
           </div>
         }
