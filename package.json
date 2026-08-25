@@ -13,9 +13,9 @@
     "test": "vitest run",
     "key:create": "tsx scripts/create-api-key.ts",
     "postinstall": "prisma generate",
-    "vercel-build": "prisma generate && prisma migrate deploy && next build",
+    "vercel-build": "prisma generate && node scripts/migrate-deploy.mjs && next build",
     "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy"
+    "db:deploy": "node scripts/migrate-deploy.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",
