@@ -9,7 +9,7 @@
  * Invoked by `npm run db:seed` locally and by the first-run /setup page on a
  * fresh deployment.
  */
-import { createHash } from "crypto";
+import { createHash, randomBytes } from "crypto";
 import { db } from "@/lib/db";
 import { mockProvider } from "@/services/ai/mock";
 import { buildCollectionSnapshot } from "@/services/insights";
@@ -229,7 +229,10 @@ export async function seedDemoData(): Promise<DemoSeedResult> {
 
   await db.complianceSettings.create({ data: { organizationId: orgId } });
 
-  const demoKey = "aip_demo_k3y_meridian_voice_2026";
+  // Generated, never hardcoded. A literal here ships a working credential in
+  // the source tree, and every deployment seeded from it would accept webhook
+  // posts from anyone who read the repository.
+  const demoKey = `aip_demo_${randomBytes(18).toString("base64url")}`;
   await db.apiKey.create({
     data: {
       organizationId: orgId,

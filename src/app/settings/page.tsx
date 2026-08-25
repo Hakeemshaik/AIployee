@@ -5,6 +5,7 @@ import { formatDateTime } from "@/lib/format";
 import { getSettings } from "@/services/settings";
 import { Badge, GlassCard, Meta, PageHeader } from "@/components/ui";
 import { ComplianceForm } from "./ComplianceForm";
+import { ResetDataCard } from "./ResetDataCard";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Settings" };
@@ -166,6 +167,13 @@ export default async function SettingsPage() {
           </p>
         </GlassCard>
       </div>
+
+      {/* Destructive, so it sits last and behind a typed confirmation. */}
+      {ctx.userRole === "admin" && (
+        <div className="mt-4">
+          <ResetDataCard />
+        </div>
+      )}
     </div>
   );
 }

@@ -392,8 +392,9 @@ analysis → promise/escalation creation → debtor state + risk update → even
 The response returns the extraction result (`outcome`, `promiseId`, `escalationId`,
 `nextAction`).
 
-The demo seed prints a working API key (`aip_demo_k3y_meridian_voice_2026`). Keys are
-stored as SHA-256 hashes; the organization is always derived from the key, never from the
+The demo seed prints a freshly generated API key once — no key value is committed to this
+repository, because a literal one would be a working credential on every deployment seeded
+from it. Keys are stored as SHA-256 hashes; the organization is always derived from the key, never from the
 payload. The endpoint is rate limited per key (120 requests/minute, in-memory — swap for
 Redis when running multiple instances).
 
@@ -491,6 +492,46 @@ signing key cannot be read, nobody is signed in.
 
 Sign out is server-side — the cookie is httpOnly, so it can only be cleared by the server.
 The control sits in the top bar in both modes ("Sign out" / "Leave demo").
+
+## Moving from the demo book to a real one
+
+`/setup` can seed a complete fictional organization so the platform can be seen working. When
+it is time for real data, **Settings → Clear demo data** (admin only) removes it:
+
+- **Deleted** — debtors, debt accounts, campaigns, campaign contacts, redial batches, voice
+  agents, calls, call analyses, promises, payments, escalations, reports, insights, platform
+  events, provider events, the audit history of demo activity, every API key, and every user
+  account other than your own.
+- **Kept** — your sign-in, compliance settings, integration settings, and anything ingested
+  from the voice provider (the seed never creates that, so it is real by definition). A
+  checkbox removes the ingested data too, for a from-scratch re-ingest.
+- **Guarded** — a preview lists exact row counts on both sides before anything runs, and the
+  organization's name must be typed character for character. The confirmation is re-checked
+  server-side. The acting admin is never deleted: wiping the users table would lock the
+  operator out of the deployment they just cleaned.
+- Deletion is explicit and child-first rather than relying on cascade order, so a schema
+  change cannot silently start orphaning rows.
+
+Afterwards the organization can be renamed in the same step, one placeholder voice agent is
+left behind so campaigns have something to point at, and the reset becomes the first entry in
+the audit log of the real book. Import the book at **Debtors → Import** and issue a fresh
+webhook key in Settings — clearing revokes the old ones, so anything posting to the webhook
+stops until you do.
+
+The same thing from a shell, dry-run by default:
+
+```bash
+npm run data:clear-demo                     # prints what would go, deletes nothing
+npm run data:clear-demo -- --confirm 'Meridian Recoveries' --rename 'Your Company'
+```
+
+Its invariants are covered by integration tests against a real database. They truncate what
+they run against, so they are opt-in and refuse any `DATABASE_URL` that is not obviously
+disposable:
+
+```bash
+DATABASE_URL=$SCRATCH TEST_DATABASE_RESET=1 npm test
+```
 
 ## Compliance guardrails
 
