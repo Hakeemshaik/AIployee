@@ -86,6 +86,7 @@ export function LoginCard() {
     const form = new FormData(e.currentTarget);
     const email = String(form.get("email") ?? "").trim();
     const password = String(form.get("password") ?? "");
+    const name = String(form.get("name") ?? "").trim();
     if (!email || !password) {
       setError("Enter your email and password.");
       return;
@@ -93,7 +94,7 @@ export function LoginCard() {
     setBusy(mode);
     setError(null);
     try {
-      const to = await post({ mode, email, password });
+      const to = await post({ mode, email, password, ...(name ? { name } : {}) });
       enter(router, to);
     } catch (err) {
       setError(err instanceof Error ? err.message : "That did not work.");
@@ -120,8 +121,9 @@ export function LoginCard() {
             No password is set on this deployment
           </p>
           <p className="mt-1 pl-[1.375rem] text-[0.75rem] leading-relaxed text-ink-2">
-            Set one now to secure {info.organizationName ?? "it"}. Until you do, this page will offer
-            the same thing to anyone who finds the URL.
+            Set one now to secure {info.organizationName ?? "it"}. Use your own email — an admin
+            account is created if it does not exist yet. Until you do this, the same offer is open to
+            anyone who finds the URL.
           </p>
         </div>
       )}
@@ -148,19 +150,28 @@ export function LoginCard() {
             Email
           </label>
           <input
-            // Keyed so the field actually remounts when the claim hint arrives
-            // or the mode changes — defaultValue alone is ignored after mount.
-            key={claiming ? `claim:${info?.suggestedEmail ?? ""}` : "signin"}
             id="email"
             name="email"
             type="email"
             autoComplete="off"
             className="field w-full"
-            // Pre-filled only in the claim window, where the address is the
-            // deployment's existing admin and is stated in the notice above.
-            defaultValue={claiming ? (info?.suggestedEmail ?? "") : ""}
+            placeholder={claiming ? "you@company.co.za" : undefined}
           />
+          {claiming && info?.suggestedEmail && (
+            <p className="mt-1 text-[0.6875rem] leading-relaxed text-ink-3">
+              Any address works. To take over the existing account instead, use{" "}
+              <span className="num text-ink-2">{info.suggestedEmail}</span>.
+            </p>
+          )}
         </div>
+        {claiming && (
+          <div>
+            <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="name">
+              Your name <span className="font-normal text-ink-3">(optional)</span>
+            </label>
+            <input id="name" name="name" autoComplete="off" className="field w-full" />
+          </div>
+        )}
         <div>
           <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="password">
             {claiming ? "Choose a password" : "Password"}

@@ -12,6 +12,7 @@
     "db:reset": "prisma db push --force-reset && tsx prisma/seed.ts",
     "test": "vitest run",
     "key:create": "tsx scripts/create-api-key.ts",
+    "password:set": "tsx scripts/set-password.ts",
     "postinstall": "prisma generate",
     "vercel-build": "prisma generate && node scripts/migrate-deploy.mjs && next build",
     "db:migrate": "prisma migrate dev",

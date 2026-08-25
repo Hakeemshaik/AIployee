@@ -26,6 +26,7 @@ const schema = z.discriminatedUnion("mode", [
     mode: z.literal("claim"),
     email: z.string().min(3).max(320),
     password: z.string().min(1).max(200),
+    name: z.string().max(120).optional(),
   }),
 ]);
 
@@ -72,7 +73,7 @@ export async function POST(request: Request) {
     }
 
     if (body.mode === "claim") {
-      const result = await claimDeployment(body.email, body.password);
+      const result = await claimDeployment(body.email, body.password, body.name);
       if (!result.ok) {
         return NextResponse.json(
           { error: result.reason, message: result.message },
@@ -80,7 +81,7 @@ export async function POST(request: Request) {
         );
       }
       await startUserSession(result.userId);
-      return NextResponse.json({ mode: "claim", redirectTo: "/" });
+      return NextResponse.json({ mode: "claim", redirectTo: "/", created: result.created });
     }
 
     const result = await signIn(body.email, body.password, callerKey(request));

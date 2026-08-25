@@ -97,7 +97,7 @@ const PLACEHOLDER_HASH =
 export type ClaimState = {
   /** True when the deployment has users but none can sign in yet. */
   unclaimed: boolean;
-  /** The admin email to claim, when there is exactly one obvious candidate. */
+  /** An existing account address, offered only as a convenience. */
   suggestedEmail: string | null;
   organizationName: string | null;
 };
@@ -127,11 +127,22 @@ export async function claimState(): Promise<ClaimState> {
 }
 
 export type ClaimResult =
-  | { ok: true; userId: string }
-  | { ok: false; reason: "closed" | "unknown_email" | "weak_password"; message: string };
+  | { ok: true; userId: string; created: boolean }
+  | { ok: false; reason: "closed" | "no_organization" | "weak_password"; message: string };
 
-/** Set the first password on a deployment that has none, and sign that user in. */
-export async function claimDeployment(email: string, password: string): Promise<ClaimResult> {
+/**
+ * Set the first password on a deployment that has none, and sign that person in.
+ *
+ * The email does NOT have to match an existing row. A seeded database is full of
+ * fictional demo staff, and requiring one of those addresses would mean the
+ * owner signs in as a made-up person — so an unrecognised email creates a real
+ * admin account on the existing organization instead of refusing.
+ */
+export async function claimDeployment(
+  email: string,
+  password: string,
+  name?: string,
+): Promise<ClaimResult> {
   const state = await claimState();
   if (!state.unclaimed) {
     return {
@@ -143,21 +154,34 @@ export async function claimDeployment(email: string, password: string): Promise<
   const problem = passwordProblem(password);
   if (problem) return { ok: false, reason: "weak_password", message: problem };
 
-  const user = await db.user.findFirst({ where: { email: email.trim().toLowerCase() } });
-  if (!user) {
-    // Naming the existing admin address is not a leak: the claim window is only
-    // open on a deployment nobody has secured yet, and it is shown in the UI.
+  const organization = await db.organization.findFirst({ orderBy: { createdAt: "asc" } });
+  if (!organization) {
     return {
       ok: false,
-      reason: "unknown_email",
-      message: "That email is not a user on this deployment.",
+      reason: "no_organization",
+      message: "This deployment has not been set up yet. Open /setup first.",
     };
   }
 
-  await db.user.update({
-    where: { id: user.id },
-    data: { passwordHash: await hashPassword(password), role: "admin" },
-  });
+  const normalisedEmail = email.trim().toLowerCase();
+  const passwordHash = await hashPassword(password);
+  const existing = await db.user.findFirst({ where: { email: normalisedEmail } });
+
+  const user = existing
+    ? await db.user.update({
+        where: { id: existing.id },
+        data: { passwordHash, role: "admin" },
+      })
+    : await db.user.create({
+        data: {
+          organizationId: organization.id,
+          name: name?.trim() || deriveName(normalisedEmail),
+          email: normalisedEmail,
+          role: "admin",
+          passwordHash,
+        },
+      });
+
   await audit({
     organizationId: user.organizationId,
     actorType: "user",
@@ -165,9 +189,19 @@ export async function claimDeployment(email: string, password: string): Promise<
     action: "deployment.claimed",
     entityType: "user",
     entityId: user.id,
-    detail: { email: user.email },
+    detail: { email: user.email, createdAccount: !existing },
   });
-  return { ok: true, userId: user.id };
+  return { ok: true, userId: user.id, created: !existing };
+}
+
+/** A reasonable display name from an email, until the person edits it. */
+function deriveName(email: string): string {
+  const local = email.split("@")[0] ?? "";
+  const words = local
+    .split(/[._\-+]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1));
+  return words.join(" ") || "Administrator";
 }
 
 /** Change a signed-in user's own password. */

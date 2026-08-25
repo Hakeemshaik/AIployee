@@ -473,7 +473,14 @@ signing key cannot be read, nobody is signed in.
 - **First-run claim.** A database seeded outside `/setup` has users but no passwords. Rather
   than leave it unreachable, `/login` offers to set the first password — and that window
   closes permanently the moment any password exists. `/setup` now requires a password up
-  front, so a new deployment never opens the window at all.
+  front, so a new deployment never opens the window at all. Use **your own** email: a seeded
+  database contains only fictional demo staff, so an unrecognised address creates a real
+  admin account rather than being refused.
+- **Locked out?** There is no password-reset email, so recovery is a shell command:
+  `npm run password:set -- --list` shows who exists and who can sign in;
+  `npm run password:set -- you@company.co.za 'a new password'` sets one (creating an admin if
+  that address is new). It calls the application's own hashing code, so the stored format
+  cannot drift from what sign-in expects.
 - **Demo sessions see fixtures only.** `getContext()` refuses a guest session outright, so
   every page and endpoint that resolves a real organization is closed to them, and guest
   navigation is limited to the one screen that runs on fixtures.
