@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { getSession } from "@/lib/session";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { Topbar } from "@/components/shell/Topbar";
 
@@ -12,12 +13,28 @@ export const metadata: Metadata = {
     "Command centre for AI-driven debt collection: campaigns, calls, promises to pay, payments, and AI-generated insight.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // With no session the only reachable pages are sign-in and first-run setup,
+  // so the shell is left off rather than offering navigation that redirects.
+  const session = await getSession().catch(() => null);
+
+  if (!session) {
+    return (
+      <html lang="en">
+        <body className="min-h-screen">
+          <main className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col justify-center px-4 py-10 sm:px-6">
+            {children}
+          </main>
+        </body>
+      </html>
+    );
+  }
+
   return (
     <html lang="en">
       <body className="min-h-screen">
         <div className="flex min-h-screen">
-          <Sidebar />
+          <Sidebar guest={session.kind === "guest"} />
           <div className="flex min-w-0 flex-1 flex-col">
             <Topbar />
             <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 pb-16 pt-6 sm:px-6 lg:px-8">

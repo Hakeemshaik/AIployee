@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { authFailure } from "@/lib/api-errors";
 import { z } from "zod";
-import { getContext, requireRole } from "@/lib/auth";
+import { apiContext, requireRole } from "@/lib/auth";
 import { blockGuests, GuestBlockedError } from "@/lib/session";
 import { JobixError } from "@/services/jobix/client";
 import { getIngestProgress, runIngestion } from "@/services/jobix/ingest";
@@ -14,7 +15,7 @@ const schema = z.object({
 // GET /api/ingest — progress of the latest run.
 export async function GET() {
   try {
-    const ctx = await getContext();
+    const ctx = await apiContext();
     const progress = await getIngestProgress(ctx.organizationId);
     return NextResponse.json(progress ?? { status: "idle" });
   } catch {
@@ -26,7 +27,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     await blockGuests("run ingestion");
-    const ctx = await getContext();
+    const ctx = await apiContext();
     requireRole(ctx, ["admin", "manager"], "run ingestion");
     const parsed = schema.safeParse(await request.json().catch(() => ({})));
     if (!parsed.success) {
@@ -40,6 +41,8 @@ export async function POST(request: Request) {
     });
     return NextResponse.json(progress, { status: 201 });
   } catch (err) {
+    const denied = authFailure(err);
+    if (denied) return denied;
     if (err instanceof GuestBlockedError) {
       return NextResponse.json({ error: "demo_mode", message: err.message }, { status: 403 });
     }

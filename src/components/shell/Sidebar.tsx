@@ -35,11 +35,14 @@ const NAV = [
   { href: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
-function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+const GUEST_NAV: readonly string[] = ["/analytics"];
+
+function NavLinks({ onNavigate, guest }: { onNavigate?: () => void; guest: boolean }) {
   const pathname = usePathname();
+  const items = guest ? NAV.filter((item) => GUEST_NAV.includes(item.href)) : NAV;
   return (
     <nav className="flex flex-col gap-0.5">
-      {NAV.map(({ href, label, icon: Icon }) => {
+      {items.map(({ href, label, icon: Icon }) => {
         const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
         return (
           <Link
@@ -81,7 +84,7 @@ function Brand() {
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ guest = false }: { guest?: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -89,13 +92,21 @@ export function Sidebar() {
       <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col gap-6 border-r border-line bg-plane/70 py-5 backdrop-blur-xl lg:flex">
         <Brand />
         <div className="flex-1 overflow-y-auto px-2">
-          <NavLinks />
+          <NavLinks guest={guest} />
         </div>
-        <p className="px-5 text-[0.6875rem] leading-relaxed text-ink-3">
-          AI voice collections,
-          <br />
-          analysed end-to-end.
-        </p>
+        {guest ? (
+          <p className="px-5 text-[0.6875rem] leading-relaxed text-ink-3">
+            Demo session — the other
+            <br />
+            sections need a sign-in.
+          </p>
+        ) : (
+          <p className="px-5 text-[0.6875rem] leading-relaxed text-ink-3">
+            AI voice collections,
+            <br />
+            analysed end-to-end.
+          </p>
+        )}
       </aside>
 
       {/* Mobile top bar trigger */}
@@ -121,7 +132,7 @@ export function Sidebar() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto px-2">
-              <NavLinks onNavigate={() => setOpen(false)} />
+              <NavLinks guest={guest} onNavigate={() => setOpen(false)} />
             </div>
           </div>
         </div>

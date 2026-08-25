@@ -29,11 +29,12 @@ export function SetupForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mode,
+          adminEmail: form.get("adminEmail") || undefined,
+          adminPassword: form.get("adminPassword") ?? "",
           ...(mode === "clean"
             ? {
                 orgName: form.get("orgName") || undefined,
                 adminName: form.get("adminName") || undefined,
-                adminEmail: form.get("adminEmail") || undefined,
               }
             : {}),
         }),
@@ -143,7 +144,7 @@ export function SetupForm() {
       </div>
 
       {mode === "clean" && (
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="orgName">Organization name</label>
             <input id="orgName" name="orgName" className="field w-full" placeholder="Your company name" />
@@ -152,12 +153,44 @@ export function SetupForm() {
             <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="adminName">Your name</label>
             <input id="adminName" name="adminName" className="field w-full" placeholder="Hakeem Shaik" />
           </div>
-          <div>
-            <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="adminEmail">Your email</label>
-            <input id="adminEmail" name="adminEmail" type="email" className="field w-full" placeholder="you@company.co.za" />
-          </div>
         </div>
       )}
+
+      {/* Admin sign-in. Set here so the deployment is never left open. */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="adminEmail">
+            Your email
+          </label>
+          <input
+            id="adminEmail"
+            name="adminEmail"
+            type="email"
+            required
+            autoComplete="username"
+            className="field w-full"
+            placeholder="you@company.co.za"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="adminPassword">
+            Password
+          </label>
+          <input
+            id="adminPassword"
+            name="adminPassword"
+            type="password"
+            required
+            minLength={12}
+            autoComplete="new-password"
+            className="field w-full"
+          />
+          <p className="mt-1 text-[0.6875rem] text-ink-3">
+            At least 12 characters. This is how you sign in — without it the deployment would be
+            open to anyone with the URL.
+          </p>
+        </div>
+      </div>
 
       {error && <p className="text-[0.78125rem] text-[#ec8181]">{error}</p>}
       <button type="submit" disabled={busy} className="btn btn-primary">

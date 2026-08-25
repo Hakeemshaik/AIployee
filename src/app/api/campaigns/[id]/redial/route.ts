@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { authFailure } from "@/lib/api-errors";
 import { z } from "zod";
-import { getContext, requireRole } from "@/lib/auth";
+import { apiContext, requireRole } from "@/lib/auth";
 import { REDIAL_FILTERS } from "@/lib/domain";
 import { createRedialBatch, previewRedial } from "@/services/redial";
 import { ProviderError } from "@/services/voice";
@@ -15,7 +16,7 @@ const schema = z.object({
 // POST /api/campaigns/:id/redial — create a filtered redial batch.
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const ctx = await getContext();
+    const ctx = await apiContext();
     requireRole(ctx, ["admin", "manager"], "redial contacts");
     const { id } = await params;
     const parsed = schema.safeParse(await request.json());
@@ -42,6 +43,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     });
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
+    const denied = authFailure(err);
+    if (denied) return denied;
     if (err instanceof ProviderError) {
       return NextResponse.json(
         { error: err.code, message: err.message, detail: err.detail },

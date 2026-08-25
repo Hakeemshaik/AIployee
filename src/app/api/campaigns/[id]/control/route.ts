@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { authFailure } from "@/lib/api-errors";
 import { z } from "zod";
-import { getContext, requireRole } from "@/lib/auth";
+import { apiContext, requireRole } from "@/lib/auth";
 import { pauseCampaign, startCampaign, stopCampaign } from "@/services/campaign-control";
 import { ProviderError } from "@/services/voice";
 
@@ -9,7 +10,7 @@ const schema = z.object({ action: z.enum(["start", "pause", "stop"]) });
 // POST /api/campaigns/:id/control — drive the voice provider.
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const ctx = await getContext();
+    const ctx = await apiContext();
     requireRole(ctx, ["admin", "manager"], "control campaigns");
     const { id } = await params;
     const parsed = schema.safeParse(await request.json());
@@ -27,6 +28,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         : await stopCampaign(ctx.organizationId, ctx.userId, id);
     return NextResponse.json(result);
   } catch (err) {
+    const denied = authFailure(err);
+    if (denied) return denied;
     if (err instanceof ProviderError) {
       // The operator sees the real integration error, never a fake success.
       return NextResponse.json(

@@ -443,12 +443,43 @@ are pinned by tests in `src/lib/format.test.ts`, including the SAST-midnight rol
 - Every entity carries an `organizationId`; every service query is organization-scoped.
   Cross-tenant references (agent on a campaign, debtor on a payment, …) are re-verified
   against the caller's organization before writes.
-- `src/lib/auth.ts` is the single auth entry point — currently a demo-session stub built
-  to swap to NextAuth/JWT without touching the rest of the app.
+- `src/lib/auth.ts` is the single auth entry point: every `organizationId` in the
+  application originates there, so tenancy has one place it can be got wrong. Pages call
+  `getContext()`, which redirects; API routes call `apiContext()`, which throws so a caller
+  gets 401 or 403 instead of a 500 naming Next's internal redirect error.
 - Server-side zod validation on every mutating endpoint; secrets live in environment
   variables only; the Anthropic key and voice API keys never reach the client bundle.
 - Always-on audit log (actor, action, entity — no transcripts/PII in details).
 - Voice agent prompts are referenced (`promptRef`), never stored or displayed.
+
+### Sessions and sign-in
+
+One signed httpOnly cookie carries either a demo session or a real user session. It is
+`base64url(payload).hmac-sha256`, so the holder can read their own user id and expiry but
+cannot alter either — a demo visitor cannot rewrite the payload to claim an account, and
+nobody can extend their own expiry. Verification is constant-time and fails closed: if the
+signing key cannot be read, nobody is signed in.
+
+- **Signing key** — `AUTH_SECRET` when set. When it is not, a key is generated once and
+  stored in `ServerSecret`, because the alternatives are a constant key (forgeable by anyone
+  reading the source) or refusing to start (locking the owner out of their own deployment).
+- **Passwords** — scrypt from `node:crypto` (N=16384, r=8, p=1, 16-byte salt), parameters
+  stored in the hash so they can be raised later without invalidating existing passwords.
+  Minimum 12 characters.
+- **Sign-in failures are uniform.** A wrong password, an unknown email and a user with no
+  password set all return the same message, and an unknown email is still compared against a
+  real hash so the timing does not reveal which accounts exist. Attempts are rate limited per
+  account and per caller.
+- **First-run claim.** A database seeded outside `/setup` has users but no passwords. Rather
+  than leave it unreachable, `/login` offers to set the first password — and that window
+  closes permanently the moment any password exists. `/setup` now requires a password up
+  front, so a new deployment never opens the window at all.
+- **Demo sessions see fixtures only.** `getContext()` refuses a guest session outright, so
+  every page and endpoint that resolves a real organization is closed to them, and guest
+  navigation is limited to the one screen that runs on fixtures.
+
+Sign out is server-side — the cookie is httpOnly, so it can only be cleared by the server.
+The control sits in the top bar in both modes ("Sign out" / "Leave demo").
 
 ## Compliance guardrails
 

@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
-import { getContext } from "@/lib/auth";
+import { authFailure } from "@/lib/api-errors";
+import { apiContext } from "@/lib/auth";
 import { buildJobixExport } from "@/services/jobix-export";
 
 // GET /api/jobix-export?campaignId=&format=csv|json
 // Builds the paste-ready Jobix dialling list for the current organization.
 export async function GET(request: Request) {
   try {
-    const ctx = await getContext();
+    const ctx = await apiContext();
     const params = new URL(request.url).searchParams;
     const result = await buildJobixExport(ctx.organizationId, {
       campaignId: params.get("campaignId") ?? undefined,
@@ -25,6 +26,8 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
+    const denied = authFailure(err);
+    if (denied) return denied;
     const message = err instanceof Error ? err.message : "internal_error";
     const status = message.includes("not found") ? 404 : 500;
     if (status === 500) console.error("[jobix-export] failed:", err);

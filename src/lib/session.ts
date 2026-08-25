@@ -1,33 +1,102 @@
+import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
+import { db } from "@/lib/db";
+import {
+  decodeSession,
+  encodeSession,
+  GUEST_TTL_MS,
+  USER_TTL_MS,
+  type Session,
+} from "./session-token";
 
 // ---------------------------------------------------------------------------
-// Guest (demo) session.
+// Sessions.
 //
-// A guest sees the fixture dataset and cannot trigger a call. The flag lives in
-// an httpOnly cookie so the client cannot grant itself demo — or escape it —
-// and every calling path re-checks it server-side rather than trusting the UI.
+// One signed httpOnly cookie carries either a demo (guest) session or a real
+// user session. The client cannot read it, cannot forge one, and cannot promote
+// a guest session into a user session — the signature covers the whole payload,
+// and every privileged path re-checks server-side rather than trusting the UI.
+//
+// A guest sees fixture data only. That is enforced in getContext(), not here:
+// any page that resolves a real organization refuses a guest session outright.
 // ---------------------------------------------------------------------------
 
-const GUEST_COOKIE = "aip_guest";
+const SESSION_COOKIE = "aip_session";
+const SECRET_NAME = "session_signing_key";
 
-export async function isGuest(): Promise<boolean> {
-  const store = await cookies();
-  return store.get(GUEST_COOKIE)?.value === "1";
+let cachedSecret: string | null = null;
+
+/**
+ * The key the session cookie is signed with.
+ *
+ * AUTH_SECRET when configured. Otherwise one is generated and stored once, so a
+ * deployment that never set the variable still holds sessions — the
+ * alternatives are a constant key (forgeable by anyone reading the source) or
+ * refusing to run (locking the owner out of their own deployment).
+ */
+export async function sessionSecret(): Promise<string> {
+  const configured = process.env.AUTH_SECRET;
+  if (configured && configured.length >= 16) return configured;
+  if (cachedSecret) return cachedSecret;
+
+  const existing = await db.serverSecret.findUnique({ where: { name: SECRET_NAME } });
+  if (existing) {
+    cachedSecret = existing.value;
+    return existing.value;
+  }
+  const generated = randomBytes(32).toString("base64url");
+  try {
+    const created = await db.serverSecret.create({ data: { name: SECRET_NAME, value: generated } });
+    cachedSecret = created.value;
+    return created.value;
+  } catch {
+    // Another instance created it first — read theirs, so both sign alike.
+    const raced = await db.serverSecret.findUnique({ where: { name: SECRET_NAME } });
+    if (!raced) throw new Error("Could not establish a session signing key.");
+    cachedSecret = raced.value;
+    return raced.value;
+  }
 }
 
-export async function setGuest(enabled: boolean): Promise<void> {
+export async function getSession(): Promise<Session | null> {
   const store = await cookies();
-  if (enabled) {
-    store.set(GUEST_COOKIE, "1", {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 8,
-    });
-  } else {
-    store.delete(GUEST_COOKIE);
+  const token = store.get(SESSION_COOKIE)?.value;
+  if (!token) return null;
+  try {
+    return decodeSession(token, await sessionSecret());
+  } catch {
+    // The signing key is unavailable (database down) — no session is provable,
+    // so nobody is signed in. Failing closed is the only safe direction.
+    return null;
   }
+}
+
+async function write(session: Session): Promise<void> {
+  const store = await cookies();
+  store.set(SESSION_COOKIE, encodeSession(session, await sessionSecret()), {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    secure: process.env.NODE_ENV === "production",
+    expires: new Date(session.expiresAt),
+  });
+}
+
+export async function startGuestSession(): Promise<void> {
+  await write({ kind: "guest", expiresAt: Date.now() + GUEST_TTL_MS });
+}
+
+export async function startUserSession(userId: string): Promise<void> {
+  await write({ kind: "user", userId, expiresAt: Date.now() + USER_TTL_MS });
+}
+
+export async function endSession(): Promise<void> {
+  const store = await cookies();
+  store.delete(SESSION_COOKIE);
+}
+
+export async function isGuest(): Promise<boolean> {
+  return (await getSession())?.kind === "guest";
 }
 
 export class GuestBlockedError extends Error {
@@ -43,3 +112,5 @@ export class GuestBlockedError extends Error {
 export async function blockGuests(action?: string): Promise<void> {
   if (await isGuest()) throw new GuestBlockedError(action);
 }
+
+export type { Session };

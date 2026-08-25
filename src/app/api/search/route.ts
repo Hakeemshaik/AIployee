@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getContext } from "@/lib/auth";
+import { authFailure } from "@/lib/api-errors";
+import { apiContext } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { label } from "@/lib/domain";
 import { money } from "@/lib/format";
@@ -7,7 +8,7 @@ import { money } from "@/lib/format";
 // GET /api/search?q= — org-scoped quick search for the command palette.
 export async function GET(request: Request) {
   try {
-    const ctx = await getContext();
+    const ctx = await apiContext();
     const q = new URL(request.url).searchParams.get("q")?.trim() ?? "";
     if (q.length < 2) return NextResponse.json({ results: [] });
 
@@ -59,6 +60,8 @@ export async function GET(request: Request) {
     ];
     return NextResponse.json({ results });
   } catch (err) {
+    const denied = authFailure(err);
+    if (denied) return denied;
     console.error("[search] failed:", err);
     return NextResponse.json({ results: [] }, { status: 200 });
   }

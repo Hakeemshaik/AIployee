@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { seedDemoData } from "@/services/demo-seed";
+import { hashPassword, passwordProblem } from "@/lib/password";
 
 // ---------------------------------------------------------------------------
 // First-run bootstrap — powers the /setup page on a fresh deployment.
@@ -26,6 +27,8 @@ export const setupSchema = z.object({
   orgName: z.string().min(2).max(120).default("My Collections Organization"),
   adminName: z.string().min(2).max(120).default("Admin"),
   adminEmail: z.string().email().default("admin@example.com"),
+  // Set here so a new deployment is never left with users who cannot sign in.
+  adminPassword: z.string().min(1).max(200),
 });
 
 export type SetupResult = {
@@ -52,9 +55,25 @@ export async function runSetup(input: z.infer<typeof setupSchema>): Promise<Setu
     throw new SetupLockedError("Setup has already been completed for this deployment.");
   }
 
+  const weak = passwordProblem(data.adminPassword);
+  if (weak) throw new WeakPasswordError(weak);
+  const passwordHash = await hashPassword(data.adminPassword);
+
   if (data.mode === "demo") {
     const { demoKey } = await seedDemoData();
     const org = await db.organization.findFirstOrThrow();
+    // The seed creates users directly; the first one becomes the admin who can
+    // actually sign in.
+    const seededAdmin = await db.user.findFirst({
+      where: { organizationId: org.id },
+      orderBy: { createdAt: "asc" },
+    });
+    if (seededAdmin) {
+      await db.user.update({
+        where: { id: seededAdmin.id },
+        data: { passwordHash, role: "admin", email: data.adminEmail.trim().toLowerCase() },
+      });
+    }
     // A production key alongside the documented demo key.
     const key = newApiKey();
     await db.apiKey.create({
@@ -81,7 +100,13 @@ export async function runSetup(input: z.infer<typeof setupSchema>): Promise<Setu
     },
   });
   await db.user.create({
-    data: { organizationId: org.id, name: data.adminName, email: data.adminEmail, role: "admin" },
+    data: {
+      organizationId: org.id,
+      name: data.adminName,
+      email: data.adminEmail.trim().toLowerCase(),
+      role: "admin",
+      passwordHash,
+    },
   });
   await db.complianceSettings.create({ data: { organizationId: org.id } });
   await db.aIAgent.create({
@@ -114,3 +139,4 @@ export async function runSetup(input: z.infer<typeof setupSchema>): Promise<Setu
 }
 
 export class SetupLockedError extends Error {}
+export class WeakPasswordError extends Error {}

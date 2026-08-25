@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { authFailure } from "@/lib/api-errors";
 import { z } from "zod";
-import { getContext, requireRole } from "@/lib/auth";
-import { GuestBlockedError, isGuest } from "@/lib/session";
+import { apiContext, requireRole } from "@/lib/auth";
+import { getSession, GuestBlockedError, isGuest } from "@/lib/session";
 import { JobixError } from "@/services/jobix/client";
 import { checkCallingWindow, dispatchBatch, prepareBatch } from "@/services/jobix/calling";
 
@@ -13,11 +14,17 @@ const schema = z.object({
 });
 
 // GET /api/calling — window status, for disabling controls before a click.
+//
+// Needs a session: guests are served (their UI shows the disabled state) but an
+// anonymous caller has no business learning how this server is configured.
 export async function GET() {
-  const window = checkCallingWindow();
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "not_authenticated" }, { status: 401 });
+  }
   return NextResponse.json({
-    window,
-    guest: await isGuest(),
+    window: checkCallingWindow(),
+    guest: session.kind === "guest",
     callingEnabled: process.env.JOBIX_CALLING_ENABLED === "true",
     triggerConfigured: !!process.env.JOBIX_TRIGGER_PATH,
   });
@@ -27,7 +34,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     if (await isGuest()) throw new GuestBlockedError();
-    const ctx = await getContext();
+    const ctx = await apiContext();
     requireRole(ctx, ["admin", "manager"], "start calls");
 
     const parsed = schema.safeParse(await request.json());
@@ -50,6 +57,8 @@ export async function POST(request: Request) {
     });
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
+    const denied = authFailure(err);
+    if (denied) return denied;
     if (err instanceof GuestBlockedError) {
       return NextResponse.json({ error: "demo_mode", message: err.message }, { status: 403 });
     }

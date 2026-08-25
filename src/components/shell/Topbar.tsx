@@ -1,32 +1,37 @@
-import { db } from "@/lib/db";
-import { isGuest } from "@/lib/session";
 import { Sparkles } from "lucide-react";
+import { db } from "@/lib/db";
+import { getSession } from "@/lib/session";
 import { CommandPalette } from "./CommandPalette";
+import { SignOutButton } from "./SignOutButton";
 
 export async function Topbar() {
+  const session = await getSession();
+  const guest = session?.kind === "guest";
+
   let orgName = "—";
   let userName = "";
   let userRole = "";
-  const guest = await isGuest();
+
   if (guest) {
     orgName = "DEMO (fixture data)";
     userName = "Guest";
-    userRole = "read-only";
-  }
-  try {
-    if (guest) throw new Error("guest");
-    const org = await db.organization.findFirst({
-      orderBy: { createdAt: "asc" },
-      include: { users: { orderBy: { createdAt: "asc" }, take: 1 } },
-    });
-    if (org && org.users[0]) {
-      orgName = org.name;
-      userName = org.users[0].name;
-      userRole = org.users[0].role;
+    userRole = "read-only demo";
+  } else if (session) {
+    try {
+      const user = await db.user.findUnique({
+        where: { id: session.userId },
+        include: { organization: { select: { name: true } } },
+      });
+      if (user) {
+        orgName = user.organization.name;
+        userName = user.name;
+        userRole = user.role;
+      }
+    } catch {
+      // Database unreachable — the pages surface the guidance.
     }
-  } catch {
-    // Database unreachable — the pages surface the guidance.
   }
+
   const aiLive = process.env.AI_PROVIDER === "claude" && !!process.env.ANTHROPIC_API_KEY;
   const initials = userName
     .split(" ")
@@ -44,7 +49,7 @@ export async function Topbar() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <CommandPalette />
+          {!guest && <CommandPalette />}
           <span
             className="hidden items-center gap-1.5 rounded-full border border-line bg-white/[0.04] px-2.5 py-1 text-[0.6875rem] text-ink-2 sm:inline-flex"
             title={
@@ -67,6 +72,7 @@ export async function Topbar() {
               </div>
             </div>
           )}
+          <SignOutButton label={guest ? "Leave demo" : "Sign out"} />
         </div>
       </div>
     </header>
