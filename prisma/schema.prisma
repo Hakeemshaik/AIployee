@@ -44,6 +44,10 @@ model Organization {
   platformEvents     PlatformEvent[]
   apiKeys            ApiKey[]
   complianceSettings ComplianceSettings?
+  campaignContacts   CampaignContact[]
+  redialBatches      RedialBatch[]
+  providerEvents     ProviderEvent[]
+  integrationSettings IntegrationSettings?
 }
 
 model User {
@@ -111,6 +115,7 @@ model Debtor {
   promises     PromiseToPay[]
   payments     Payment[]
   escalations  Escalation[]
+  campaignContacts CampaignContact[]
 
   @@unique([organizationId, accountNumber])
   @@index([organizationId, status])
@@ -154,19 +159,128 @@ model Campaign {
   maxAttempts        Int       @default(6)
   retryIntervalHours Int       @default(48)
   strategy           String    @default("standard") // standard | payment_plan_first | early_settlement | firm_reminder
-  status             String    @default("draft") // draft | scheduled | active | paused | completed
+  // draft | scheduled | queued | running | paused | completed | stopped | failed
+  // ("active" is retained as a synonym of "running" for existing records)
+  status             String    @default("draft")
+  // Voice provider execution state
+  providerCampaignId String? // id of the campaign/batch on the voice platform
+  providerStartedAt  DateTime?
+  providerError      String? // last integration error surfaced to the operator
+  idempotencyKey     String? // guards against duplicate provider campaigns on retry
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  agent        AIAgent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agent        AIAgent?          @relation(fields: [agentId], references: [id], onDelete: SetNull)
   debtors      Debtor[]
   calls        Call[]
   promises     PromiseToPay[]
   payments     Payment[]
   escalations  Escalation[]
+  contacts     CampaignContact[]
+  redialBatches RedialBatch[]
 
   @@index([organizationId, status])
+  @@index([organizationId, providerCampaignId])
+}
+
+// Per-campaign membership and dialling state for a debtor. Separate from
+// Debtor.campaignId (which records the debtor's current campaign) so attempt
+// counts, outcomes and retry limits are tracked per campaign — this is what
+// the redial filters read.
+model CampaignContact {
+  id                String    @id @default(cuid())
+  organizationId    String
+  campaignId        String
+  debtorId          String
+  redialBatchId     String? // set when the contact was queued by a redial batch
+  providerContactId String? // id of the contact on the voice platform
+  attempts          Int       @default(0)
+  lastOutcome       String? // canonical internal outcome of the latest attempt
+  lastAttemptAt     DateTime?
+  callbackAt        DateTime? // when the debtor asked to be called back
+  active            Boolean   @default(true) // false once resolved/suppressed
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaign     Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  debtor       Debtor       @relation(fields: [debtorId], references: [id], onDelete: Cascade)
+  redialBatch  RedialBatch? @relation(fields: [redialBatchId], references: [id], onDelete: SetNull)
+
+  @@unique([campaignId, debtorId])
+  @@index([organizationId, campaignId, lastOutcome])
+  @@index([organizationId, callbackAt])
+}
+
+// A filtered re-dial run over a subset of a campaign's contacts (no answers,
+// busy numbers, callbacks due, failed calls). Sent to the provider as its own
+// batch, always linked back to the parent campaign.
+model RedialBatch {
+  id                 String    @id @default(cuid())
+  organizationId     String
+  campaignId         String
+  filter             String // no_answer | busy | failed | callback_due | custom
+  contactCount       Int       @default(0)
+  maxRetries         Int       @default(3)
+  status             String    @default("queued") // queued | running | completed | failed
+  providerCampaignId String? // provider-side batch/campaign id
+  providerError      String?
+  idempotencyKey     String?   @unique
+  createdByUserId    String?
+  createdAt          DateTime  @default(now())
+  completedAt        DateTime?
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaign     Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contacts     CampaignContact[]
+
+  @@index([organizationId, campaignId, createdAt])
+}
+
+// Every inbound provider event, stored before processing. The unique
+// externalEventId makes webhook delivery idempotent: a repeated event is
+// recognised and skipped instead of creating duplicate calls or promises.
+model ProviderEvent {
+  id              String    @id @default(cuid())
+  organizationId  String
+  provider        String    @default("jobix")
+  externalEventId String
+  type            String
+  payload         String // raw JSON as received
+  status          String    @default("received") // received | processed | ignored | failed
+  error           String?
+  callId          String?
+  processedAt     DateTime?
+  createdAt       DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, externalEventId])
+  @@index([organizationId, type, createdAt])
+}
+
+// Per-organization voice provider configuration. Endpoint paths are stored
+// rather than hard-coded so the integration matches what the provider
+// actually exposes; secrets stay in environment variables.
+model IntegrationSettings {
+  id             String  @id @default(cuid())
+  organizationId String  @unique
+  provider       String  @default("manual") // manual | jobix
+  baseUrl        String? // e.g. https://dashboard.jobix.ai/api
+  // JSON map of capability -> path, e.g.
+  // {"listAgents":"/agents","listConversations":"/conversations"}
+  endpoints      String?
+  // JSON map of provider status/result -> canonical internal outcome
+  outcomeMap     String?
+  pollEnabled    Boolean @default(false)
+  pollCursor     String? // newest provider record already ingested
+  lastSyncAt     DateTime?
+  lastSyncError  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
 model AIAgent {
@@ -203,6 +317,8 @@ model Call {
   outcome         String? // promise_to_pay | payment_arrangement | paid_in_full_claimed | dispute | financial_hardship | refused_to_pay | wrong_number | callback_requested | no_commitment | escalated | opted_out
   transcript      String?
   recordingUrl    String?
+  callbackAt      DateTime? // requested callback time, when the debtor asked for one
+  providerBatchId String? // provider campaign/batch this call belonged to
   createdAt       DateTime  @default(now())
 
   organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)

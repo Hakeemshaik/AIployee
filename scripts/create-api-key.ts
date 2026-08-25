@@ -7,6 +7,7 @@
  * Prints the plaintext key ONCE — store it in the voice platform's webhook
  * configuration. Only the SHA-256 hash is kept in the database.
  */
+import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { createHash, randomBytes } from "crypto";
 

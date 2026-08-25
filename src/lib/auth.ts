@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 
 // ---------------------------------------------------------------------------
@@ -28,7 +29,8 @@ export const getContext = cache(async (): Promise<AppContext> => {
     include: { users: { orderBy: { createdAt: "asc" }, take: 1 } },
   });
   if (!org || org.users.length === 0) {
-    throw new Error("No organization found — run `npm run db:seed` first.");
+    // Fresh deployment — send the visitor to the one-time setup flow.
+    redirect("/setup");
   }
   const user = org.users[0];
   return {
@@ -39,3 +41,32 @@ export const getContext = cache(async (): Promise<AppContext> => {
     userRole: user.role,
   };
 });
+
+// ---------------------------------------------------------------------------
+// Authorization.
+//
+// Role gate for privileged actions (starting/stopping campaigns, redialling,
+// viewing transcripts and recordings). Throws so route handlers can map it to
+// a 403 uniformly. Wired to the same context object real auth will populate.
+// ---------------------------------------------------------------------------
+
+export const ROLES = ["admin", "manager", "collector", "viewer"] as const;
+export type Role = (typeof ROLES)[number];
+
+export class NotPermittedError extends Error {
+  constructor(action: string, role: string) {
+    super(`Your role (${role}) is not permitted to ${action}.`);
+    this.name = "NotPermittedError";
+  }
+}
+
+export function requireRole(ctx: AppContext, allowed: readonly Role[], action: string): void {
+  if (!allowed.includes(ctx.userRole as Role)) {
+    throw new NotPermittedError(action, ctx.userRole);
+  }
+}
+
+/** Non-throwing check, for hiding controls the user cannot use. */
+export function hasRole(ctx: AppContext, allowed: readonly Role[]): boolean {
+  return allowed.includes(ctx.userRole as Role);
+}

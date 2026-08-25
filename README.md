@@ -96,7 +96,16 @@ assign the debtors and the agent, and set it **Active**. To link agents to Jobix
 agent's `externalId` to the Jobix agent id (`npx prisma studio` → AIAgent) and pass it as
 `externalAgentId` on the webhook.
 
-**4. Point Jobix at the webhook**
+**4. Build the dialling list for Jobix**
+
+Open the campaign → **Build Jobix list**. It produces the 72-column import table Jobix
+expects, already cleaned (E.164 phone numbers, whole-rand amounts) and filtered to
+callable accounts only — opt-outs, do-not-contact flags, settled balances, open disputes
+and live escalations are held back and reported. **Copy for Jobix**, then paste into the
+Jobix dashboard → Database → paste box. (Or **Download CSV**, or call
+`GET /api/jobix-export?campaignId=…` from a script.)
+
+**5. Point Jobix at the webhook**
 
 Configure Jobix (webhook/automation, or a small relay script if your plan only exposes
 exports) to send each finished call to:
@@ -110,13 +119,107 @@ Debtor matching works on `accountNumber` **or** `phone` — Jobix always knows t
 dialled, so `phone` alone is enough. The endpoint is idempotent on `externalCallId`
 (re-sending a call is safe) and rate limited at 120 req/min per key.
 
-**5. Confirm the loop**
+**6. Confirm the loop**
 
 Send one test call (see the payload below or Settings → Voice platform integration) and
 check: the call appears under Calls with an AI analysis → a promise appears under Promises
 to Pay (if one was made) → the debtor's timeline and campaign metrics update → the
 dashboard work queue picks up the follow-up. Record the payment when it lands and the
 promise resolves to Fulfilled.
+
+## Live Jobix integration (campaign execution)
+
+The platform is the control centre; the voice platform executes the calls. The integration
+lives entirely in `src/services/voice/` behind one interface, so no page or service knows
+which provider is in use:
+
+```
+src/services/voice/
+  types.ts          VoiceCampaignProvider interface + typed ProviderError
+  index.ts          factory: per-org IntegrationSettings -> JOBIX_* env -> manual
+  manual.ts         paste workflow (honest: refuses start/pause/stop)
+  jobix/client.ts   server-only HTTP client, redacting, timeouts
+  jobix/index.ts    JobixProvider — capability-gated, config-driven endpoints
+  jobix/mapping.ts  provider status/result -> canonical internal outcome
+```
+
+Credentials are server-side only:
+
+```env
+JOBIX_BASE_URL=https://dashboard.jobix.ai/api
+JOBIX_API_KEY=
+JOBIX_WEBHOOK_SECRET=
+```
+
+### The loop
+
+```
+AIployee  ──START──▶ provider.createCampaign + addContacts + startCampaign
+                              │
+                        voice AI calls
+                              │
+AIployee ◀── POST /api/webhooks/jobix ── call/campaign events
+                              │
+        call ▸ AI analysis ▸ promise ▸ escalation ▸ campaign metrics
+                              │
+                    live campaign dashboard (SSE)
+```
+
+- **Start / pause / stop** — `POST /api/campaigns/:id/control`. A campaign is never reported
+  as running unless the provider accepted it; a rejection stores the real error and leaves
+  the campaign `failed`. Starting twice cannot create two provider campaigns (idempotency
+  key derived from the campaign and its contact set).
+- **Webhook** — `POST /api/webhooks/jobix`, authenticated by HMAC signature
+  (`JOBIX_WEBHOOK_SECRET`, constant-time) or a `voice:ingest` API key. Every event is stored
+  in `ProviderEvent` first; the unique provider event id makes redelivery a no-op, so a
+  repeated event never creates a second call, promise or escalation. Unknown event types are
+  recorded and ignored rather than erroring.
+- **Live dashboard** — `GET /api/campaigns/:id/live` streams state over SSE (or
+  `?snapshot=1` for JSON). The page updates in place: KPIs, activity feed, outcome
+  breakdown, redial counts. No polling loops, no full-page refresh.
+- **Redial** — `POST /api/campaigns/:id/redial` with `filter` =
+  `no_answer | busy | failed | callback_due` (add `preview: true` for a count first). One
+  reusable `createRedialBatch()` powers every button. **Only the filtered contacts are
+  sent** — 147 no-answers means 147 contacts, never the whole campaign; that guarantee is
+  pinned by tests in `src/services/redial.test.ts`. Contacts at the attempt limit, settled
+  accounts, disputes, escalations and opt-outs are excluded, and each exclusion is counted
+  for the operator.
+- **Outcome mapping** — provider results map onto the platform's own outcome vocabulary
+  (`jobix/mapping.ts`, overridable per organization via `IntegrationSettings.outcomeMap`).
+  An unrecognised result returns `null` and falls through to AI transcript analysis instead
+  of being guessed.
+
+### What Jobix must expose — and what is still unknown
+
+Endpoint paths are **configuration, not code** (`IntegrationSettings.endpoints`), because
+inventing a path produces a silent failure at the worst moment. A capability is offered only
+when its path is configured; otherwise the operator gets a precise "not exposed" error.
+
+| Capability | Config key | Status |
+|---|---|---|
+| List agents/flows | `listAgents` | Path `/agents` observed in production use (paged `page`, `page_size`) |
+| List calls/conversations | `listCalls` | Path `/conversations` observed in production use (fields `uuid`, `phone_number`, `duration`, `created_at`, `agent`, `contact`) |
+| Fetch one call | `getCall` | Unconfirmed |
+| Create campaign | `createCampaign` | **Unconfirmed — needs Jobix API docs** |
+| Upload contacts | `addContacts` | **Unconfirmed — needs Jobix API docs** |
+| Start / pause / stop | `startCampaign`, `pauseCampaign`, `stopCampaign` | **Unconfirmed — needs Jobix API docs** |
+| Webhook signing + event names | — | **Unconfirmed — needs Jobix webhook docs** |
+
+Until the write endpoints are confirmed, the platform runs the **manual provider**: it builds
+the dialling list (Build Jobix list), you paste it into the Jobix Database import and start
+the run there, and results flow back automatically through the webhook. Nothing is faked —
+`startCampaign` on the manual provider reports the operator step instead of claiming the
+campaign started.
+
+To switch to full API control, set the `JOBIX_*` environment variables and record the
+confirmed paths in `IntegrationSettings.endpoints`, e.g.
+
+```json
+{ "listAgents": "/agents", "listCalls": "/conversations",
+  "createCampaign": "/campaigns", "addContacts": "/campaigns/contacts",
+  "startCampaign": "/campaigns/start", "pauseCampaign": "/campaigns/pause",
+  "stopCampaign": "/campaigns/stop" }
+```
 
 ## AI provider architecture
 
