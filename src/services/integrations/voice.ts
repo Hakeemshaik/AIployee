@@ -43,6 +43,10 @@ export const callCompletedSchema = z.object({
   transcript: z.string().max(200_000).optional(),
   recordingUrl: z.string().url().max(2000).optional(),
   outcome: z.string().max(60).optional(),
+  /** Provider campaign/batch this call belonged to. */
+  providerBatchId: z.string().max(120).optional(),
+  /** Requested callback time, when the debtor asked for one. */
+  callbackAt: z.coerce.date().optional(),
 });
 
 export type CallCompletedPayload = z.infer<typeof callCompletedSchema>;
@@ -109,6 +113,8 @@ export async function processCallCompleted(
       outcome: payload.outcome,
       transcript: payload.transcript,
       recordingUrl: payload.recordingUrl,
+      providerBatchId: payload.providerBatchId,
+      callbackAt: payload.callbackAt,
     },
   });
 
@@ -266,6 +272,46 @@ export async function processCallCompleted(
       ...(extraction.outcome === "opted_out" ? { doNotContact: true } : {}),
     },
   });
+
+  // Per-campaign dialling state: attempt counting and the outcome the redial
+  // filters read. Upserted so a call for a debtor not yet materialised as a
+  // campaign contact still lands correctly.
+  if (campaign) {
+    const callbackAt =
+      extraction.outcome === "callback_requested" ? (payload.callbackAt ?? null) : null;
+    const closesContact = ["opted_out", "wrong_number", "paid_in_full_claimed", "dispute"].includes(
+      extraction.outcome,
+    );
+    const existingContact = await db.campaignContact.findUnique({
+      where: { campaignId_debtorId: { campaignId: campaign.id, debtorId: debtor.id } },
+      select: { id: true, attempts: true },
+    });
+    if (existingContact) {
+      await db.campaignContact.update({
+        where: { id: existingContact.id },
+        data: {
+          attempts: existingContact.attempts + 1,
+          lastOutcome: extraction.outcome,
+          lastAttemptAt: payload.startedAt,
+          callbackAt,
+          active: !closesContact,
+        },
+      });
+    } else {
+      await db.campaignContact.create({
+        data: {
+          organizationId,
+          campaignId: campaign.id,
+          debtorId: debtor.id,
+          attempts: 1,
+          lastOutcome: extraction.outcome,
+          lastAttemptAt: payload.startedAt,
+          callbackAt,
+          active: !closesContact,
+        },
+      });
+    }
+  }
 
   await audit({
     organizationId,

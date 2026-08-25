@@ -188,6 +188,10 @@ export async function seedDemoData(): Promise<DemoSeedResult> {
 
   console.log("Clearing existing data…");
   // Order matters for FK constraints.
+  await db.campaignContact.deleteMany();
+  await db.redialBatch.deleteMany();
+  await db.providerEvent.deleteMany();
+  await db.integrationSettings.deleteMany();
   await db.auditLog.deleteMany();
   await db.platformEvent.deleteMany();
   await db.aIInsight.deleteMany();
@@ -690,6 +694,42 @@ export async function seedDemoData(): Promise<DemoSeedResult> {
         },
       });
     }
+  }
+
+  // Materialise per-campaign contact state from the seeded call history, so
+  // redial filters and the live dashboard have real data to work with.
+  console.log("Building campaign contact state…");
+  const allDebtors = await db.debtor.findMany({
+    where: { organizationId: orgId, campaignId: { not: null } },
+    select: {
+      id: true,
+      campaignId: true,
+      status: true,
+      calls: {
+        orderBy: { startedAt: "desc" },
+        select: {
+          startedAt: true,
+          callbackAt: true,
+          analysis: { select: { outcome: true } },
+        },
+      },
+    },
+  });
+  for (const d of allDebtors) {
+    const latest = d.calls[0];
+    const lastOutcome = latest?.analysis?.outcome ?? null;
+    await db.campaignContact.create({
+      data: {
+        organizationId: orgId,
+        campaignId: d.campaignId!,
+        debtorId: d.id,
+        attempts: d.calls.length,
+        lastOutcome,
+        lastAttemptAt: latest?.startedAt ?? null,
+        callbackAt: lastOutcome === "callback_requested" ? (latest?.callbackAt ?? daysAgo(1)) : null,
+        active: !["paid", "opted_out", "dispute"].includes(d.status),
+      },
+    });
   }
 
   console.log("Generating AI insights and reports from the seeded data…");

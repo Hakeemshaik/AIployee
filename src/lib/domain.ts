@@ -16,8 +16,46 @@ export const DEBTOR_STATUSES = [
 ] as const;
 export type DebtorStatus = (typeof DEBTOR_STATUSES)[number];
 
-export const CAMPAIGN_STATUSES = ["draft", "scheduled", "active", "paused", "completed"] as const;
+export const CAMPAIGN_STATUSES = [
+  "draft",
+  "scheduled",
+  "queued",
+  "running",
+  "active", // legacy synonym of "running", kept so existing records stay valid
+  "paused",
+  "completed",
+  "stopped",
+  "failed",
+] as const;
 export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number];
+
+/** Statuses in which the provider is (or should be) executing the campaign. */
+export const LIVE_CAMPAIGN_STATUSES = ["queued", "running", "active"] as const;
+
+// ---------------------------------------------------------------------------
+// Canonical call outcomes.
+//
+// CALL_OUTCOMES stays the analysis vocabulary used by the AI layer. The
+// provider integration maps its own call results onto this same set, so one
+// outcome vocabulary drives redial filters, dashboards and reporting.
+// ---------------------------------------------------------------------------
+
+/** Outcomes that mean "we never spoke to anyone" — the redial candidates. */
+export const UNREACHED_OUTCOMES = ["no_answer", "busy", "voicemail", "failed"] as const;
+
+/** Outcomes that close a contact out of further dialling. */
+export const TERMINAL_OUTCOMES = [
+  "paid_in_full_claimed",
+  "opted_out",
+  "wrong_number",
+  "dispute",
+] as const;
+
+export const REDIAL_FILTERS = ["no_answer", "busy", "failed", "callback_due"] as const;
+export type RedialFilter = (typeof REDIAL_FILTERS)[number];
+
+export const VOICE_PROVIDERS = ["manual", "jobix"] as const;
+export type VoiceProviderName = (typeof VOICE_PROVIDERS)[number];
 
 export const CAMPAIGN_STRATEGIES = [
   "standard",
@@ -129,6 +167,12 @@ const LABELS: Record<string, string> = {
   // campaign
   draft: "Draft",
   scheduled: "Scheduled",
+  queued: "Queued",
+  running: "Running",
+  stopped: "Stopped",
+  callback_due: "Callback Due",
+  manual: "Manual (CSV paste)",
+  jobix: "Jobix",
   paused: "Paused",
   completed: "Completed",
   standard: "Standard",

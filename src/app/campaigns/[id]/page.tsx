@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getContext } from "@/lib/auth";
+import { getContext, hasRole } from "@/lib/auth";
 import { label } from "@/lib/domain";
 import { formatDate, money, percent } from "@/lib/format";
 import { getCampaign } from "@/services/campaigns";
@@ -9,6 +9,8 @@ import { BackLink, Badge, GlassCard, Meta, PageHeader, StatCard } from "@/compon
 import { CampaignActivityChart, HBarChart, PaymentsBarChart } from "@/components/charts";
 import { StatusControls } from "./StatusControls";
 import { JobixExport } from "./JobixExport";
+import { LiveCampaign } from "./LiveCampaign";
+import { getCampaignLiveState } from "@/services/campaign-live";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Campaign" };
@@ -23,7 +25,11 @@ export default async function CampaignDetailPage({
   const result = await getCampaign(ctx.organizationId, id);
   if (!result) notFound();
   const { campaign, metrics, series } = result;
-  const debtors = await listDebtors(ctx.organizationId, { campaignId: id });
+  const [debtors, live] = await Promise.all([
+    listDebtors(ctx.organizationId, { campaignId: id }),
+    getCampaignLiveState(ctx.organizationId, id),
+  ]);
+  const canControl = hasRole(ctx, ["admin", "manager"]);
 
   return (
     <div className="page-in">
@@ -32,14 +38,26 @@ export default async function CampaignDetailPage({
         title={campaign.name}
         description={campaign.description ?? undefined}
         actions={
-          <div className="flex items-center gap-3">
-            <Badge value={campaign.status} label={label(campaign.status)} />
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <JobixExport campaignId={campaign.id} />
             <StatusControls campaignId={campaign.id} status={campaign.status} />
           </div>
         }
       />
 
+      {live && (
+        <div className="mb-5">
+          <LiveCampaign
+            campaignId={campaign.id}
+            canControl={canControl}
+            initial={JSON.parse(JSON.stringify(live))}
+          />
+        </div>
+      )}
+
+      <h2 className="mb-3 text-[0.6875rem] font-medium uppercase tracking-[0.07em] text-ink-3">
+        Recovery performance
+      </h2>
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <StatCard label="Total debt" value={money(metrics.totalDebt)} />
         <StatCard label="Debtors" value={String(metrics.totalDebtors)} />
