@@ -53,9 +53,9 @@ export async function listDebtors(
       ...(filters.search
         ? {
             OR: [
-              { firstName: { contains: filters.search } },
-              { lastName: { contains: filters.search } },
-              { accountNumber: { contains: filters.search } },
+              { firstName: { contains: filters.search, mode: "insensitive" as const } },
+              { lastName: { contains: filters.search, mode: "insensitive" as const } },
+              { accountNumber: { contains: filters.search, mode: "insensitive" as const } },
               { phone: { contains: filters.search.replace(/[\s()-]/g, "") } },
             ],
           }

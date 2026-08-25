@@ -3,20 +3,20 @@
 // Multi-tenant relational model. Every business entity carries an
 // organizationId and all service-layer queries are scoped by it.
 //
-// SQLite is used for the MVP so the app runs anywhere with zero setup.
-// The schema is written to port cleanly to PostgreSQL (swap the datasource,
-// promote the String status/JSON columns to native enums/jsonb, and move
-// money columns to Decimal). SQLite has no native enums, so enumerated
-// columns are Strings validated with zod in the service layer — the
-// canonical value sets live in src/lib/domain.ts.
+// PostgreSQL (Neon / Vercel Postgres / any managed PG). Enumerated columns
+// are Strings validated with zod in the service layer — the canonical value
+// sets live in src/lib/domain.ts — which keeps values greppable and lets new
+// outcomes ship without a migration. Money columns are Float (double
+// precision); promote to Decimal if you ever need cent-exact ledger math.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // runtime — use the POOLED string on Vercel/Neon
+  directUrl = env("DIRECT_DATABASE_URL") // migrations — direct (non-pooled) connection
 }
 
 model Organization {

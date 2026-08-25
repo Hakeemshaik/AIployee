@@ -11,7 +11,11 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma db push --force-reset && tsx prisma/seed.ts",
     "test": "vitest run",
-    "key:create": "tsx scripts/create-api-key.ts"
+    "key:create": "tsx scripts/create-api-key.ts",
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma generate && prisma migrate deploy && next build",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

@@ -16,18 +16,23 @@ record for calls and recordings and pushes results in through a clean integratio
 
 - **Next.js 16** (App Router, React Server Components) + TypeScript
 - **Tailwind CSS v4** — dark, glass-panel design system
-- **Prisma 6 + SQLite** for the MVP (schema written to port directly to PostgreSQL)
+- **Prisma 6 + PostgreSQL** (Neon / Vercel Postgres / any managed PG)
 - **Recharts** for dashboards
 - **Zod** for all server-side input validation
 - **Anthropic SDK (Claude)** behind a provider abstraction, with a deterministic built-in
   fallback engine so everything works with no API key
+- Deploys to **Vercel** out of the box (`vercel-build` runs migrations automatically)
 
-## Getting started
+## Getting started (local)
+
+You need a PostgreSQL database. Quickest options: a free Neon database, or locally
+`docker run -d -p 5432:5432 -e POSTGRES_USER=aiployee -e POSTGRES_PASSWORD=aiployee_dev -e POSTGRES_DB=aiployee postgres:16`.
 
 ```bash
 npm install
-npm run db:push     # create the SQLite database
-npm run db:seed     # load the realistic demo dataset (fictional SA data, ZAR)
+cp .env.example .env   # set DATABASE_URL + DIRECT_DATABASE_URL
+npm run db:migrate     # apply migrations
+npm run db:seed        # load the realistic demo dataset (fictional SA data, ZAR)
 npm run dev
 ```
 
@@ -50,25 +55,33 @@ Useful entry points once running:
 The platform is the system of record and command centre; Jobix stays the dialler. Go-live
 checklist:
 
-**1. Run it in production mode**
+**1. Deploy to Vercel**
 
-```bash
-npm ci
-npm run db:push
-npm run db:seed        # or skip and import your real book (step 3)
-npm run build
-npm start              # serves on :3000 — put HTTPS in front (Caddy/nginx/host platform)
-```
+1. Create the database: in Vercel → Storage, add **Neon (Postgres)** (or bring any managed
+   PG). Note the two connection strings — **pooled** and **direct/unpooled**.
+2. Push this repo to GitHub and **Import Project** in Vercel.
+3. Set the environment variables in Vercel → Settings → Environment Variables:
+   - `DATABASE_URL` — the **pooled** connection string
+   - `DIRECT_DATABASE_URL` — the **direct (non-pooled)** connection string
+   - `AI_PROVIDER=claude` + `ANTHROPIC_API_KEY` for Claude analysis/reports (optional —
+     omit to run the built-in engine)
+4. Deploy. The `vercel-build` script runs `prisma generate && prisma migrate deploy &&
+   next build`, so the schema is applied automatically on every deploy.
+5. Seed or load data from your machine against the production database:
+   ```bash
+   DATABASE_URL=<direct-url> DIRECT_DATABASE_URL=<direct-url> npm run db:seed   # demo data
+   ```
+   …or skip the seed and import your real book through the UI (step 3).
 
-SQLite needs a host with a persistent disk (a VM, Railway/Render/Fly volume). For
-serverless hosts (Vercel), switch the Prisma datasource to PostgreSQL first — the schema
-ports as-is. Set production env vars: `DATABASE_URL`, and `AI_PROVIDER=claude` +
-`ANTHROPIC_API_KEY` for Claude-generated analysis and reports (server-side only).
+Serverless note: the webhook rate limiter is in-memory per instance — fine at Jobix call
+volumes; move it to Redis/Upstash if you ever fan out to very high concurrency.
 
 **2. Create the Jobix API key**
 
+Run locally against the production database:
+
 ```bash
-npm run key:create -- "Jobix production"
+DATABASE_URL=<direct-url> DIRECT_DATABASE_URL=<direct-url> npm run key:create -- "Jobix production"
 ```
 
 Copy the printed key once. It authorizes only `voice:ingest`.

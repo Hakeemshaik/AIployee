@@ -16,9 +16,9 @@ export async function GET(request: Request) {
         where: {
           organizationId: ctx.organizationId,
           OR: [
-            { firstName: { contains: q } },
-            { lastName: { contains: q } },
-            { accountNumber: { contains: q } },
+            { firstName: { contains: q, mode: "insensitive" } },
+            { lastName: { contains: q, mode: "insensitive" } },
+            { accountNumber: { contains: q, mode: "insensitive" } },
             { phone: { contains: q.replace(/[\s()-]/g, "") } },
           ],
         },
@@ -26,12 +26,12 @@ export async function GET(request: Request) {
         take: 6,
       }),
       db.campaign.findMany({
-        where: { organizationId: ctx.organizationId, name: { contains: q } },
+        where: { organizationId: ctx.organizationId, name: { contains: q, mode: "insensitive" } },
         select: { id: true, name: true, status: true },
         take: 4,
       }),
       db.aIAgent.findMany({
-        where: { organizationId: ctx.organizationId, name: { contains: q } },
+        where: { organizationId: ctx.organizationId, name: { contains: q, mode: "insensitive" } },
         select: { id: true, name: true, status: true },
         take: 3,
       }),
