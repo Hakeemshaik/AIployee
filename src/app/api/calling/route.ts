@@ -6,6 +6,11 @@ import { getSession, GuestBlockedError, isGuest } from "@/lib/session";
 import { JobixError } from "@/services/jobix/client";
 import { checkCallingWindow, dispatchBatch, prepareBatch } from "@/services/jobix/calling";
 
+// Dispatch stamps the batch code, then waits and re-reads to verify, because
+// customer/save is asynchronous on the provider's side — longer than the
+// platform's default function duration.
+export const maxDuration = 120;
+
 const schema = z.object({
   debtorIds: z.array(z.string().min(1)).min(1).max(5000),
   /** Preview returns the filtered count and value for the confirmation dialog. */

@@ -6,6 +6,13 @@ import { blockGuests, GuestBlockedError } from "@/lib/session";
 import { JobixError } from "@/services/jobix/client";
 import { getIngestProgress, runIngestion } from "@/services/jobix/ingest";
 
+// Ingestion holds this request open for the entire pull — conversations page
+// by page, then one request per uncached transcript. On Vercel the platform
+// default duration kills that mid-run, so the limit is raised to the Hobby-plan
+// maximum. A run that still hits the ceiling is not lost: it checkpoints as it
+// goes and never re-fetches a cached transcript, so pressing Run again resumes.
+export const maxDuration = 300;
+
 const schema = z.object({
   since: z.coerce.date().optional(),
   expectedAgentNames: z.array(z.string()).max(10).optional(),
