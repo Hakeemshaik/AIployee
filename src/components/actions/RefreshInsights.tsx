@@ -29,7 +29,7 @@ export function RefreshInsightsButton({ scope }: { scope: "dashboard" | "insight
 
   return (
     <div className="flex items-center gap-2">
-      {error && <span className="text-[0.6875rem] text-[#ec8181]">Failed — try again</span>}
+      {error && <span className="text-[0.6875rem] text-[#ec8181]">Analysis could not be generated</span>}
       <button onClick={run} disabled={busy} className="btn btn-ghost text-[0.75rem]">
         <RefreshCw size={13} className={busy ? "animate-spin" : ""} />
         {busy ? "Analysing…" : "Regenerate"}

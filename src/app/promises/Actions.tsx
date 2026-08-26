@@ -6,10 +6,12 @@ import { useState } from "react";
 export function CancelPromiseButton({ promiseId }: { promiseId: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function cancel() {
     if (!window.confirm("Cancel this promise? The debtor returns to normal follow-up.")) return;
     setBusy(true);
+    setError(null);
     try {
       const res = await fetch(`/api/promises/${promiseId}`, {
         method: "PATCH",
@@ -19,16 +21,19 @@ export function CancelPromiseButton({ promiseId }: { promiseId: string }) {
       if (!res.ok) throw new Error(String(res.status));
       router.refresh();
     } catch {
-      window.alert("Could not cancel the promise — it may already be resolved.");
+      setError("Could not cancel the promise — it may already be resolved.");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <button onClick={cancel} disabled={busy} className="btn btn-ghost text-[0.71875rem] text-ink-3">
-      {busy ? "Cancelling…" : "Cancel"}
-    </button>
+    <span className="inline-flex items-center gap-2">
+      {error && <span className="text-[0.6875rem] text-[#ec8181]">{error}</span>}
+      <button onClick={cancel} disabled={busy} className="btn btn-ghost text-[0.71875rem] text-ink-3">
+        {busy ? "Cancelling…" : "Cancel"}
+      </button>
+    </span>
   );
 }
 
@@ -36,10 +41,12 @@ export function SweepButton() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function sweep() {
     setBusy(true);
     setResult(null);
+    setError(null);
     try {
       const res = await fetch("/api/promises/sweep", { method: "POST" });
       const body = await res.json();
@@ -47,7 +54,7 @@ export function SweepButton() {
       setResult(body.marked);
       router.refresh();
     } catch {
-      window.alert("Sweep failed — try again.");
+      setError("The sweep could not be completed.");
     } finally {
       setBusy(false);
     }
@@ -55,9 +62,10 @@ export function SweepButton() {
 
   return (
     <div className="flex items-center gap-2">
+      {error && <span className="text-[0.71875rem] text-[#ec8181]">{error}</span>}
       {result != null && (
         <span className="text-[0.71875rem] text-ink-3">
-          {result === 0 ? "Nothing past grace period" : `${result} marked broken`}
+          {result === 0 ? "No promises are past the grace period" : `${result} marked broken`}
         </span>
       )}
       <button onClick={sweep} disabled={busy} className="btn">

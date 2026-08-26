@@ -93,7 +93,7 @@ async function startRun(): Promise<StartFailure | null> {
       title: "Jobix is not configured on this server",
       detail:
         body.message ??
-        "Set JOBIX_TOKEN (and JOBIX_BASE) in the server environment. Credentials are never read from the browser.",
+        "The voice platform sign-in is not configured on the server. An administrator must set JOBIX_EMAIL and JOBIX_PASSWORD.",
       tone: "warning",
     };
   }
@@ -108,14 +108,14 @@ async function startRun(): Promise<StartFailure | null> {
   }
   if (response.status === 403) {
     return {
-      title: "Not available in the demo",
+      title: "Unavailable in demo mode",
       detail: body.message ?? "Sign in with a real account to run ingestion.",
       tone: "warning",
     };
   }
   return {
     title: "Ingestion failed to start",
-    detail: body.message ?? body.error ?? `The server returned ${response.status}.`,
+    detail: body.message ?? "Ingestion could not be started. Try again.",
     tone: "critical",
   };
 }
@@ -193,7 +193,7 @@ export function IngestionPanel({
         if (cancelled) return;
         setFailure({
           title: "Ingestion failed to start",
-          detail: "The request could not be sent. Check that the server is reachable.",
+          detail: "The request could not be sent. Check your connection and try again.",
           tone: "critical",
         });
         setRunning(false);
@@ -203,7 +203,7 @@ export function IngestionPanel({
     };
   }, [starts]);
 
-  const blocked = disabledReason ?? (configured ? undefined : "Jobix credentials are not set on the server.");
+  const blocked = disabledReason ?? (configured ? undefined : "The voice platform connection is not configured.");
   const current = phaseIndex(progress?.phase ?? "conversations");
   const failed = progress?.status === "failed";
 
@@ -217,12 +217,12 @@ export function IngestionPanel({
             {running
               ? `Running — ${progress?.phase ?? "starting"}…`
               : failed
-                ? `Last run failed: ${progress?.error ?? "unknown error"}`
+                ? "Last run did not complete — open Detail for the reason."
                 : progress?.finishedAt
                   ? `Last run finished ${formatDateTime(progress.finishedAt)} · ${progress.conversationsFound.toLocaleString("en-ZA")} conversations`
                   : blocked
                     ? blocked
-                    : "No run yet. Pulls conversations, transcripts, customers and messaging steps."}
+                    : "No ingestion run recorded. Pulls conversations, transcripts, customers and messaging steps."}
           </p>
         </div>
         <button
@@ -237,7 +237,7 @@ export function IngestionPanel({
         <button
           className="btn btn-primary"
           disabled={running || !!blocked}
-          title={blocked ?? (running ? "A run is already in flight" : "Pull the latest data from Jobix")}
+          title={blocked ?? (running ? "An ingestion run is already in progress" : "Pull the latest data from Jobix")}
           onClick={() => {
             setFailure(null);
             setRunning(true);

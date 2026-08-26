@@ -113,7 +113,7 @@ export function ResetDataCard() {
       {!preview && (
         <button className="btn mt-4" onClick={loadPreview} disabled={state === "loading"}>
           {state === "loading" ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
-          Show me what would be removed
+          Preview what would be removed
         </button>
       )}
 
@@ -170,8 +170,8 @@ export function ResetDataCard() {
               <AlertTriangle size={13} className="mt-0.5 shrink-0" />
               Revoking {preview.revokingKeys.length} API{" "}
               {preview.revokingKeys.length === 1 ? "key" : "keys"} — anything currently posting to the
-              webhook will stop working until you issue a new one. The seeded key&apos;s value is
-              published in this project&apos;s README, so it should not stay live regardless.
+              webhook will stop working until you issue a new one. The seeded key is not a secret and
+              must not stay live.
             </p>
           )}
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
 
 // ---------------------------------------------------------------------------
@@ -193,7 +194,7 @@ export function BackLink({ href, label }: { href: string; label: string }) {
       href={href}
       className="mb-4 inline-flex items-center gap-1 text-[0.75rem] text-ink-3 transition-colors hover:text-ink-2"
     >
-      ← {label}
+      <ArrowLeft size={14} /> {label}
     </Link>
   );
 }

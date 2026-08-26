@@ -35,17 +35,17 @@ export default async function DashboardPage() {
       />
 
       <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-        <StatCard label="Total Outstanding" value={money(m.totalOutstanding)} sub="across the full book" />
-        <StatCard label="Total Recovered" value={money(m.totalRecovered)} tone="good" sub="all time" />
-        <StatCard label="Recovery Rate" value={percent(m.recoveryRate)} sub="recovered vs total book" />
-        <StatCard label="Debtors Contacted" value={String(m.debtorsContacted)} sub="last 30 days" />
-        <StatCard label="Successful Contacts" value={String(m.successfulContacts)} sub="reached & spoke" />
-        <StatCard label="Open Promises" value={String(m.promisesOpen)} sub="awaiting payment" />
-        <StatCard label="Promise Value" value={money(m.promiseValue)} sub="committed, not yet paid" />
-        <StatCard label="Payments Received" value={String(m.paymentsReceived)} sub={`${money(m.paymentsValue)} in 30 days`} />
-        <StatCard label="Active Campaigns" value={String(m.activeCampaigns)} sub="dialling now" />
+        <StatCard label="Total outstanding" value={money(m.totalOutstanding)} sub="across the full book" />
+        <StatCard label="Total recovered" value={money(m.totalRecovered)} tone="good" sub="all time" />
+        <StatCard label="Recovery rate" value={percent(m.recoveryRate)} sub="recovered vs total book" />
+        <StatCard label="Debtors contacted" value={String(m.debtorsContacted)} sub="last 30 days" />
+        <StatCard label="Successful contacts" value={String(m.successfulContacts)} sub="reached & spoke" />
+        <StatCard label="Open promises" value={String(m.promisesOpen)} sub="awaiting payment" />
+        <StatCard label="Promise value" value={money(m.promiseValue)} sub="committed, not yet paid" />
+        <StatCard label="Payments received" value={String(m.paymentsReceived)} sub={`${money(m.paymentsValue)} in 30 days`} />
+        <StatCard label="Active campaigns" value={String(m.activeCampaigns)} sub="dialling now" />
         <StatCard
-          label="Connect Rate"
+          label="Connect rate"
           value={
             data.contactSeries.reduce((s, d) => s + d.attempts, 0) > 0
               ? percent(
@@ -58,10 +58,10 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* AI Collection Intelligence */}
+      {/* AI collection intelligence */}
       <GlassCard
         className="mb-5"
-        title="AI Collection Intelligence"
+        title="AI collection intelligence"
         subtitle={
           insight
             ? `Generated ${formatDateTime(insight.generatedAt)} · ${insight.provider === "claude" ? "Claude" : "built-in engine"}`
@@ -112,7 +112,7 @@ export default async function DashboardPage() {
             <p className="mt-4 text-[0.71875rem] text-ink-3">
               Full analysis on the{" "}
               <Link href="/insights" className="text-accent hover:underline">
-                AI Insights
+                AI insights
               </Link>{" "}
               page.
             </p>

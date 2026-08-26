@@ -40,10 +40,10 @@ export function SetupForm() {
         }),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.message ?? body.error ?? "Setup failed");
+      if (!res.ok) throw new Error(body.message ?? "Setup could not be completed.");
       setResult(body);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Setup failed");
+      setError(err instanceof Error ? err.message : "Setup could not be completed.");
     } finally {
       setBusy(false);
     }
@@ -63,7 +63,7 @@ export function SetupForm() {
 
         <div>
           <p className="mb-1.5 text-[0.71875rem] font-medium uppercase tracking-[0.07em] text-ink-3">
-            Your Jobix webhook key — shown only once, copy it now
+            Jobix webhook key — shown once, copy it now
           </p>
           <div className="flex items-center gap-2">
             <code className="num flex-1 truncate rounded-lg border border-line bg-black/30 px-3 py-2.5 text-[0.78125rem] text-ink">
@@ -193,7 +193,7 @@ export function SetupForm() {
 
       {error && <p className="text-[0.78125rem] text-[#ec8181]">{error}</p>}
       <button type="submit" disabled={busy} className="btn btn-primary">
-        {busy ? "Setting up…" : mode === "demo" ? "Set up with demo data" : "Set up clean"}
+        {busy ? "Setting up…" : mode === "demo" ? "Set up with demo data" : "Set up empty platform"}
       </button>
       <p className="text-[0.6875rem] leading-relaxed text-ink-3">
         This page only works once — after setup it locks itself and every setup request is refused.

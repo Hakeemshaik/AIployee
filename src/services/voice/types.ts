@@ -123,8 +123,10 @@ export class ProviderError extends Error {
 
 export class UnsupportedCapabilityError extends ProviderError {
   constructor(provider: string, capability: ProviderCapability) {
+    // The capability travels in `detail` for logs and handlers; the message
+    // itself stays free of internal identifiers.
     super(
-      `The ${provider} integration does not expose "${capability}". Configure the endpoint in Settings → Integration, or run this step in the provider dashboard.`,
+      "This action is not available for the current voice integration.",
       "unsupported",
       capability,
     );

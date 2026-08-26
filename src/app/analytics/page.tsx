@@ -91,19 +91,22 @@ export default async function AnalyticsPage() {
       // identity only, never values. Exists because "the variable is set in
       // Vercel" and "the running function received it" are different facts,
       // and debugging the gap by screenshot wastes everyone's day.
-      diagnostic: {
-        vercelEnv: process.env.VERCEL_ENV ?? null,
-        branch: process.env.VERCEL_GIT_COMMIT_REF ?? null,
-        commit: (process.env.VERCEL_GIT_COMMIT_SHA ?? "").slice(0, 7) || null,
-        vars: {
-          JOBIX_EMAIL: !!process.env.JOBIX_EMAIL,
-          JOBIX_PASSWORD: !!process.env.JOBIX_PASSWORD,
-          JOBIX_TOKEN: !!process.env.JOBIX_TOKEN,
-          JOBIX_COMPANY_KEY: !!process.env.JOBIX_COMPANY_KEY,
-          JOBIX_FLOW_UUID: !!process.env.JOBIX_FLOW_UUID,
-          JOBIX_TRIGGER_NODE_UUID: !!process.env.JOBIX_TRIGGER_NODE_UUID,
-        },
-      },
+      // Admins only — it is an ops diagnostic, not an operator control.
+      diagnostic: hasRole(ctx, ["admin"])
+        ? {
+            vercelEnv: process.env.VERCEL_ENV ?? null,
+            branch: process.env.VERCEL_GIT_COMMIT_REF ?? null,
+            commit: (process.env.VERCEL_GIT_COMMIT_SHA ?? "").slice(0, 7) || null,
+            vars: {
+              JOBIX_EMAIL: !!process.env.JOBIX_EMAIL,
+              JOBIX_PASSWORD: !!process.env.JOBIX_PASSWORD,
+              JOBIX_TOKEN: !!process.env.JOBIX_TOKEN,
+              JOBIX_COMPANY_KEY: !!process.env.JOBIX_COMPANY_KEY,
+              JOBIX_FLOW_UUID: !!process.env.JOBIX_FLOW_UUID,
+              JOBIX_TRIGGER_NODE_UUID: !!process.env.JOBIX_TRIGGER_NODE_UUID,
+            },
+          }
+        : undefined,
     };
     const classifiedById = new Map(result.classified.map((c) => [c.accountId, c]));
     payload = {
@@ -149,7 +152,7 @@ export default async function AnalyticsPage() {
       )}
       <PageHeader
         title="Call analytics"
-        description={`${payload.campaignName} · workspace: ${payload.workspace} — every account classified by whether a real human conversation happened.`}
+        description={`${payload.campaignName} · Workspace ${payload.workspace}. Every account classified by whether a real human conversation happened.`}
       />
       <IngestionPanel
         initial={ingestion.initial}

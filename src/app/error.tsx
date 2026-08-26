@@ -12,7 +12,7 @@ export default function Error({
     <div className="mx-auto mt-20 max-w-md">
       <div className="glass p-6 text-center">
         <p className="text-[0.9375rem] font-semibold text-ink">
-          {needsSeed ? "Database not seeded yet" : "Something went wrong"}
+          {needsSeed ? "Database not seeded yet" : "This page could not be loaded"}
         </p>
         <p className="mt-2 text-[0.8125rem] leading-relaxed text-ink-2">
           {needsSeed
@@ -31,7 +31,7 @@ export default function Error({
         </div>
         {!needsSeed && (
           <p className="mt-3 text-[0.6875rem] text-ink-3">
-            Fresh deployment? <a href="/setup" className="text-accent hover:underline">Run the one-time setup</a>.
+            If this is a new deployment, <a href="/setup" className="text-accent hover:underline">run the one-time setup</a>.
           </p>
         )}
       </div>

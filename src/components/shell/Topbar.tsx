@@ -13,7 +13,7 @@ export async function Topbar() {
   let userRole = "";
 
   if (guest) {
-    orgName = "DEMO (fixture data)";
+    orgName = "Demo organization";
     userName = "Guest";
     userRole = "read-only demo";
   } else if (session) {
@@ -55,11 +55,11 @@ export async function Topbar() {
             title={
               aiLive
                 ? "AI analysis and reporting served by Claude"
-                : "Running on the built-in analysis engine — set AI_PROVIDER=claude and ANTHROPIC_API_KEY to enable Claude"
+                : "Running on the built-in analysis engine. An administrator can enable Claude in the server configuration."
             }
           >
             <Sparkles size={12} className={aiLive ? "text-accent" : "text-ink-3"} />
-            {aiLive ? "Claude connected" : "AI: built-in engine"}
+            {aiLive ? "Claude connected" : "Built-in analysis engine"}
           </span>
           {userName && (
             <div className="flex items-center gap-2.5">

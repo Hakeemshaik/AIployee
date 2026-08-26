@@ -79,11 +79,10 @@ async function fetchJourney(id: string): Promise<Journey> {
     cache: "no-store",
   });
   if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as { error?: string };
     throw new Error(
       response.status === 404
         ? "This account could not be found."
-        : body.error || `Request failed (${response.status}).`,
+        : "This account could not be loaded.",
     );
   }
   return (await response.json()) as Journey;
@@ -396,7 +395,7 @@ function DrawerBody({ accountId, onClose, bucketLabels, bucketExplanations }: Dr
                   />
                 )}
                 {journey.flags.disputed && <Badge value="dispute" label="Disputed" />}
-                {journey.flags.paidClaimed && <Badge value="paid_in_full_claimed" label="Says paid" />}
+                {journey.flags.paidClaimed && <Badge value="paid_in_full_claimed" label="Payment claimed" />}
                 {journey.flags.escalated && <Badge value="escalated" label="Escalated" />}
                 {journey.flags.doNotCall && <Badge value="opted_out" label="Do not call" />}
               </div>

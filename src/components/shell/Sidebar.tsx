@@ -25,10 +25,10 @@ const NAV = [
   { href: "/debtors", label: "Debtors", icon: Users },
   { href: "/campaigns", label: "Campaigns", icon: Radar },
   { href: "/calls", label: "Calls", icon: PhoneCall },
-  { href: "/analytics", label: "Call Analytics", icon: ScanSearch },
-  { href: "/promises", label: "Promises to Pay", icon: CalendarClock },
+  { href: "/analytics", label: "Call analytics", icon: ScanSearch },
+  { href: "/promises", label: "Promises to pay", icon: CalendarClock },
   { href: "/payments", label: "Payments", icon: Banknote },
-  { href: "/insights", label: "AI Insights", icon: Sparkles },
+  { href: "/insights", label: "AI insights", icon: Sparkles },
   { href: "/reports", label: "Reports", icon: FileText },
   { href: "/agents", label: "Agents", icon: Bot },
   { href: "/escalations", label: "Escalations", icon: AlertTriangle },
@@ -96,9 +96,7 @@ export function Sidebar({ guest = false }: { guest?: boolean }) {
         </div>
         {guest ? (
           <p className="px-5 text-[0.6875rem] leading-relaxed text-ink-3">
-            Demo session — the other
-            <br />
-            sections need a sign-in.
+            Demo session. Sign in to access all sections.
           </p>
         ) : (
           <p className="px-5 text-[0.6875rem] leading-relaxed text-ink-3">

@@ -24,11 +24,11 @@ export function CampaignForm({ agents }: { agents: { id: string; name: string }[
         body: JSON.stringify(payload),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error === "validation_failed" ? "Please check the highlighted fields." : (body.error ?? "Failed to create campaign"));
+      if (!res.ok) throw new Error(body.error === "validation_failed" ? "Please check the highlighted fields." : "The campaign could not be created. Try again.");
       router.push(`/campaigns/${body.id}`);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create campaign");
+      setError(err instanceof Error ? err.message : "The campaign could not be created. Try again.");
       setBusy(false);
     }
   }

@@ -106,7 +106,7 @@ export function LiveCampaign({
         body: JSON.stringify({ action }),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.message ?? body.error ?? "Request failed");
+      if (!res.ok) throw new Error(body.message ?? "The campaign could not be updated.");
       setNotice({
         kind: "ok",
         text:
@@ -116,7 +116,7 @@ export function LiveCampaign({
       });
       router.refresh();
     } catch (err) {
-      setNotice({ kind: "error", text: err instanceof Error ? err.message : "Request failed" });
+      setNotice({ kind: "error", text: err instanceof Error ? err.message : "The campaign could not be updated." });
     } finally {
       setBusy(null);
     }
@@ -135,14 +135,14 @@ export function LiveCampaign({
         body: JSON.stringify({ filter }),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.message ?? body.error ?? "Redial failed");
+      if (!res.ok) throw new Error(body.message ?? "The redial batch could not be sent.");
       setNotice({
         kind: "ok",
         text: `Redial batch created with ${body.contactCount} contact${body.contactCount === 1 ? "" : "s"} — only the filtered contacts were sent.${body.manualStep ? ` ${body.manualStep}` : ""}`,
       });
       router.refresh();
     } catch (err) {
-      setNotice({ kind: "error", text: err instanceof Error ? err.message : "Redial failed" });
+      setNotice({ kind: "error", text: err instanceof Error ? err.message : "The redial batch could not be sent." });
     } finally {
       setBusy(null);
     }

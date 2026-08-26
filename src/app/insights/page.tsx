@@ -8,7 +8,7 @@ import { RefreshInsightsButton } from "@/components/actions/RefreshInsights";
 import type { InsightFinding, RecommendedAction } from "@/services/ai";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "AI Insights" };
+export const metadata = { title: "AI insights" };
 
 function FindingList({ items }: { items: InsightFinding[] }) {
   if (!items?.length) return <p className="text-[0.8125rem] text-ink-3">Nothing notable in this period.</p>;
@@ -30,7 +30,7 @@ export default async function InsightsPage() {
   return (
     <div className="page-in">
       <PageHeader
-        title="AI Insights"
+        title="AI insights"
         description="Structured analysis of outcomes, behaviour, risk and campaign performance across the last 30 days."
         actions={<RefreshInsightsButton scope="insights" />}
       />

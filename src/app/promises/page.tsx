@@ -9,7 +9,7 @@ import { ParamSelect } from "@/components/actions/ParamSelect";
 import { CancelPromiseButton, SweepButton } from "./Actions";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Promises to Pay" };
+export const metadata = { title: "Promises to pay" };
 
 export default async function PromisesPage({
   searchParams,
@@ -27,7 +27,7 @@ export default async function PromisesPage({
   return (
     <div className="page-in">
       <PageHeader
-        title="Promises to Pay"
+        title="Promises to pay"
         description="Every commitment captured on calls, tracked to fulfilment."
         actions={<SweepButton />}
       />

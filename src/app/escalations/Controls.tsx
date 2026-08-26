@@ -17,9 +17,11 @@ export function EscalationControls({
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function update(patch: Record<string, unknown>) {
     setBusy(true);
+    setError(null);
     try {
       const res = await fetch(`/api/escalations/${escalationId}`, {
         method: "PATCH",
@@ -29,7 +31,7 @@ export function EscalationControls({
       if (!res.ok) throw new Error(String(res.status));
       router.refresh();
     } catch {
-      window.alert("Update failed — try again.");
+      setError("The escalation could not be updated.");
     } finally {
       setBusy(false);
     }
@@ -37,6 +39,7 @@ export function EscalationControls({
 
   return (
     <div className="flex items-center justify-end gap-1.5">
+      {error && <span className="text-[0.6875rem] text-[#ec8181]">{error}</span>}
       <select
         className="field py-1 text-[0.71875rem]"
         value={assignedToUserId ?? ""}

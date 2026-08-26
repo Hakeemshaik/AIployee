@@ -37,7 +37,7 @@ export default async function AgentDetailPage({
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <StatCard label="Calls today" value={String(performance.callsToday)} />
         <StatCard label="Calls total" value={String(performance.callsTotal)} />
-        <StatCard label="Connection rate" value={percent(performance.connectionRate, 0)} />
+        <StatCard label="Connect rate" value={percent(performance.connectionRate, 0)} />
         <StatCard label="Promise rate" value={percent(performance.promiseRate, 0)} sub="promises per connected call" />
         <StatCard label="Recovery value" value={money(performance.recoveryValue)} tone="good" sub="from this agent's promises" />
       </div>

@@ -16,7 +16,7 @@ export default async function AgentsPage() {
   return (
     <div className="page-in">
       <PageHeader
-        title="AI Agents"
+        title="AI agents"
         description="Voice agents from your calling platform and their collection performance."
       />
       {agents.length === 0 ? (
@@ -51,7 +51,7 @@ export default async function AgentsPage() {
                 {[
                   ["Calls today", String(performance.callsToday)],
                   ["Calls total", String(performance.callsTotal)],
-                  ["Connection rate", percent(performance.connectionRate, 0)],
+                  ["Connect rate", percent(performance.connectionRate, 0)],
                   ["Promise rate", percent(performance.promiseRate, 0)],
                   ["Recovery value", money(performance.recoveryValue)],
                 ].map(([k, v]) => (

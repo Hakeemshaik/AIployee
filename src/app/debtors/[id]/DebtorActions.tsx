@@ -19,9 +19,11 @@ export function DebtorActions({
   const [escalateOpen, setEscalateOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [assignError, setAssignError] = useState<string | null>(null);
 
   async function assignCampaign(campaignId: string) {
     setBusy(true);
+    setAssignError(null);
     try {
       const res = await fetch(`/api/debtors/${debtor.id}`, {
         method: "PATCH",
@@ -31,7 +33,7 @@ export function DebtorActions({
       if (!res.ok) throw new Error(String(res.status));
       router.refresh();
     } catch {
-      window.alert("Could not reassign the campaign — try again.");
+      setAssignError("The campaign assignment could not be saved.");
     } finally {
       setBusy(false);
     }
@@ -53,11 +55,11 @@ export function DebtorActions({
           notes: form.get("notes") || undefined,
         }),
       });
-      if (!res.ok) throw new Error("Escalation failed — try again.");
+      if (!res.ok) throw new Error("The escalation could not be created.");
       setEscalateOpen(false);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Escalation failed");
+      setError(err instanceof Error ? err.message : "The escalation could not be created.");
     } finally {
       setBusy(false);
     }
@@ -82,6 +84,7 @@ export function DebtorActions({
       <button className="btn btn-danger" onClick={() => setEscalateOpen(true)}>
         <AlertTriangle size={13} /> Escalate
       </button>
+      {assignError && <span className="text-[0.6875rem] text-[#ec8181]">{assignError}</span>}
 
       {escalateOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[14vh]">
@@ -114,7 +117,7 @@ export function DebtorActions({
               </div>
               <div>
                 <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="esc-notes">Notes for the collector</label>
-                <textarea id="esc-notes" name="notes" rows={3} className="field w-full resize-y" placeholder="What should a human look at?" />
+                <textarea id="esc-notes" name="notes" rows={3} className="field w-full resize-y" placeholder="Context for the assigned collector" />
               </div>
               {error && <p className="text-[0.78125rem] text-[#ec8181]">{error}</p>}
               <button type="submit" disabled={busy} className="btn btn-primary w-full justify-center">

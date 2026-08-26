@@ -33,7 +33,7 @@ export function GenerateReportControl({ campaigns }: { campaigns: { id: string; 
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {error && <span className="text-[0.6875rem] text-[#ec8181]">Generation failed</span>}
+      {error && <span className="text-[0.6875rem] text-[#ec8181]">The report could not be generated.</span>}
       <select className="field" value={type} onChange={(e) => setType(e.target.value)} aria-label="Report type">
         {REPORT_TYPES.map((t) => (
           <option key={t} value={t}>{label(t)}</option>

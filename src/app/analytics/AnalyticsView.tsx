@@ -386,9 +386,9 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
                     <span className="flex flex-wrap gap-1">
                       {r.hasPtp && <Badge value="fulfilled" label="PTP" />}
                       {r.disputed && <Badge value="dispute" label="Dispute" />}
-                      {r.paidClaimed && <Badge value="paid_in_full_claimed" label="Paid?" />}
+                      {r.paidClaimed && <Badge value="paid_in_full_claimed" label="Payment claimed" />}
                       {r.escalated && <Badge value="escalated" label="Escalated" />}
-                      {r.doNotCall && <Badge value="opted_out" label="DNC" />}
+                      {r.doNotCall && <Badge value="opted_out" label="Do not call" />}
                     </span>
                   </td>
                   <td className="text-right">

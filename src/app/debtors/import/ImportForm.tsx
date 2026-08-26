@@ -6,8 +6,8 @@ import { useRef, useState } from "react";
 import { CheckCircle2, FileUp, Upload } from "lucide-react";
 
 const TEMPLATE = `firstName,lastName,accountNumber,phone,email,city,province,creditorName,originalBalance,currentBalance,dueDate
-Nomsa,Khanyile,EDG-5001,0821234567,nomsa.khanyile@gmail.com,Durban,KwaZulu-Natal,Edgars Retail Credit,4850,4850,2026-06-15
-Dawie,Kruger,EDG-5002,+27835551234,,Pretoria,Gauteng,Edgars Retail Credit,12400,11150,2026-05-30`;
+Jane,Doe,ACC-1001,+27821234567,jane.doe@example.com,Johannesburg,Gauteng,Example Retail Credit,4850,4850,2026-06-15
+John,Smith,ACC-1002,+27835551234,,Pretoria,Gauteng,Example Retail Credit,12400,11150,2026-05-30`;
 
 type ImportResult = { created: number; skipped: { row: number; reason: string }[] };
 
@@ -41,11 +41,11 @@ export function ImportForm({ campaigns }: { campaigns: { id: string; name: strin
         body: JSON.stringify({ csv, ...(campaignId ? { campaignId } : {}) }),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.message ?? body.error ?? "Import failed");
+      if (!res.ok) throw new Error(body.message ?? "The import could not be completed.");
       setResult(body);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Import failed");
+      setError(err instanceof Error ? err.message : "The import could not be completed.");
     } finally {
       setBusy(false);
     }

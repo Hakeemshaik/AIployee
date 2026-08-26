@@ -65,7 +65,7 @@ export function LoginCard() {
       body: JSON.stringify(body),
     });
     const parsed = (await res.json().catch(() => ({}))) as { message?: string; redirectTo?: string };
-    if (!res.ok) throw new Error(parsed.message ?? "That did not work. Try again.");
+    if (!res.ok) throw new Error(parsed.message ?? "Sign-in failed. Check your email and password.");
     return parsed.redirectTo ?? "/";
   }
 
@@ -97,7 +97,7 @@ export function LoginCard() {
       const to = await post({ mode, email, password, ...(name ? { name } : {}) });
       enter(router, to);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "That did not work.");
+      setError(err instanceof Error ? err.message : "Sign-in failed. Try again.");
       setBusy(null);
     }
   }

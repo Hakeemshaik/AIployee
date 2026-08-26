@@ -157,8 +157,8 @@ export function ComplianceForm({ initial }: { initial: Compliance }) {
         <button onClick={save} disabled={busy} className="btn btn-primary">
           {busy ? "Saving…" : "Save guardrails"}
         </button>
-        {saved && <span className="text-[0.75rem] text-[#5fc46a]">Saved.</span>}
-        {error && <span className="text-[0.75rem] text-[#ec8181]">Save failed — try again.</span>}
+        {saved && <span className="text-[0.75rem] text-[#5fc46a]">Changes saved</span>}
+        {error && <span className="text-[0.75rem] text-[#ec8181]">Changes could not be saved.</span>}
       </div>
       <p className="text-[0.6875rem] leading-relaxed text-ink-3">
         These guardrails are configuration, not legal advice — set them to match your organization&apos;s

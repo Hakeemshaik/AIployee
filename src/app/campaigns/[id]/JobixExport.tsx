@@ -24,10 +24,10 @@ export function JobixExport({ campaignId }: { campaignId: string }) {
     try {
       const res = await fetch(`/api/jobix-export?campaignId=${campaignId}&format=json`);
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Could not build the list");
+      if (!res.ok) throw new Error("The dialling list could not be generated.");
       setResult(body);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not build the list");
+      setError(err instanceof Error ? err.message : "The dialling list could not be generated.");
     } finally {
       setBusy(false);
     }

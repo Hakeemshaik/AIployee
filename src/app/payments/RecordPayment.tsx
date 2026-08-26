@@ -34,7 +34,7 @@ export function RecordPaymentButton({
         body: JSON.stringify(payload),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error === "validation_failed" ? "Check the amount and debtor." : (body.error ?? "Failed"));
+      if (!res.ok) throw new Error(body.error === "validation_failed" ? "Check the amount and debtor." : "The payment could not be recorded. Try again.");
       setDone(true);
       router.refresh();
       setTimeout(() => {
@@ -42,7 +42,7 @@ export function RecordPaymentButton({
         setDone(false);
       }, 900);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to record payment");
+      setError(err instanceof Error ? err.message : "The payment could not be recorded. Try again.");
     } finally {
       setBusy(false);
     }
