@@ -14,7 +14,7 @@ import { getIngestProgress } from "@/services/jobix/ingest";
 import { loadJobixEnv } from "@/services/jobix/client";
 import { PageHeader } from "@/components/ui";
 import { AnalyticsView, type AnalyticsPayload } from "./AnalyticsView";
-import { IngestionPanel, type Progress } from "./IngestionPanel";
+import { IngestionPanel, type Progress, type ServerDiagnostic } from "./IngestionPanel";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Call analytics" };
@@ -23,7 +23,12 @@ export default async function AnalyticsPage() {
   const guest = await isGuest();
 
   let payload: AnalyticsPayload;
-  let ingestion: { initial: Progress | null; configured: boolean; disabledReason?: string };
+  let ingestion: {
+    initial: Progress | null;
+    configured: boolean;
+    disabledReason?: string;
+    diagnostic?: ServerDiagnostic;
+  };
 
   if (guest) {
     const meta = demoMeta();
@@ -82,6 +87,21 @@ export default async function AnalyticsPage() {
       initial: lastRun
         ? (JSON.parse(JSON.stringify(lastRun)) as Progress)
         : null,
+      // What THIS deployment can actually see — presence booleans and build
+      // identity only, never values. Exists because "the variable is set in
+      // Vercel" and "the running function received it" are different facts,
+      // and debugging the gap by screenshot wastes everyone's day.
+      diagnostic: {
+        vercelEnv: process.env.VERCEL_ENV ?? null,
+        branch: process.env.VERCEL_GIT_COMMIT_REF ?? null,
+        commit: (process.env.VERCEL_GIT_COMMIT_SHA ?? "").slice(0, 7) || null,
+        vars: {
+          JOBIX_TOKEN: !!process.env.JOBIX_TOKEN,
+          JOBIX_COMPANY_KEY: !!process.env.JOBIX_COMPANY_KEY,
+          JOBIX_FLOW_UUID: !!process.env.JOBIX_FLOW_UUID,
+          JOBIX_TRIGGER_NODE_UUID: !!process.env.JOBIX_TRIGGER_NODE_UUID,
+        },
+      },
     };
     const classifiedById = new Map(result.classified.map((c) => [c.accountId, c]));
     payload = {
@@ -133,6 +153,7 @@ export default async function AnalyticsPage() {
         initial={ingestion.initial}
         configured={ingestion.configured}
         disabledReason={ingestion.disabledReason}
+        diagnostic={ingestion.diagnostic}
       />
       <AnalyticsView payload={JSON.parse(JSON.stringify(payload))} canCall={payload.source === "live"} />
     </div>

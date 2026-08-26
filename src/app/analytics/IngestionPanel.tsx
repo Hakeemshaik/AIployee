@@ -53,6 +53,14 @@ const PHASES = [
 
 const POLL_MS = 2000;
 
+export type ServerDiagnostic = {
+  vercelEnv: string | null;
+  branch: string | null;
+  commit: string | null;
+  vars: Record<string, boolean>;
+};
+
+
 function phaseIndex(phase: string): number {
   const found = PHASES.findIndex((p) => p.key === phase);
   return found === -1 ? PHASES.length : found;
@@ -125,12 +133,15 @@ export function IngestionPanel({
   initial,
   configured,
   disabledReason,
+  diagnostic,
 }: {
   initial: Progress | null;
   /** Whether the server has Jobix credentials. Never the credentials themselves. */
   configured: boolean;
   /** Set when the viewer may not ingest at all (demo mode, or insufficient role). */
   disabledReason?: string;
+  /** What the running deployment sees — presence booleans and build identity, no values. */
+  diagnostic?: ServerDiagnostic;
 }) {
   const [progress, setProgress] = useState<Progress | null>(initial);
   const [running, setRunning] = useState(initial?.status === "running");
@@ -341,6 +352,19 @@ export function IngestionPanel({
             interrupted run continues where it stopped. Refresh the page to recompute the analytics below with
             the newly ingested data.
           </p>
+
+          {diagnostic && (
+            <p className="num text-[0.65625rem] leading-relaxed text-ink-3">
+              This deployment sees:{" "}
+              {Object.entries(diagnostic.vars)
+                .map(([name, present]) => `${name} ${present ? "✓" : "✗"}`)
+                .join(" · ")}
+              {" — env "}
+              {diagnostic.vercelEnv ?? "?"}
+              {diagnostic.branch ? ` · branch ${diagnostic.branch}` : ""}
+              {diagnostic.commit ? ` · build ${diagnostic.commit}` : ""}
+            </p>
+          )}
         </div>
       )}
     </section>
