@@ -187,7 +187,14 @@ page can be traced to the evidence behind it:
 request each, so they are fetched at concurrency 12, checkpointed every 25, cached in
 `JobixTranscript` by conversation uuid and **never re-fetched**. Customers are stale-filtered
 on `_modify_time` and deduped by phone (skipping this produced 5,608 "records" for 660
-phones). A fourth phase pulls flow **node history** (WhatsApp/SMS sends and filter branches)
+phones). Pulled customers are then **persisted**: debtors are matched by phone — the only
+key Jobix reliably puts on a customer — or created with a `JBX-` account number and their
+balance; a confirmed PTP becomes a real PromiseToPay row (unstated amounts stay 0 so the
+floor/ceiling range stays honest, and a date the provider never stated is marked
+`dateStated:false` rather than passed off as debtor-chosen). The provider can escalate a
+debtor's state but never quietly walk it back: do-not-contact is set, never unset, and
+human-owned statuses (legal, hardship, opted-out) are not overwritten by a flag sync.
+A fourth phase pulls flow **node history** (WhatsApp/SMS sends and filter branches)
 when `JOBIX_FLOW_UUID` is set; without a flow there is no endpoint to ask, so the phase is
 skipped and reports zero rather than inventing state. Jobix issues no event id for these, so
 identity is the event's content and a repeat is ignored as the same event seen again.

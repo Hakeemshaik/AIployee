@@ -330,6 +330,8 @@ model IngestionRun {
   transcriptsCached  Int   @default(0)
   transcriptsFailed  Int   @default(0)
   customersFound     Int   @default(0)
+  customersCreated   Int   @default(0)
+  customersUpdated   Int   @default(0)
   droppedStale       Int   @default(0)
   droppedDuplicate   Int   @default(0)
   messagingEvents    Int   @default(0)

@@ -11,6 +11,7 @@ import {
   type JobixConversation,
 } from "./api";
 import { messagingChannel, nameKey } from "./messaging";
+import { persistCustomers } from "./customers";
 import { JobixClient, JobixError, loadJobixEnv } from "./client";
 
 // ---------------------------------------------------------------------------
@@ -50,6 +51,8 @@ export type IngestProgress = {
   transcriptsCached: number;
   transcriptsFailed: number;
   customersFound: number;
+  customersCreated: number;
+  customersUpdated: number;
   droppedStale: number;
   droppedDuplicate: number;
   messagingEvents: number;
@@ -270,8 +273,14 @@ export async function runIngestion(options: IngestOptions): Promise<IngestProgre
     const { customers, droppedStale, droppedDuplicate } = await pullCustomers(client, {
       campaignStart: options.since,
     });
+    // Persist what was pulled: debtors matched or created by phone, and
+    // confirmed PTPs written as real promise rows so the commitments range and
+    // the work queue see them.
+    const sync = await persistCustomers(organizationId, customers);
     await update({
       customersFound: customers.length,
+      customersCreated: sync.created,
+      customersUpdated: sync.updated,
       droppedStale,
       droppedDuplicate,
       phase: "messaging",
@@ -301,6 +310,11 @@ export async function runIngestion(options: IngestOptions): Promise<IngestProgre
         transcriptsCached: cachedSet.size,
         transcriptsFailed: failed,
         customers: customers.length,
+        customersCreated: sync.created,
+        customersUpdated: sync.updated,
+        customersSkippedNoPhone: sync.skippedNoPhone,
+        promisesCreated: sync.promisesCreated,
+        promisesUpdated: sync.promisesUpdated,
         droppedStale,
         droppedDuplicate,
         messagingEvents,
@@ -333,6 +347,8 @@ export async function getIngestProgress(
     transcriptsCached: run.transcriptsCached,
     transcriptsFailed: run.transcriptsFailed,
     customersFound: run.customersFound,
+    customersCreated: run.customersCreated,
+    customersUpdated: run.customersUpdated,
     droppedStale: run.droppedStale,
     droppedDuplicate: run.droppedDuplicate,
     messagingEvents: run.messagingEvents,

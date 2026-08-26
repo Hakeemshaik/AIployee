@@ -33,6 +33,8 @@ export type Progress = {
   transcriptsCached: number;
   transcriptsFailed: number;
   customersFound: number;
+  customersCreated: number;
+  customersUpdated: number;
   droppedStale: number;
   droppedDuplicate: number;
   messagingEvents: number;
@@ -280,7 +282,11 @@ export function IngestionPanel({
                 value={progress.transcriptsFailed}
                 hint="Transcript fetches that errored — a re-run retries only these"
               />
-              <Counter label="Customers" value={progress.customersFound} hint="After stale and duplicate filtering" />
+              <Counter
+                label="Customers"
+                value={progress.customersFound}
+                hint={`After stale and duplicate filtering — ${progress.customersCreated} new debtors created, ${progress.customersUpdated} existing updated by phone match`}
+              />
               <Counter
                 label="Messaging"
                 value={progress.messagingEvents}
