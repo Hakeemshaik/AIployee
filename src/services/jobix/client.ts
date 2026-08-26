@@ -172,7 +172,19 @@ export class JobixClient {
 
   /** POST against the write API base (customer/save lives there). */
   async postWrite<T>(path: string, body: unknown): Promise<T> {
-    const url = `${this.env.apiBase}${path}`;
+    return this.post(`${this.env.apiBase}${path}`, body);
+  }
+
+  /**
+   * POST against the dashboard host. The flow trigger
+   * (/api/nodes/now/trigger) lives here, NOT on the write API base — confirmed
+   * from a DevTools capture of the flow builder's own Run button.
+   */
+  async postDashboard<T>(path: string, body: unknown): Promise<T> {
+    return this.post(`${this.env.base}${path}`, body);
+  }
+
+  private async post<T>(url: string, body: unknown): Promise<T> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     try {
@@ -190,7 +202,7 @@ export class JobixClient {
       const text = await response.text();
       if (!response.ok) {
         throw new JobixError(
-          `Jobix write failed (HTTP ${response.status}) for ${path}.`,
+          `Jobix write failed (HTTP ${response.status}) for ${redact(url)}.`,
           response.status === 401 || response.status === 403 ? "unauthorized" : "rejected",
           redact(text),
         );

@@ -49,3 +49,30 @@ describe("calling-hours hard gate", () => {
     expect(checkCallingWindow(utc("2026-08-17T22:00:00Z")).allowed).toBe(false);
   });
 });
+
+describe("flow trigger contract (captured from the flow builder)", () => {
+  // The trigger request was captured from DevTools on the Run button. These
+  // pin what the capture established, so a refactor cannot drift back to the
+  // earlier guessed shape (snake_case with an inline filter — Jobix accepts
+  // neither).
+  it("targets the dashboard host path, not the write API", async () => {
+    const source = (await import("node:fs")).readFileSync("src/services/jobix/calling.ts", "utf8");
+    expect(source).toContain('"/api/nodes/now/trigger"');
+    expect(source).toContain("postDashboard(");
+    // The old guess must be gone: no filter in the trigger payload.
+    expect(source).not.toContain("flow_uuid");
+    expect(source).not.toMatch(/trigger[\s\S]{0,300}operator: "Equals"/);
+  });
+
+  it("sends camelCase flowUuid and nodeUuid", async () => {
+    const source = (await import("node:fs")).readFileSync("src/services/jobix/calling.ts", "utf8");
+    const trigger = source.slice(source.indexOf("postDashboard("));
+    expect(trigger).toContain("flowUuid: env.flowUuid");
+    expect(trigger).toContain("nodeUuid: triggerNodeUuid");
+  });
+
+  it("stays inert without the Now node uuid", async () => {
+    const source = (await import("node:fs")).readFileSync("src/services/jobix/calling.ts", "utf8");
+    expect(source).toContain("env.flowUuid && triggerNodeUuid");
+  });
+});

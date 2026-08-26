@@ -31,7 +31,9 @@ export async function GET() {
     window: checkCallingWindow(),
     guest: session.kind === "guest",
     callingEnabled: process.env.JOBIX_CALLING_ENABLED === "true",
-    triggerConfigured: !!process.env.JOBIX_TRIGGER_PATH,
+    // The path has a confirmed default; what actually gates the trigger is
+    // knowing WHICH flow and WHICH Now node to run.
+    triggerConfigured: !!process.env.JOBIX_FLOW_UUID && !!process.env.JOBIX_TRIGGER_NODE_UUID,
   });
 }
 

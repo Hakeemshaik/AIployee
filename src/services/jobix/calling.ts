@@ -16,20 +16,26 @@ import { JobixClient, JobixError, loadJobixEnv } from "./client";
 //   2. stamp a unique batch code onto those accounts via customer/save
 //   3. WAIT and VERIFY the stamp landed (the save is asynchronous and
 //      downstream reads can be stale for tens of seconds)
-//   4. trigger the flow with a filter of `call Equals <batchCode>`
+//   4. trigger the flow's "Now" node, which runs the flow.
 //
-// Step 4 is NOT implemented against a guessed endpoint. The trigger request
-// has to be captured from the flow builder first (see TRIGGER_DISCOVERY), and
-// until JOBIX_TRIGGER_PATH is configured the run stops after step 3 with the
-// batch prepared and the exact next action reported.
-// ---------------------------------------------------------------------------
+// The trigger was captured from the flow builder's own Run button (DevTools):
+//   POST {base}/api/nodes/now/trigger   (the DASHBOARD host, not the write API)
+//   body: { "flowUuid": "...", "nodeUuid": "..." }   (camelCase)
+//
+// CRITICAL — the trigger carries NO audience. There is no filter in the
+// request: Jobix dials whatever the flow's own entry filter matches at run
+// time. The platform's protection is therefore the stamp: only this batch's
+// accounts get the batch code written to their `call` field, and the flow's
+// filter node (configured once, in the builder) must gate on that field.
+// Until JOBIX_TRIGGER_NODE_UUID is set the run stops after the stamp with
+// instructions instead of pretending.
 
-export const TRIGGER_DISCOVERY = `Capture the trigger request before enabling automatic dialling:
-  1. Open the flow builder, open the "Now" node and press Run.
-  2. With DevTools → Network recording, note the request method, URL and payload.
-  3. Also capture the request made when saving a node's filter.
-  4. Set JOBIX_TRIGGER_PATH (and JOBIX_TRIGGER_METHOD if not POST) to that path.
-Until then the batch is stamped and ready, and the run is started from the flow builder.`;
+export const TRIGGER_DISCOVERY = `Automatic dialling needs two settings (from the flow builder):
+  1. JOBIX_FLOW_UUID — the id in the flow's URL (/automation/<uuid>).
+  2. JOBIX_TRIGGER_NODE_UUID — the "Now" node's uuid, from a DevTools capture of the Run button.
+Then set JOBIX_CALLING_ENABLED=true — but FIRST confirm the flow's entry filter gates on the
+\`call\` field, because the trigger itself carries no audience: Jobix dials whatever the flow's
+filter matches.`;
 
 /** Calling windows in South African time. No Sundays. */
 export const CALLING_WINDOWS: Record<number, { start: number; end: number } | null> = {
@@ -229,20 +235,25 @@ export async function dispatchBatch(
     // Verification is best-effort; the audit records what was attempted.
   }
 
-  // --- trigger, only against a confirmed path ---
-  const triggerPath = process.env.JOBIX_TRIGGER_PATH;
+  // --- trigger the flow's Now node, exactly as the flow builder's Run does ---
+  // Path and payload come from a DevTools capture, not a guess. The default
+  // path can be overridden with JOBIX_TRIGGER_PATH if Jobix ever moves it.
+  const triggerPath = process.env.JOBIX_TRIGGER_PATH || "/api/nodes/now/trigger";
+  const triggerNodeUuid = process.env.JOBIX_TRIGGER_NODE_UUID;
   let triggered = false;
   let nextAction = TRIGGER_DISCOVERY;
 
-  if (triggerPath && env.flowUuid) {
-    await client.postWrite(triggerPath, {
-      flow_uuid: env.flowUuid,
-      filter: { field: "call", operator: "Equals", value: batch.batchCode },
+  if (env.flowUuid && triggerNodeUuid) {
+    await client.postDashboard(triggerPath, {
+      flowUuid: env.flowUuid,
+      nodeUuid: triggerNodeUuid,
     });
     triggered = true;
-    nextAction = `Triggered flow ${env.flowUuid} for batch ${batch.batchCode}.`;
+    nextAction =
+      `Triggered the flow for batch ${batch.batchCode} (${stamped} account(s) stamped). ` +
+      `Jobix dials what the flow's own filter matches — the stamp on the \`call\` field is what scopes it to this batch.`;
   } else {
-    nextAction = `Batch ${batch.batchCode} is stamped on ${stamped} account(s). Start the flow with filter "call Equals ${batch.batchCode}". ${TRIGGER_DISCOVERY}`;
+    nextAction = `Batch ${batch.batchCode} is stamped on ${stamped} account(s). Press Run on the flow in Jobix, or configure the trigger: ${TRIGGER_DISCOVERY}`;
   }
 
   await audit({

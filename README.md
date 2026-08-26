@@ -229,11 +229,19 @@ mismatch. Only the *presence* of credentials is sent to the browser, never a val
 | `customer/save` is asynchronous | dispatch waits, then verifies before triggering |
 | endpoints time out under sustained paging | retry with backoff + checkpointing |
 
-### Calling — guarded, and the one genuine gap
+### Calling — guarded, trigger confirmed
 
 Calling is last in the build order and off by default (`JOBIX_CALLING_ENABLED=false`).
 Both "call one" and "call all" take one path: filter → stamp a unique batch code via
-`customer/save` → wait and verify → trigger the flow with `call Equals <batchCode>`.
+`customer/save` → wait and verify → trigger the flow's Now node.
+
+The trigger was captured from the flow builder's own Run button, not guessed:
+`POST {JOBIX_BASE}/api/nodes/now/trigger` with `{ "flowUuid", "nodeUuid" }` — the dashboard
+host, camelCase, and **no audience in the request**. Jobix dials whatever the flow's own
+entry filter matches at run time, so the stamp is the scope: only this batch's accounts get
+the batch code written to their `call` field, and the flow's filter node must gate on that
+field. Configure `JOBIX_FLOW_UUID` and `JOBIX_TRIGGER_NODE_UUID`, confirm the flow filter,
+and only then set `JOBIX_CALLING_ENABLED=true`.
 
 Guardrails, all enforced server-side (a guest session is refused regardless of the UI):
 confirmation of exact account count and value; a hard SAST calling-hours gate
