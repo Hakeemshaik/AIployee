@@ -521,6 +521,29 @@ signing key cannot be read, nobody is signed in.
 Sign out is server-side — the cookie is httpOnly, so it can only be cleared by the server.
 The control sits in the top bar in both modes ("Sign out" / "Leave demo").
 
+## Team and multi-tenancy
+
+Members join by invitation. An admin creates an invite in **Settings → Team** (name, email,
+role); the app shows the link exactly once — no email service is involved, the admin sends it
+through whatever channel the team uses — and the invitee sets their own password on that
+link. Tokens are stored as SHA-256 only, expire after seven days, and are single use. Roles
+(admin, manager, collector, viewer) can be changed and members removed from the same card;
+the last admin can be neither demoted nor removed, and every mutation is audited.
+
+The data model is tenant-scoped throughout (every entity carries `organizationId`, and every
+query derives it from the session), verified by integration tests that create two
+organizations and assert nothing crosses: journeys, analytics, team listings, invites and
+ingestion progress. Three boundaries are enforced explicitly because the provider
+integration is deployment-global:
+
+- The signed Jobix webhook refuses to process events when more than one organization exists —
+  a deployment-wide HMAC secret cannot identify a tenant. Multi-organization deployments use
+  per-organization API keys instead.
+- Ingestion and outbound calling refuse to run on a multi-organization deployment, because a
+  deployment-global Jobix connection would pull the same workspace into every tenant.
+- Provider-event idempotency and transcript caching are unique per organization, so one
+  tenant can neither suppress another's webhook events nor collide with its transcript rows.
+
 ## Moving from the demo book to a real one
 
 `/setup` can seed a complete fictional organization so the platform can be seen working. When

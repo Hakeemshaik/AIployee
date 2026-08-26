@@ -6,6 +6,7 @@ import { getSettings } from "@/services/settings";
 import { Badge, GlassCard, Meta, PageHeader } from "@/components/ui";
 import { ComplianceForm } from "./ComplianceForm";
 import { ResetDataCard } from "./ResetDataCard";
+import { TeamCard } from "./TeamCard";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Settings" };
@@ -62,19 +63,23 @@ export default async function SettingsPage() {
             anonymised data is sent for insight generation.
           </p>
         </GlassCard>
-        <GlassCard title="Team">
-          <ul className="space-y-2.5">
-            {users.map((u) => (
-              <li key={u.id} className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[0.8125rem] font-medium text-ink">{u.name}</p>
-                  <p className="text-[0.6875rem] text-ink-3">{u.email}</p>
-                </div>
-                <Badge value="neutral" label={u.role} />
-              </li>
-            ))}
-          </ul>
-        </GlassCard>
+        {ctx.userRole === "admin" ? (
+          <TeamCard selfId={ctx.userId} />
+        ) : (
+          <GlassCard title="Team">
+            <ul className="space-y-2.5">
+              {users.map((u) => (
+                <li key={u.id} className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[0.8125rem] font-medium text-ink">{u.name}</p>
+                    <p className="text-[0.6875rem] text-ink-3">{u.email}</p>
+                  </div>
+                  <Badge value="neutral" label={u.role} />
+                </li>
+              ))}
+            </ul>
+          </GlassCard>
+        )}
       </div>
 
       <GlassCard
@@ -102,7 +107,7 @@ export default async function SettingsPage() {
             }}
           />
         ) : (
-          <p className="text-[0.8125rem] text-ink-3">No compliance settings found — run the seed.</p>
+          <p className="text-[0.8125rem] text-ink-3">No compliance settings have been configured for this organization.</p>
         )}
       </GlassCard>
 

@@ -182,6 +182,15 @@ export type DemoSeedResult = {
 };
 
 export async function seedDemoData(): Promise<DemoSeedResult> {
+  // This wipes every tenant table unconditionally, so it must never run on a
+  // deployment that already has an organization. Its legitimate callers (the
+  // CLI seed and first-run setup) satisfy this by definition.
+  const existing = await db.organization.count();
+  if (existing > 0 && process.env.ALLOW_DESTRUCTIVE_SEED !== "true") {
+    throw new Error(
+      "seedDemoData refused: an organization already exists. Set ALLOW_DESTRUCTIVE_SEED=true to override deliberately.",
+    );
+  }
   const now = new Date();
   const daysAgo = (d: number) => new Date(now.getTime() - d * 86_400_000);
   const daysAhead = (d: number) => new Date(now.getTime() + d * 86_400_000);

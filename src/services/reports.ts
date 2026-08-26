@@ -76,6 +76,14 @@ export async function generateReport(
     });
     if (!campaign) throw new Error("Campaign not found in this organization");
   }
+  if (data.agentId) {
+    // Same rule as the campaign: a foreign agent id must not be persisted.
+    const agent = await db.aIAgent.findFirst({
+      where: { id: data.agentId, organizationId },
+      select: { id: true },
+    });
+    if (!agent) throw new Error("Agent not found in this organization.");
+  }
 
   const snapshot = await buildCollectionSnapshot(organizationId, {
     periodStart,

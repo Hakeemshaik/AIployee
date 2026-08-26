@@ -183,8 +183,25 @@ async function ingestNodeHistory(
   return stored;
 }
 
+/**
+ * The Jobix credentials are deployment-global environment variables, so they
+ * cannot be partitioned between tenants: every organization would be pulling
+ * the same workspace into itself. Ingestion and calling therefore refuse to
+ * run on a deployment with more than one organization.
+ */
+export async function assertSingleOrganization(): Promise<void> {
+  const organizations = await db.organization.count();
+  if (organizations > 1) {
+    throw new JobixError(
+      "This deployment has multiple organizations, but the Jobix connection is deployment-wide. Per-organization integration settings are required before ingestion or calling can run.",
+      "rejected",
+    );
+  }
+}
+
 export async function runIngestion(options: IngestOptions): Promise<IngestProgress> {
   const { organizationId } = options;
+  await assertSingleOrganization();
   const client = jobixClientOrThrow();
 
   const run = await db.ingestionRun.create({
@@ -242,7 +259,7 @@ export async function runIngestion(options: IngestOptions): Promise<IngestProgre
             summary.userWords < 15);
 
         await db.jobixTranscript.upsert({
-          where: { conversationUuid: conversation.uuid },
+          where: { organizationId_conversationUuid: { organizationId, conversationUuid: conversation.uuid } },
           create: {
             organizationId,
             conversationId,

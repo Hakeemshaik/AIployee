@@ -52,6 +52,7 @@ model Organization {
   jobixTranscripts   JobixTranscript[]
   ingestionRuns      IngestionRun[]
   jobixNodeEvents    JobixNodeEvent[]
+  invites            Invite[]
 }
 
 model User {
@@ -263,7 +264,7 @@ model ProviderEvent {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  @@unique([provider, externalEventId])
+  @@unique([organizationId, provider, externalEventId])
   @@index([organizationId, type, createdAt])
 }
 
@@ -302,7 +303,7 @@ model JobixTranscript {
   id             String   @id @default(cuid())
   organizationId String
   conversationId String   @unique
-  conversationUuid String @unique
+  conversationUuid String
   /** JSON array of { role, text }. */
   turns          String
   userTurns      Int      @default(0)
@@ -315,6 +316,7 @@ model JobixTranscript {
   organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   conversation JobixConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
+  @@unique([organizationId, conversationUuid])
   @@index([organizationId, reached])
 }
 
@@ -659,4 +661,27 @@ model ServerSecret {
   name      String   @id
   value     String
   createdAt DateTime @default(now())
+}
+
+/// An invitation to join an organization.
+///
+/// There is no outbound email service, so the flow is: an admin creates the
+/// invite, the app shows the link exactly once, and the admin sends it through
+/// whatever channel they already use. The token itself is never stored — only
+/// its SHA-256 — so a database read cannot mint working links.
+model Invite {
+  id             String    @id @default(cuid())
+  organizationId String
+  email          String
+  name           String
+  role           String    @default("collector")
+  tokenHash      String    @unique
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdById    String
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
 }

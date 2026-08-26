@@ -19,7 +19,10 @@ export async function getSetupStatus() {
     db.organization.count(),
     db.organization.findFirst({ select: { name: true } }),
   ]);
-  return { needsSetup: orgCount === 0, orgName: orgName?.name ?? null };
+  // The organization's name is disclosed only while setup is still open —
+  // this endpoint is reachable without a session.
+  const needsSetup = orgCount === 0;
+  return { needsSetup, orgName: needsSetup ? (orgName?.name ?? null) : null };
 }
 
 export const setupSchema = z.object({

@@ -36,8 +36,23 @@ export async function POST(request: Request) {
         { status: 401 },
       );
     }
-    // A signed webhook is trusted; scope it to the organization that has the
-    // Jobix integration configured (single-tenant secret).
+    // The signature proves the sender knows the deployment's secret — it does
+    // NOT identify a tenant, because JOBIX_WEBHOOK_SECRET is one value for the
+    // whole deployment. With one organization that is unambiguous; with more
+    // than one it would write call data into an arbitrary tenant, so the
+    // signed path refuses outright rather than guessing. Multi-organization
+    // deployments must use per-organization API keys (the Bearer path below).
+    const organizations = await db.organization.count();
+    if (organizations > 1) {
+      return NextResponse.json(
+        {
+          error: "ambiguous_tenant",
+          message:
+            "This deployment has multiple organizations, so the shared webhook secret cannot identify one. Use a per-organization API key (Authorization: Bearer) instead.",
+        },
+        { status: 409 },
+      );
+    }
     const settings = await db.integrationSettings.findFirst({
       where: { provider: "jobix" },
       select: { organizationId: true },

@@ -197,6 +197,9 @@ export async function dispatchBatch(
   const window = checkCallingWindow();
   if (!window.allowed) throw new JobixError(window.reason, "rejected");
 
+  const { assertSingleOrganization } = await import("./ingest");
+  await assertSingleOrganization();
+
   const env = loadJobixEnv();
   if (!env?.companyKey) {
     throw new JobixError("JOBIX_COMPANY_KEY is required to stamp a batch code.", "not_configured");
