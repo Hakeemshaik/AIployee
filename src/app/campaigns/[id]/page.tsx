@@ -8,8 +8,8 @@ import { listDebtors } from "@/services/debtors";
 import { BackLink, Badge, GlassCard, Meta, PageHeader, StatCard } from "@/components/ui";
 import { CampaignActivityChart, HBarChart, PaymentsBarChart } from "@/components/charts";
 import { StatusControls } from "./StatusControls";
-import { JobixExport } from "./JobixExport";
 import { LiveCampaign } from "./LiveCampaign";
+import { LaunchPanel } from "./LaunchPanel";
 import { getCampaignLiveState } from "@/services/campaign-live";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +39,6 @@ export default async function CampaignDetailPage({
         description={campaign.description ?? undefined}
         actions={
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <JobixExport campaignId={campaign.id} />
             <StatusControls campaignId={campaign.id} status={campaign.status} />
           </div>
         }
@@ -64,6 +63,10 @@ export default async function CampaignDetailPage({
         <StatCard label="Contacted" value={String(metrics.contacted)} sub={`${metrics.connected} connected`} />
         <StatCard label="Promises" value={String(metrics.promises)} sub={money(metrics.promiseValue)} />
         <StatCard label="Recovered" value={money(metrics.recovered)} tone="good" sub={`${percent(metrics.recoveryRate)} recovery rate · ${metrics.payments} payments`} />
+      </div>
+
+      <div className="mb-4">
+        <LaunchPanel campaignId={campaign.id} canLaunch={canControl} />
       </div>
 
       <div className="mb-4 grid gap-4 xl:grid-cols-3">

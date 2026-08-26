@@ -99,7 +99,7 @@ export type PreparedBatch = {
   window: WindowCheck;
 };
 
-function batchCode(now = new Date()): string {
+export function batchCode(now = new Date()): string {
   const day = now.getUTCDate();
   const month = now.toLocaleString("en-GB", { month: "short" }).toUpperCase();
   const stamp = `${day}${month}`;

@@ -42,6 +42,13 @@ const EXCLUDED_STATUSES = ["paid", "opted_out", "dispute", "escalated", "legal",
 
 export type JobixExportOptions = {
   campaignId?: string;
+  /**
+   * When set, written into every row's `call` column. The flow's entry filter
+   * gates on that field, so a list pasted with the code already in place is
+   * pre-armed: triggering the flow dials exactly these rows and nobody else,
+   * with no separate stamping step.
+   */
+  batchCode?: string;
   /** Only accounts at least this many days overdue. */
   minDaysOverdue?: number;
   /** Only accounts owing at least this much. */
@@ -139,6 +146,7 @@ export async function buildJobixExport(
       batch,
       language: "English",
       "month-of": today.toISOString().slice(0, 7),
+      ...(options.batchCode ? { call: options.batchCode } : {}),
     };
     rows.push(JOBIX_COLUMNS.map((c) => csvCell(values[c])).join(","));
   }

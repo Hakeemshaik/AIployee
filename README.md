@@ -242,6 +242,26 @@ refresh-token dance: re-logging-in hourly is simpler and survives token rotation
 | `customer/save` is asynchronous | dispatch waits, then verifies before triggering |
 | endpoints time out under sustained paging | retry with backoff + checkpointing |
 
+### Launching a campaign, end to end
+
+The campaign page carries a three-step launch panel that replaces the manual Jobix workflow:
+
+1. **Contacts, categorised** — who will be dialled (count and value) and every excluded
+   account with its reason (do-not-contact, disputed, escalated, settled, unusable number,
+   nothing outstanding).
+2. **Send the list** — the platform generates the exact 72-column paste table Jobix's
+   database screen accepts, with this launch's batch code already written into every row's
+   `call` column. Pasting it is the one manual step, and it replaces both the old import and
+   the stamping step, because the flow's entry filter gates on `call`.
+3. **Start the calls** — the platform triggers the flow's Now node. Jobix dials exactly the
+   rows carrying the batch code. The start button stays disabled until the list is confirmed
+   pasted, calling is enabled, the trigger is configured, and the SAST calling window is
+   open — and the server re-checks all four.
+
+Results return through ingestion as usual. The remaining manual paste can be eliminated the
+same way the trigger was: capture the database screen's import request with DevTools and the
+platform can submit the list itself.
+
 ### Calling — guarded, trigger confirmed
 
 Calling is last in the build order and off by default (`JOBIX_CALLING_ENABLED=false`).
