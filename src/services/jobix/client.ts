@@ -50,18 +50,28 @@ export class JobixError extends Error {
 export type JobixEnv = {
   base: string;
   apiBase: string;
-  token: string;
+  /** Static bearer token. Session sign-in (email/password) is preferred:
+   *  the dashboard API only accepts the short-lived tokens a login mints. */
+  token?: string;
+  email?: string;
+  password?: string;
   companyKey?: string;
   flowUuid?: string;
 };
 
 export function loadJobixEnv(): JobixEnv | null {
   const token = process.env.JOBIX_TOKEN ?? process.env.JOBIX_API_KEY;
-  if (!token) return null;
+  const email = process.env.JOBIX_EMAIL;
+  const password = process.env.JOBIX_PASSWORD;
+  // Configured = either credential style. Session sign-in wins when both are
+  // set, because the static profile key does not open the dashboard API.
+  if (!token && !(email && password)) return null;
   return {
     base: (process.env.JOBIX_BASE ?? "https://dashboard.jobix.ai").replace(/\/$/, ""),
     apiBase: (process.env.JOBIX_API_BASE ?? "https://dashboard-api.jobix.ai").replace(/\/$/, ""),
     token,
+    email,
+    password,
     companyKey: process.env.JOBIX_COMPANY_KEY,
     flowUuid: process.env.JOBIX_FLOW_UUID,
   };
@@ -100,6 +110,19 @@ export class JobixClient {
     return this.env.flowUuid;
   }
 
+  private get sessionMode(): boolean {
+    return !!(this.env.email && this.env.password);
+  }
+
+  /** Bearer token for a request — a fresh session token, or the static one. */
+  private async bearer(force = false): Promise<string> {
+    if (this.sessionMode) {
+      const { getSessionToken } = await import("./auth");
+      return getSessionToken(this.env.base, this.env.email!, this.env.password!, { force });
+    }
+    return this.env.token!;
+  }
+
   /**
    * GET against the dashboard API with retry + backoff. These endpoints time
    * out under sustained paging, so transient failures are retried rather than
@@ -112,19 +135,32 @@ export class JobixClient {
     }
 
     let lastError: unknown;
+    let relogged = false;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
       try {
         const response = await fetch(url, {
-          headers: { Authorization: `Bearer ${this.env.token}`, Accept: "application/json" },
+          headers: { Authorization: `Bearer ${await this.bearer()}`, Accept: "application/json" },
           signal: controller.signal,
           cache: "no-store",
         });
         const text = await response.text();
 
         if (response.status === 401 || response.status === 403) {
-          throw new JobixError("Jobix rejected the credentials (check JOBIX_TOKEN).", "unauthorized");
+          // A session token expires hourly; mint a fresh one and retry once
+          // before concluding the credentials are wrong.
+          if (this.sessionMode && !relogged) {
+            relogged = true;
+            await this.bearer(true);
+            continue;
+          }
+          throw new JobixError(
+            this.sessionMode
+              ? "Jobix rejected the session — check JOBIX_EMAIL and JOBIX_PASSWORD."
+              : "Jobix rejected the credentials (check JOBIX_TOKEN).",
+            "unauthorized",
+          );
         }
         if (response.status === 404) {
           throw new JobixError(`Jobix returned not found for ${path}.`, "not_found");
@@ -184,14 +220,14 @@ export class JobixClient {
     return this.post(`${this.env.base}${path}`, body);
   }
 
-  private async post<T>(url: string, body: unknown): Promise<T> {
+  private async post<T>(url: string, body: unknown, relogged = false): Promise<T> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     try {
       const response = await fetch(url, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${this.env.token}`,
+          Authorization: `Bearer ${await this.bearer()}`,
           "Content-Type": "application/json",
           Accept: "application/json",
         },
@@ -200,6 +236,10 @@ export class JobixClient {
         cache: "no-store",
       });
       const text = await response.text();
+      if ((response.status === 401 || response.status === 403) && this.sessionMode && !relogged) {
+        await this.bearer(true);
+        return this.post(url, body, true);
+      }
       if (!response.ok) {
         throw new JobixError(
           `Jobix write failed (HTTP ${response.status}) for ${redact(url)}.`,

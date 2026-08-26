@@ -66,7 +66,7 @@ export function jobixClientOrThrow(): JobixClient {
   const env = loadJobixEnv();
   if (!env) {
     throw new JobixError(
-      "Jobix is not configured on the server. Set JOBIX_TOKEN (and JOBIX_BASE) to enable ingestion.",
+      "Jobix is not configured on the server. Set JOBIX_EMAIL and JOBIX_PASSWORD (the dashboard sign-in) to enable ingestion.",
       "not_configured",
     );
   }

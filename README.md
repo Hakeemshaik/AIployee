@@ -210,6 +210,19 @@ panel says so. Configuration failures are reported as configuration, not bugs: *
 Jobix credentials are absent from the server, **403** in demo mode, **409** on a workspace
 mismatch. Only the *presence* of credentials is sent to the browser, never a value.
 
+### Authentication — the dashboard API takes sign-ins, not API keys
+
+Established empirically: the profile "API key" is rejected by every `/api/*` endpoint on
+`dashboard.jobix.ai` however it is presented (Bearer or `x-api-key`, either host), and those
+paths do not exist on the write-API host at all. The dashboard API accepts only the
+short-lived session tokens a login mints. So the platform signs in the way the browser does
+— `POST /api/auth/login` with `JOBIX_EMAIL`/`JOBIX_PASSWORD` (captured from the real login
+flow, `reCaptcha` sent empty exactly as the dashboard sends it) — reads the access token
+from the JSON body or the `access_token` cookie, caches it in `ServerSecret` so concurrent
+serverless invocations share one session, re-mints it a minute before its hourly expiry, and
+on a mid-run 401 re-logs-in once before concluding the credentials are wrong. There is no
+refresh-token dance: re-logging-in hourly is simpler and survives token rotation.
+
 ### Jobix API traps, encoded as guards
 
 `src/services/jobix/client.ts` + `api.ts` enforce these rather than documenting them:

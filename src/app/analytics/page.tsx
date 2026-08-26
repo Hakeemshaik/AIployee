@@ -96,6 +96,8 @@ export default async function AnalyticsPage() {
         branch: process.env.VERCEL_GIT_COMMIT_REF ?? null,
         commit: (process.env.VERCEL_GIT_COMMIT_SHA ?? "").slice(0, 7) || null,
         vars: {
+          JOBIX_EMAIL: !!process.env.JOBIX_EMAIL,
+          JOBIX_PASSWORD: !!process.env.JOBIX_PASSWORD,
           JOBIX_TOKEN: !!process.env.JOBIX_TOKEN,
           JOBIX_COMPANY_KEY: !!process.env.JOBIX_COMPANY_KEY,
           JOBIX_FLOW_UUID: !!process.env.JOBIX_FLOW_UUID,
