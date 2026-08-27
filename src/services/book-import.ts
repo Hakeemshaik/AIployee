@@ -2,6 +2,7 @@ import * as XLSX from "xlsx";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { normalizePhone } from "@/services/debtors";
+import { money } from "@/lib/format";
 
 // ---------------------------------------------------------------------------
 // Book file import.
@@ -40,11 +41,21 @@ export type BookFormat = "jobix" | "simple" | "generic";
 /** "auto" detects; naming a format forces that reading of the headers. */
 export type BookFormatChoice = BookFormat | "auto";
 
-/** What one row of the file becomes, and whether it will be written. */
+/**
+ * What one row of the file becomes.
+ *
+ *   create    — a new account
+ *   update    — an account already here, with something different in the file
+ *   unchanged — an account already here, identical; nothing is written
+ *   duplicate — the same phone appeared earlier in this file
+ *   invalid   — unusable, with the reason
+ */
+export type RowStatus = "create" | "update" | "unchanged" | "duplicate" | "invalid";
+
 export type PreviewRow = {
   row: number;
-  status: "create" | "existing" | "duplicate" | "invalid";
-  /** Why a row is not being created — always populated except for "create". */
+  status: RowStatus;
+  /** What will change, or why nothing will. Empty only for a plain create. */
   note: string | null;
   cells: (string | number | null)[];
 };
@@ -70,7 +81,10 @@ export type BookPreview = {
   totalRows: number;
   creatable: number;
   creatableValue: number;
-  alreadyOnPlatform: number;
+  /** Existing accounts the file changes — re-importing a book updates them. */
+  updatable: number;
+  /** Existing accounts the file matches with nothing to change. */
+  unchanged: number;
   duplicateInFile: number;
   invalid: RowIssue[];
   /** First rows that will be created, for a visual sanity check. */
@@ -298,6 +312,125 @@ export function mapBook(sheet: ParsedSheet, choice: BookFormatChoice = "auto"): 
 
 const phoneKey = (phone: string) => phone.replace(/[^\d]/g, "").slice(-9);
 
+/**
+ * What an existing account currently holds, for comparing against the file.
+ * Re-importing a client's book is how the platform learns a new balance, so a
+ * matched row is an update, never a duplicate and never a skip.
+ */
+type ExistingAccount = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  city: string | null;
+  campaignId: string | null;
+  account: { id: string; currentBalance: number; creditorName: string; reference: string } | null;
+};
+
+/** mapBook's stand-in when the file names no creditor. Not a real value. */
+const CREDITOR_FALLBACK = "Imported book";
+
+export type FieldChange = { field: string; from: string; to: string };
+
+/**
+ * Which fields the file would change on an existing account.
+ *
+ * Only fields the file actually carries are compared: a client sheet with no
+ * email column must not blank an email somebody typed in. Account number and
+ * phone are never touched — one is ledger identity, the other is the key the
+ * match was made on.
+ */
+export function accountChanges(
+  existing: ExistingAccount,
+  data: BookRow,
+  campaignId?: string,
+): FieldChange[] {
+  const changes: FieldChange[] = [];
+
+  if (!existing.account) {
+    // On the platform with no account row at all — typically a record the voice
+    // platform created without a stated amount. The file supplies one, and the
+    // commit creates the account, so the review has to show that as a change.
+    changes.push({ field: "amount owing", from: "—", to: money(data.originalBalance) });
+  } else if (existing.account.currentBalance !== data.originalBalance) {
+    changes.push({
+      field: "amount owing",
+      from: money(existing.account.currentBalance),
+      to: money(data.originalBalance),
+    });
+  }
+  const currentName = `${existing.firstName} ${existing.lastName}`.trim();
+  const fileName = `${data.firstName} ${data.lastName}`.trim();
+  if (fileName && fileName !== currentName) {
+    changes.push({ field: "name", from: currentName, to: fileName });
+  }
+  if (data.email && data.email !== existing.email) {
+    changes.push({ field: "email", from: existing.email ?? "—", to: data.email });
+  }
+  if (data.city && data.city !== existing.city) {
+    changes.push({ field: "city", from: existing.city ?? "—", to: data.city });
+  }
+  if (data.unit && existing.account && data.unit !== existing.account.reference) {
+    changes.push({ field: "unit", from: existing.account.reference, to: data.unit });
+  }
+  if (
+    data.creditorName &&
+    data.creditorName !== CREDITOR_FALLBACK &&
+    existing.account &&
+    data.creditorName !== existing.account.creditorName
+  ) {
+    changes.push({
+      field: "creditor",
+      from: existing.account.creditorName,
+      to: data.creditorName,
+    });
+  }
+  if (campaignId && existing.campaignId !== campaignId) {
+    changes.push({ field: "campaign", from: existing.campaignId ? "another campaign" : "none", to: "this campaign" });
+  }
+  return changes;
+}
+
+function describeChanges(changes: FieldChange[]): string {
+  return changes.map((c) => `${c.field} ${c.from} → ${c.to}`).join(", ");
+}
+
+/** Everything the review and the write both need about the current book. */
+async function loadExistingBook(organizationId: string): Promise<Map<string, ExistingAccount>> {
+  const debtors = await db.debtor.findMany({
+    where: { organizationId },
+    select: {
+      id: true,
+      phone: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      city: true,
+      campaignId: true,
+      accounts: {
+        select: { id: true, currentBalance: true, creditorName: true, reference: true },
+        orderBy: { createdAt: "asc" },
+        take: 1,
+      },
+    },
+  });
+  const byPhone = new Map<string, ExistingAccount>();
+  for (const debtor of debtors) {
+    const key = phoneKey(debtor.phone);
+    if (!key || byPhone.has(key)) continue;
+    byPhone.set(key, {
+      id: debtor.id,
+      firstName: debtor.firstName,
+      lastName: debtor.lastName,
+      email: debtor.email,
+      city: debtor.city,
+      campaignId: debtor.campaignId,
+      account: debtor.accounts[0] ?? null,
+    });
+  }
+  return byPhone;
+}
+
 /** Columns shown in the review grid, in the order an operator reads them. */
 const GRID_COLUMNS = ["Name", "Phone", "Account", "Amount owing", "Creditor / building", "Unit", "Email", "City"];
 
@@ -318,18 +451,16 @@ export async function previewBook(
   organizationId: string,
   sheet: ParsedSheet,
   choice: BookFormatChoice = "auto",
+  campaignId?: string,
 ): Promise<BookPreview> {
   const mapped = mapBook(sheet, choice);
-  const existing = await db.debtor.findMany({
-    where: { organizationId },
-    select: { phone: true },
-  });
-  const existingPhones = new Set(existing.map((d) => phoneKey(d.phone)));
+  const existingBook = await loadExistingBook(organizationId);
 
   const seenInFile = new Set<string>();
   let creatable = 0;
   let creatableValue = 0;
-  let alreadyOnPlatform = 0;
+  let updatable = 0;
+  let unchanged = 0;
   let duplicateInFile = 0;
   const invalid: RowIssue[] = [];
   const sample: BookPreview["sample"] = [];
@@ -337,7 +468,7 @@ export async function previewBook(
 
   // Every row gets a verdict, and the verdict is the same one commitBook will
   // reach — the grid is a rehearsal of the import, not a separate opinion.
-  const record = (row: number, status: PreviewRow["status"], note: string | null, data: Partial<BookRow>) => {
+  const record = (row: number, status: RowStatus, note: string | null, data: Partial<BookRow>) => {
     if (gridRows.length < PREVIEW_ROW_CAP) {
       gridRows.push({ row, status, note, cells: gridCells(data) });
     }
@@ -356,16 +487,20 @@ export async function previewBook(
       continue;
     }
     seenInFile.add(key);
-    if (existingPhones.has(key)) {
-      alreadyOnPlatform += 1;
-      record(
-        entry.row,
-        "existing",
-        "already on the platform — assigned to the campaign rather than duplicated",
-        entry.data,
-      );
+
+    const existing = existingBook.get(key);
+    if (existing) {
+      const changes = accountChanges(existing, entry.data as BookRow, campaignId);
+      if (changes.length === 0) {
+        unchanged += 1;
+        record(entry.row, "unchanged", "already on the platform, nothing in the file differs", entry.data);
+      } else {
+        updatable += 1;
+        record(entry.row, "update", describeChanges(changes), entry.data);
+      }
       continue;
     }
+
     creatable += 1;
     creatableValue += entry.data.originalBalance!;
     record(entry.row, "create", null, entry.data);
@@ -386,7 +521,8 @@ export async function previewBook(
     totalRows: mapped.rows.length,
     creatable,
     creatableValue,
-    alreadyOnPlatform,
+    updatable,
+    unchanged,
     duplicateInFile,
     invalid: invalid.slice(0, 100),
     sample,
@@ -400,7 +536,8 @@ export async function previewBook(
 
 export type BookCommitResult = {
   created: number;
-  assignedExisting: number;
+  updated: number;
+  unchanged: number;
   skipped: RowIssue[];
 };
 
@@ -421,14 +558,14 @@ export async function commitBook(
   }
 
   const mapped = mapBook(sheet, choice);
-  const existing = await db.debtor.findMany({
-    where: { organizationId },
-    select: { id: true, phone: true, accountNumber: true },
-  });
-  const byPhone = new Map(existing.map((d) => [phoneKey(d.phone), d]));
-  const usedAccounts = new Set(existing.map((d) => d.accountNumber));
+  const existingBook = await loadExistingBook(organizationId);
+  const usedAccounts = new Set(
+    (await db.debtor.findMany({ where: { organizationId }, select: { accountNumber: true } })).map(
+      (d) => d.accountNumber,
+    ),
+  );
 
-  const result: BookCommitResult = { created: 0, assignedExisting: 0, skipped: [] };
+  const result: BookCommitResult = { created: 0, updated: 0, unchanged: 0, skipped: [] };
   const seenInFile = new Set<string>();
 
   for (const entry of mapped.rows) {
@@ -444,21 +581,64 @@ export async function commitBook(
     }
     seenInFile.add(key);
 
-    const already = byPhone.get(key);
-    if (already) {
-      if (campaignId) {
-        await db.debtor.update({ where: { id: already.id }, data: { campaignId } });
-        result.assignedExisting += 1;
-      } else {
-        result.skipped.push({ row: entry.row, problem: "already on the platform (matched by phone)" });
+    const existing = existingBook.get(key);
+    if (existing) {
+      const changes = accountChanges(existing, data, campaignId);
+      if (changes.length === 0) {
+        result.unchanged += 1;
+        continue;
       }
+      // Update, never duplicate. The account number is ledger identity and the
+      // phone is the key this match was made on, so neither is touched; a
+      // status or do-not-contact flag a human set is likewise left alone.
+      await db.debtor.update({
+        where: { id: existing.id },
+        data: {
+          firstName: data.firstName,
+          lastName: data.lastName,
+          // A file with no email column must not blank one somebody typed in.
+          ...(data.email ? { email: data.email } : {}),
+          ...(data.city ? { city: data.city } : {}),
+          ...(campaignId ? { campaignId } : {}),
+        },
+      });
+      if (existing.account) {
+        await db.debtAccount.update({
+          where: { id: existing.account.id },
+          data: {
+            // The file states what is owed now. The original balance is history
+            // and stays as first seen.
+            currentBalance: data.originalBalance,
+            ...(data.unit ? { reference: data.unit } : {}),
+            ...(data.creditorName && data.creditorName !== CREDITOR_FALLBACK
+              ? { creditorName: data.creditorName }
+              : {}),
+          },
+        });
+      } else {
+        // On the platform with no account row — a record that arrived from the
+        // voice platform without a stated amount. The file supplies one.
+        await db.debtAccount.create({
+          data: {
+            organizationId,
+            debtorId: existing.id,
+            reference: data.unit ?? data.accountNumber,
+            creditorName: data.creditorName,
+            originalBalance: data.originalBalance,
+            currentBalance: data.originalBalance,
+            dueDate: new Date(),
+          },
+        });
+      }
+      result.updated += 1;
       continue;
     }
 
     // Account numbers are unique per organization; suffix a collision rather
     // than silently dropping the row.
     let accountNumber = data.accountNumber;
-    while (usedAccounts.has(accountNumber)) accountNumber = `${data.accountNumber}-${result.created + 1}`;
+    let suffix = 1;
+    while (usedAccounts.has(accountNumber)) accountNumber = `${data.accountNumber}-${suffix++}`;
     usedAccounts.add(accountNumber);
 
     const debtor = await db.debtor.create({
@@ -484,6 +664,17 @@ export async function commitBook(
         dueDate: new Date(),
       },
     });
+    // So a second row in the same file matching this phone updates rather than
+    // creating a second account.
+    existingBook.set(key, {
+      id: debtor.id,
+      firstName: debtor.firstName,
+      lastName: debtor.lastName,
+      email: debtor.email,
+      city: debtor.city,
+      campaignId: debtor.campaignId,
+      account: null,
+    });
     result.created += 1;
   }
 
@@ -497,7 +688,8 @@ export async function commitBook(
     detail: {
       format: mapped.format,
       created: result.created,
-      assignedExisting: result.assignedExisting,
+      updated: result.updated,
+      unchanged: result.unchanged,
       skipped: result.skipped.length,
     },
   });

@@ -18,9 +18,11 @@ import { count, money } from "@/lib/format";
 // campaign's own page (campaign fixed).
 // ---------------------------------------------------------------------------
 
+type RowStatus = "create" | "update" | "unchanged" | "duplicate" | "invalid";
+
 type PreviewRow = {
   row: number;
-  status: "create" | "existing" | "duplicate" | "invalid";
+  status: RowStatus;
   note: string | null;
   cells: (string | number | null)[];
 };
@@ -32,7 +34,8 @@ type Preview = {
   totalRows: number;
   creatable: number;
   creatableValue: number;
-  alreadyOnPlatform: number;
+  updatable: number;
+  unchanged: number;
   duplicateInFile: number;
   invalid: { row: number; problem: string }[];
   grid: { columns: string[]; rows: PreviewRow[]; truncated: number };
@@ -40,7 +43,8 @@ type Preview = {
 
 type CommitResult = {
   created: number;
-  assignedExisting: number;
+  updated: number;
+  unchanged: number;
   skipped: { row: number; problem: string }[];
 };
 
@@ -70,9 +74,10 @@ const CONCEPT_LABELS: Record<string, string> = {
   city: "City",
 };
 
-const STATUS_STYLE: Record<PreviewRow["status"], { label: string; className: string }> = {
+const STATUS_STYLE: Record<RowStatus, { label: string; className: string }> = {
   create: { label: "New", className: "text-[#3ecf9a]" },
-  existing: { label: "On platform", className: "text-ink-3" },
+  update: { label: "Update", className: "text-accent" },
+  unchanged: { label: "No change", className: "text-ink-3" },
   duplicate: { label: "Duplicate", className: "text-ink-3" },
   invalid: { label: "Excluded", className: "text-[#f2c14e]" },
 };
@@ -145,11 +150,11 @@ export function BookImporter({
       <div className="space-y-3">
         <p className="flex items-start gap-2 rounded-lg border border-[rgba(25,158,112,0.35)] bg-[rgba(25,158,112,0.08)] px-3 py-2.5 text-[0.8125rem] text-ink">
           <Check size={14} className="mt-0.5 shrink-0 text-[#3ecf9a]" />
-          Imported: <span className="num font-medium">{count(result.created)}</span> created
-          {result.assignedExisting > 0 && (
+          Imported: <span className="num font-medium">{count(result.created)}</span> created,{" "}
+          <span className="num font-medium">{count(result.updated)}</span> updated
+          {result.unchanged > 0 && (
             <>
-              , <span className="num font-medium">{count(result.assignedExisting)}</span> existing assigned to
-              the campaign
+              , <span className="num font-medium">{count(result.unchanged)}</span> already up to date
             </>
           )}
           {result.skipped.length > 0 && (
@@ -268,10 +273,14 @@ export function BookImporter({
               Will be created <span className="num">{count(preview.creatable)}</span> ·{" "}
               {money(preview.creatableValue)}
             </span>
-            {preview.alreadyOnPlatform > 0 && (
-              <span className="rounded-full border border-line bg-white/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-2">
-                Already on the platform <span className="num">{count(preview.alreadyOnPlatform)}</span>
-                {targetCampaign ? " (assigned to the campaign)" : ""}
+            {preview.updatable > 0 && (
+              <span className="rounded-full border border-[rgba(57,135,229,0.45)] bg-accent-soft px-2.5 py-1 text-[0.6875rem] text-ink">
+                Will be updated <span className="num">{count(preview.updatable)}</span>
+              </span>
+            )}
+            {preview.unchanged > 0 && (
+              <span className="rounded-full border border-line bg-white/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-3">
+                Already up to date <span className="num">{count(preview.unchanged)}</span>
               </span>
             )}
             {preview.duplicateInFile > 0 && (
@@ -311,7 +320,10 @@ export function BookImporter({
                   {preview.grid.rows.map((row) => {
                     const status = STATUS_STYLE[row.status];
                     return (
-                      <tr key={row.row} className={row.status === "create" ? undefined : "opacity-70"}>
+                      <tr
+                        key={row.row}
+                        className={row.status === "create" || row.status === "update" ? undefined : "opacity-70"}
+                      >
                         <td className="num text-ink-3">{row.row}</td>
                         <td className={`text-[0.6875rem] ${status.className}`} title={row.note ?? undefined}>
                           {status.label}
@@ -376,14 +388,15 @@ export function BookImporter({
 
           <button
             className="btn btn-primary"
-            disabled={busy !== null || preview.creatable + (targetCampaign ? preview.alreadyOnPlatform : 0) === 0}
+            disabled={busy !== null || preview.creatable + preview.updatable === 0}
             onClick={() => send("commit")}
           >
             {busy === "commit" ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
-            Import {count(preview.creatable)} account{preview.creatable === 1 ? "" : "s"}
-            {targetCampaign && preview.alreadyOnPlatform > 0
-              ? ` and assign ${count(preview.alreadyOnPlatform)} existing`
-              : ""}
+            {preview.creatable > 0 && preview.updatable > 0
+              ? `Import ${count(preview.creatable)} new and update ${count(preview.updatable)}`
+              : preview.updatable > 0
+                ? `Update ${count(preview.updatable)} account${preview.updatable === 1 ? "" : "s"}`
+                : `Import ${count(preview.creatable)} account${preview.creatable === 1 ? "" : "s"}`}
           </button>
         </div>
       )}

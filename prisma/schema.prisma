@@ -183,6 +183,13 @@ model Campaign {
   providerCampaignId String? // id of the campaign/batch on the voice platform
   providerStartedAt  DateTime?
   providerError      String? // last integration error surfaced to the operator
+  /** When this campaign should start dialling by itself. Cleared once it has
+   *  fired, so a schedule never runs twice. */
+  scheduledFor       DateTime?
+  /** Who set the schedule — a schedule is the human confirmation to dial. */
+  scheduledBy        String?
+  /** Why a scheduled start did not go ahead. */
+  scheduleError      String?
   idempotencyKey     String? // guards against duplicate provider campaigns on retry
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
@@ -199,6 +206,7 @@ model Campaign {
 
   @@index([organizationId, status])
   @@index([organizationId, providerCampaignId])
+  @@index([scheduledFor])
 }
 
 // Per-campaign membership and dialling state for a debtor. Separate from

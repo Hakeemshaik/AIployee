@@ -232,7 +232,8 @@ describe.skipIf(!scratch)("book import (integration)", () => {
       totalRows: 4,
       creatable: 2,
       duplicateInFile: 1,
-      alreadyOnPlatform: 0,
+      updatable: 0,
+      unchanged: 0,
     });
     expect(preview.invalid).toHaveLength(1);
     expect(await db.debtor.count()).toBe(0); // preview wrote nothing
@@ -274,7 +275,7 @@ describe.skipIf(!scratch)("book import (integration)", () => {
     expect(preview.grid.rows).toHaveLength(4);
     expect(preview.grid.rows.map((row) => row.status)).toEqual([
       "create",
-      "existing",
+      "update",
       "duplicate",
       "invalid",
     ]);
@@ -283,7 +284,8 @@ describe.skipIf(!scratch)("book import (integration)", () => {
     expect(preview.grid.rows.map((row) => row.row)).toEqual([2, 3, 4, 5]);
     // Every row that is not created says why.
     expect(preview.grid.rows[0].note).toBeNull();
-    expect(preview.grid.rows[1].note).toMatch(/already on the platform/i);
+    // The existing record has no stated amount, so the file gives it one.
+    expect(preview.grid.rows[1].note).toMatch(/amount owing — → R 4 500/);
     expect(preview.grid.rows[2].note).toMatch(/appears earlier/i);
     expect(preview.grid.rows[3].note).toMatch(/not a usable number/i);
     // The cells are the mapped values, not the raw file.
@@ -294,7 +296,7 @@ describe.skipIf(!scratch)("book import (integration)", () => {
     expect(await db.debtor.count()).toBe(1); // still nothing written
   });
 
-  it("assigns existing debtors to the campaign instead of duplicating them", async () => {
+  it("updates an existing debtor and assigns the campaign instead of duplicating", async () => {
     const campaign = await db.campaign.create({
       data: { organizationId: orgId, name: "Reload", status: "draft" },
     });
@@ -304,12 +306,97 @@ describe.skipIf(!scratch)("book import (integration)", () => {
 
     const sheet = parseSpreadsheet(workbookBuffer([jobixRow()], [...JOBIX_COLUMNS]), "batch.xlsx");
     const result = await commitBook(orgId, userId, sheet, campaign.id);
-    expect(result).toMatchObject({ created: 0, assignedExisting: 1 });
+    expect(result).toMatchObject({ created: 0, updated: 1 });
 
     const debtor = await db.debtor.findFirstOrThrow();
     expect(debtor.campaignId).toBe(campaign.id);
     expect(debtor.accountNumber).toBe("OLD-1"); // ledger identity untouched
     expect(await db.debtor.count()).toBe(1);
+  });
+
+  it("re-importing the same book a second time changes nothing", async () => {
+    const sheet = parseSpreadsheet(workbookBuffer([jobixRow()], [...JOBIX_COLUMNS]), "batch.xlsx");
+    await commitBook(orgId, userId, sheet);
+
+    const second = await commitBook(orgId, userId, sheet);
+
+    expect(second).toMatchObject({ created: 0, updated: 0, unchanged: 1 });
+    expect(await db.debtor.count()).toBe(1);
+    expect(await db.debtAccount.count()).toBe(1);
+  });
+
+  it("re-importing an updated book refreshes the balance rather than duplicating", async () => {
+    const first = parseSpreadsheet(workbookBuffer([jobixRow()], [...JOBIX_COLUMNS]), "aug.xlsx");
+    await commitBook(orgId, userId, first);
+
+    const second = parseSpreadsheet(
+      workbookBuffer(
+        [jobixRow({ arrears_amount: "R 9 800,00", total_due: "R 9 800,00", Email: "new@example.com" })],
+        [...JOBIX_COLUMNS],
+      ),
+      "sep.xlsx",
+    );
+    const preview = await previewBook(orgId, second);
+    expect(preview).toMatchObject({ creatable: 0, updatable: 1, unchanged: 0 });
+    expect(preview.grid.rows[0].status).toBe("update");
+    expect(preview.grid.rows[0].note).toContain("amount owing R 4 500 → R 9 800");
+    expect(preview.grid.rows[0].note).toContain("email");
+
+    const result = await commitBook(orgId, userId, second);
+
+    expect(result).toMatchObject({ created: 0, updated: 1, unchanged: 0 });
+    expect(await db.debtor.count()).toBe(1);
+    const debtor = await db.debtor.findFirstOrThrow({ include: { accounts: true } });
+    expect(debtor.email).toBe("new@example.com");
+    expect(debtor.accounts).toHaveLength(1);
+    expect(debtor.accounts[0].currentBalance).toBe(9800);
+    // The original balance is history and stays as first seen.
+    expect(debtor.accounts[0].originalBalance).toBe(4500);
+    // Ledger identity is never rewritten by a file.
+    expect(debtor.accountNumber).toBe("TC-100");
+  });
+
+  it("does not blank a field the file has no column for", async () => {
+    const sheet = parseSpreadsheet(workbookBuffer([jobixRow()], [...JOBIX_COLUMNS]), "batch.xlsx");
+    await commitBook(orgId, userId, sheet);
+    const debtor = await db.debtor.findFirstOrThrow();
+    await db.debtor.update({
+      where: { id: debtor.id },
+      data: { email: "typed-in-by-a-human@example.com", city: "Sandton" },
+    });
+
+    // A bare sheet with no email or city columns at all.
+    const bare = parseSpreadsheet(
+      workbookBuffer([{ "Tenant Name": "Test Person", "Cell No": "+27825550100", "Total Due": "R 6 000" }]),
+      "bare.xlsx",
+    );
+    await commitBook(orgId, userId, bare);
+
+    const after = await db.debtor.findFirstOrThrow({ include: { accounts: true } });
+    expect(after.email).toBe("typed-in-by-a-human@example.com");
+    expect(after.city).toBe("Sandton");
+    expect(after.accounts[0].currentBalance).toBe(6000);
+  });
+
+  it("leaves a status and a do-not-contact flag a human set alone", async () => {
+    const sheet = parseSpreadsheet(workbookBuffer([jobixRow()], [...JOBIX_COLUMNS]), "batch.xlsx");
+    await commitBook(orgId, userId, sheet);
+    const debtor = await db.debtor.findFirstOrThrow();
+    await db.debtor.update({
+      where: { id: debtor.id },
+      data: { status: "legal", doNotContact: true },
+    });
+
+    const updated = parseSpreadsheet(
+      workbookBuffer([jobixRow({ arrears_amount: 7777, total_due: 7777 })], [...JOBIX_COLUMNS]),
+      "batch2.xlsx",
+    );
+    await commitBook(orgId, userId, updated);
+
+    const after = await db.debtor.findFirstOrThrow({ include: { accounts: true } });
+    expect(after.status).toBe("legal");
+    expect(after.doNotContact).toBe(true);
+    expect(after.accounts[0].currentBalance).toBe(7777);
   });
 
   it("suffixes an account-number collision rather than dropping the row", async () => {

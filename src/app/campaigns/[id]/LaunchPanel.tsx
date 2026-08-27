@@ -7,11 +7,13 @@ import {
   ClipboardCopy,
   Loader2,
   PhoneOutgoing,
+  CalendarClock,
   RefreshCw,
   Send,
   Users,
+  X,
 } from "lucide-react";
-import { count, money } from "@/lib/format";
+import { count, money, formatDateTime } from "@/lib/format";
 import { GlassCard } from "@/components/ui";
 
 // ---------------------------------------------------------------------------
@@ -21,8 +23,13 @@ import { GlassCard } from "@/components/ui";
 // excluded account with its reason. Step 2 generates the paste table with the
 // batch code already in the `call` column; pasting it into the Jobix database
 // screen is the one manual step, replacing both the old import and the
-// stamping step. Step 3 triggers the flow from here; Jobix dials exactly the
-// rows carrying the batch code.
+// stamping step. Step 3 either triggers the flow now or sets a time to trigger
+// it — Jobix dials exactly the rows carrying the batch code either way.
+//
+// While a scheduled start is pending this panel asks the server whether it is
+// due, every fifteen seconds. That is what makes "start in five minutes" work
+// on a host whose own scheduler only runs once a day; the unattended path is
+// /api/cron/campaigns.
 // ---------------------------------------------------------------------------
 
 type LaunchState = {
@@ -36,6 +43,8 @@ type LaunchState = {
   window: { allowed: boolean; reason: string; sastTime: string };
   callingEnabled: boolean;
   triggerConfigured: boolean;
+  scheduledFor: string | null;
+  scheduleError: string | null;
 };
 
 type PreparedList = { csv: string; rowCount: number; batchCode: string };
@@ -54,7 +63,9 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
   const [list, setList] = useState<PreparedList | null>(null);
   const [pasted, setPasted] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [busy, setBusy] = useState<"list" | "start" | null>(null);
+  const [busy, setBusy] = useState<"list" | "start" | "schedule" | "cancel" | null>(null);
+  const [when, setWhen] = useState("");
+  const [now, setNow] = useState(() => Date.now());
   const [actionError, setActionError] = useState<string | null>(null);
   const [started, setStarted] = useState<string | null>(null);
 
@@ -107,6 +118,29 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
     }
   }
 
+  async function act(
+    body: Record<string, unknown>,
+    label: "schedule" | "cancel",
+    failure: string,
+  ) {
+    setBusy(label);
+    setActionError(null);
+    try {
+      const response = await fetch(`/api/campaigns/${campaignId}/launch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const parsed = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(parsed.message ?? failure);
+      setRefresh((n) => n + 1);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : failure);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function start() {
     setBusy("start");
     setActionError(null);
@@ -127,7 +161,37 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
     }
   }
 
+  // Tick while a schedule is pending: once for the countdown, and a nudge to
+  // the server so a due campaign actually starts.
+  const scheduledAt = state?.scheduledFor ? new Date(state.scheduledFor).getTime() : null;
+  useEffect(() => {
+    if (!scheduledAt) return;
+    const timer = setInterval(() => {
+      setNow(Date.now());
+      if (Date.now() >= scheduledAt) {
+        fetch("/api/campaigns/due", { method: "POST" })
+          .then(() => setRefresh((n) => n + 1))
+          .catch(() => {
+            /* the next tick tries again */
+          });
+      }
+    }, 15_000);
+    return () => clearInterval(timer);
+  }, [scheduledAt]);
+
   if (!canLaunch) return null;
+
+  const secondsAway = scheduledAt ? Math.round((scheduledAt - now) / 1000) : null;
+  const countdown =
+    secondsAway === null
+      ? null
+      : secondsAway <= 0
+        ? "due now — starting on the next check"
+        : secondsAway < 60
+          ? `in ${secondsAway} seconds`
+          : secondsAway < 3600
+            ? `in ${Math.round(secondsAway / 60)} minutes`
+            : `in ${(secondsAway / 3600).toFixed(1)} hours`;
 
   return (
     <GlassCard
@@ -154,6 +218,44 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
 
       {state && (
         <div className="space-y-4">
+          {state.scheduledFor && (
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border border-[rgba(57,135,229,0.45)] bg-accent-soft px-3 py-2.5">
+              <CalendarClock size={14} className="shrink-0 text-accent" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[0.78125rem] font-medium text-ink">
+                  Scheduled to start {formatDateTime(state.scheduledFor)}
+                  {countdown ? ` — ${countdown}` : ""}
+                </p>
+                <p className="mt-0.5 text-[0.6875rem] text-ink-2">
+                  Dialling the batch {state.batchCode ?? "—"}. Every guardrail is checked again at the moment
+                  it fires.
+                </p>
+              </div>
+              <button
+                className="btn"
+                disabled={busy !== null}
+                onClick={() =>
+                  void act({ action: "cancel_schedule" }, "cancel", "The schedule could not be cancelled.")
+                }
+              >
+                {busy === "cancel" ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
+                Cancel
+              </button>
+            </div>
+          )}
+
+          {state.scheduleError && !state.scheduledFor && (
+            <div className="rounded-lg border border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)] px-3 py-2.5">
+              <p className="flex items-start gap-2 text-[0.78125rem] font-medium text-[#e2714a]">
+                <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+                The last scheduled start did not go ahead
+              </p>
+              <p className="mt-1 pl-[1.3rem] text-[0.71875rem] leading-relaxed text-ink-2">
+                {state.scheduleError}
+              </p>
+            </div>
+          )}
+
           {/* Step 1 — review */}
           <div>
             <p className="mb-2 flex items-center gap-2 text-[0.78125rem] font-semibold text-ink">
@@ -264,6 +366,7 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                     </span>
                   </span>
                 </div>
+                <div className="flex flex-wrap items-center gap-2">
                 <button
                   className="btn btn-primary"
                   disabled={
@@ -289,8 +392,90 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                   onClick={start}
                 >
                   {busy === "start" ? <Loader2 size={13} className="animate-spin" /> : <PhoneOutgoing size={13} />}
-                  Start calling {list ? `${count(list.rowCount)} accounts` : ""}
+                  Start calling now {list ? `(${count(list.rowCount)})` : ""}
                 </button>
+                </div>
+
+                {/* Or set a time. The presets exist because "in five minutes"
+                    is how a test run is actually described. */}
+                <div className="rounded-lg border border-line bg-white/[0.02] p-3">
+                  <p className="mb-2 flex items-center gap-2 text-[0.75rem] font-medium text-ink">
+                    <CalendarClock size={13} className="text-accent" /> Or schedule it
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {[
+                      { label: "In 5 minutes", minutes: 5 },
+                      { label: "In 15 minutes", minutes: 15 },
+                      { label: "In 1 hour", minutes: 60 },
+                      { label: "Tomorrow 09:00", minutes: null },
+                    ].map((option) => (
+                      <button
+                        key={option.label}
+                        className="btn"
+                        disabled={busy !== null || !pasted}
+                        title={
+                          !pasted
+                            ? "Confirm the list has been pasted into Jobix first"
+                            : `Start this campaign ${option.label.toLowerCase()}`
+                        }
+                        onClick={() => {
+                          if (option.minutes) {
+                            void act(
+                              { action: "schedule", confirmed: true, minutes: option.minutes },
+                              "schedule",
+                              "The run could not be scheduled.",
+                            );
+                            return;
+                          }
+                          // Tomorrow at 09:00 South African time.
+                          const sastNow = new Date(Date.now() + 2 * 3_600_000);
+                          const at = new Date(
+                            Date.UTC(
+                              sastNow.getUTCFullYear(),
+                              sastNow.getUTCMonth(),
+                              sastNow.getUTCDate() + 1,
+                              9,
+                            ) -
+                              2 * 3_600_000,
+                          );
+                          void act(
+                            { action: "schedule", confirmed: true, at: at.toISOString() },
+                            "schedule",
+                            "The run could not be scheduled.",
+                          );
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                    <input
+                      type="datetime-local"
+                      className="field w-auto"
+                      value={when}
+                      onChange={(event) => setWhen(event.target.value)}
+                      aria-label="Start at a specific time"
+                    />
+                    <button
+                      className="btn"
+                      disabled={busy !== null || !pasted || !when}
+                      onClick={() =>
+                        void act(
+                          { action: "schedule", confirmed: true, at: new Date(when).toISOString() },
+                          "schedule",
+                          "The run could not be scheduled.",
+                        )
+                      }
+                    >
+                      {busy === "schedule" ? <Loader2 size={13} className="animate-spin" /> : null}
+                      Schedule
+                    </button>
+                  </div>
+                  <p className="mt-2 text-[0.6875rem] leading-relaxed text-ink-3">
+                    A scheduled run dials the batch code on the list above, under the same rules as starting
+                    now: inside calling hours, calling enabled, trigger configured. Keep this page open and it
+                    fires on the minute; unattended firing needs CRON_SECRET set and the scheduler running.
+                  </p>
+                </div>
               </div>
             )}
           </div>

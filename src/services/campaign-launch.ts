@@ -38,6 +38,10 @@ export type LaunchState = {
   window: { allowed: boolean; reason: string; sastTime: string };
   callingEnabled: boolean;
   triggerConfigured: boolean;
+  /** A pending scheduled start, when one is set. */
+  scheduledFor: Date | null;
+  /** Why the last scheduled start did not go ahead. */
+  scheduleError: string | null;
 };
 
 async function campaignOrThrow(organizationId: string, campaignId: string) {
@@ -71,6 +75,8 @@ export async function launchState(
     window: checkCallingWindow(),
     callingEnabled: process.env.JOBIX_CALLING_ENABLED === "true",
     triggerConfigured: !!process.env.JOBIX_FLOW_UUID && !!process.env.JOBIX_TRIGGER_NODE_UUID,
+    scheduledFor: campaign.scheduledFor,
+    scheduleError: campaign.scheduleError,
   };
 }
 

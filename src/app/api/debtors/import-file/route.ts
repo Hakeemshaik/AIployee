@@ -63,7 +63,9 @@ export async function POST(request: Request) {
       const result = await commitBook(ctx.organizationId, ctx.userId, sheet, campaignId, format);
       return NextResponse.json(result, { status: 201 });
     }
-    return NextResponse.json(await previewBook(ctx.organizationId, sheet, format));
+    // The campaign matters to the review too: assigning an account to it is
+    // one of the changes the file makes.
+    return NextResponse.json(await previewBook(ctx.organizationId, sheet, format, campaignId));
   } catch (err) {
     const denied = authFailure(err);
     if (denied) return denied;
