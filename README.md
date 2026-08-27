@@ -242,6 +242,19 @@ refresh-token dance: re-logging-in hourly is simpler and survives token rotation
 | `customer/save` is asynchronous | dispatch waits, then verifies before triggering |
 | endpoints time out under sustained paging | retry with backoff + checkpointing |
 
+### Importing a book, in whatever format the client sent it
+
+**Debtors → Import** accepts a file upload (.xlsx or .csv) alongside the CSV paste. Three
+formats are recognised: the 72-column Jobix import workbook (matched on its own headers),
+the platform template, and any generic client spreadsheet — whose columns are fuzzy-matched
+by name (tenant name, cell no, amount owing, body corporate, unit) with the mapping shown so
+a wrong guess is visible. Every row is validated before anything is written: the preview
+reports what will be created (count and value), what already exists on the platform (matched
+by phone; assigned to the chosen campaign instead of duplicated), duplicates within the
+file, and each invalid row with its reason. Phone numbers normalise to E.164 from any
+format; amounts parse from currency strings; account-number collisions are suffixed rather
+than dropped.
+
 ### Launching a campaign, end to end
 
 The campaign page carries a three-step launch panel that replaces the manual Jobix workflow:
