@@ -43,6 +43,19 @@ export function moneyCompact(amount: number): string {
   return `R${Math.round(amount)}`;
 }
 
+/**
+ * 2 700 — a plain count, grouped the same way money is.
+ *
+ * toLocaleString("en-ZA") has the identical ICU split as currency: Node groups
+ * with a no-break space, Chromium with a comma, so a server-rendered count and
+ * its client re-render disagree and React discards the tree.
+ */
+export function count(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value)) return "—";
+  const negative = value < 0;
+  return `${negative ? "-" : ""}${groupDigits(Math.abs(Math.round(value)).toString())}`;
+}
+
 export function percent(value: number | null | undefined, digits = 1): string {
   if (value == null || Number.isNaN(value)) return "—";
   return `${(value * 100).toFixed(digits)}%`;

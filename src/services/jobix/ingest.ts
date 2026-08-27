@@ -31,6 +31,13 @@ import { JobixClient, JobixError, loadJobixEnv } from "./client";
 
 const TRANSCRIPT_CONCURRENCY = 12;
 
+/** Default run budget. The route's maxDuration is 300s; this leaves margin to
+ *  checkpoint and respond rather than being killed mid-write. */
+const DEFAULT_BUDGET_MS = 240_000;
+/** Held back from the transcript phase so customers and messaging can still
+ *  run when transcripts finish inside the budget. */
+const TAIL_RESERVE_MS = 60_000;
+
 export type IngestOptions = {
   organizationId: string;
   /** Only ingest conversations at or after this instant. */
@@ -40,6 +47,13 @@ export type IngestOptions = {
   campaignId?: string;
   /** Cap transcript fetches for a quick first pass. */
   transcriptLimit?: number;
+  /**
+   * Wall-clock budget for the whole run. The request is killed at the
+   * platform's duration ceiling, so the run stops itself before that and
+   * reports `interrupted` — a resumable state — instead of being cut off
+   * mid-write while still claiming to be running.
+   */
+  budgetMs?: number;
 };
 
 export type IngestProgress = {
@@ -50,6 +64,7 @@ export type IngestProgress = {
   transcriptsFetched: number;
   transcriptsCached: number;
   transcriptsFailed: number;
+  transcriptsPending: number;
   customersFound: number;
   customersCreated: number;
   customersUpdated: number;
@@ -73,36 +88,101 @@ export function jobixClientOrThrow(): JobixClient {
   return new JobixClient(env);
 }
 
-/** Store or refresh a conversation, returning its local row id. */
-async function upsertConversation(organizationId: string, c: JobixConversation) {
-  return db.jobixConversation.upsert({
-    where: { organizationId_uuid: { organizationId, uuid: c.uuid } },
-    create: {
-      organizationId,
-      uuid: c.uuid,
-      externalId: c.id || null,
-      phone: c.phone,
-      contactName: c.contactName,
-      agentUuid: c.agentUuid,
-      agentName: c.agentName,
-      flowName: c.flowName,
-      durationSeconds: c.durationSeconds,
-      status: c.status,
-      conversion: c.conversion,
-      voicemailFlag: c.voicemailFlag,
-      startedAt: c.createdAt,
-      sastHour: sastHour(c.createdAt),
-    },
-    update: {
-      durationSeconds: c.durationSeconds,
-      status: c.status,
-      conversion: c.conversion,
-      voicemailFlag: c.voicemailFlag,
-      agentName: c.agentName,
-      flowName: c.flowName,
-    },
-    select: { id: true, uuid: true },
-  });
+const WRITE_CHUNK = 400;
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const groups: T[][] = [];
+  for (let i = 0; i < items.length; i += size) groups.push(items.slice(i, i + size));
+  return groups;
+}
+
+/**
+ * Store or refresh conversations and return uuid → local row id.
+ *
+ * A row per round trip does not scale: a book of a few thousand calls spent
+ * most of the request budget writing rows that had not changed. New rows go in
+ * one createMany per chunk, and an existing row is only written when a mutable
+ * field actually differs — so re-running over a settled book costs two reads
+ * per chunk and nothing else.
+ */
+export async function syncConversations(
+  organizationId: string,
+  conversations: JobixConversation[],
+): Promise<Map<string, string>> {
+  const ids = new Map<string, string>();
+
+  for (const group of chunk(conversations, WRITE_CHUNK)) {
+    const existing = await db.jobixConversation.findMany({
+      where: { organizationId, uuid: { in: group.map((c) => c.uuid) } },
+      select: {
+        id: true,
+        uuid: true,
+        status: true,
+        durationSeconds: true,
+        conversion: true,
+        voicemailFlag: true,
+        agentName: true,
+        flowName: true,
+      },
+    });
+    const byUuid = new Map(existing.map((row) => [row.uuid, row]));
+
+    const missing = group.filter((c) => !byUuid.has(c.uuid));
+    if (missing.length > 0) {
+      await db.jobixConversation.createMany({
+        data: missing.map((c) => ({
+          organizationId,
+          uuid: c.uuid,
+          externalId: c.id || null,
+          phone: c.phone,
+          contactName: c.contactName,
+          agentUuid: c.agentUuid,
+          agentName: c.agentName,
+          flowName: c.flowName,
+          durationSeconds: c.durationSeconds,
+          status: c.status,
+          conversion: c.conversion,
+          voicemailFlag: c.voicemailFlag,
+          startedAt: c.createdAt,
+          sastHour: sastHour(c.createdAt),
+        })),
+        skipDuplicates: true,
+      });
+      // createMany does not return ids, so read back the ones just written.
+      const created = await db.jobixConversation.findMany({
+        where: { organizationId, uuid: { in: missing.map((c) => c.uuid) } },
+        select: { id: true, uuid: true },
+      });
+      for (const row of created) ids.set(row.uuid, row.id);
+    }
+
+    for (const c of group) {
+      const row = byUuid.get(c.uuid);
+      if (!row) continue;
+      ids.set(c.uuid, row.id);
+      const changed =
+        row.status !== c.status ||
+        row.durationSeconds !== c.durationSeconds ||
+        row.conversion !== c.conversion ||
+        row.voicemailFlag !== c.voicemailFlag ||
+        row.agentName !== c.agentName ||
+        row.flowName !== c.flowName;
+      if (!changed) continue;
+      await db.jobixConversation.update({
+        where: { id: row.id },
+        data: {
+          status: c.status,
+          durationSeconds: c.durationSeconds,
+          conversion: c.conversion,
+          voicemailFlag: c.voicemailFlag,
+          agentName: c.agentName,
+          flowName: c.flowName,
+        },
+      });
+    }
+  }
+
+  return ids;
 }
 
 /** Run a bounded number of async tasks at a time. */
@@ -203,6 +283,7 @@ export async function runIngestion(options: IngestOptions): Promise<IngestProgre
   const { organizationId } = options;
   await assertSingleOrganization();
   const client = jobixClientOrThrow();
+  const deadline = Date.now() + (options.budgetMs ?? DEFAULT_BUDGET_MS);
 
   const run = await db.ingestionRun.create({
     data: { organizationId, campaignId: options.campaignId, status: "running", phase: "conversations" },
@@ -217,19 +298,21 @@ export async function runIngestion(options: IngestOptions): Promise<IngestProgre
     await update({ workspaceNote: health.message });
 
     // --- conversations ---
+    let conversationsTruncated = false;
     const { conversations } = await pullConversations(client, {
       since: options.since,
       onPage: async ({ pulled }) => {
         await update({ conversationsFound: pulled });
+        // Leave the tail of the budget for writing and transcripts.
+        if (Date.now() > deadline - TAIL_RESERVE_MS) {
+          conversationsTruncated = true;
+          return false;
+        }
       },
     });
     await update({ conversationsFound: conversations.length, phase: "transcripts" });
 
-    const localIds = new Map<string, string>();
-    for (const c of conversations) {
-      const row = await upsertConversation(organizationId, c);
-      localIds.set(c.uuid, row.id);
-    }
+    const localIds = await syncConversations(organizationId, conversations);
 
     // --- transcripts: only what is not already cached ---
     const cached = await db.jobixTranscript.findMany({
@@ -238,6 +321,9 @@ export async function runIngestion(options: IngestOptions): Promise<IngestProgre
     });
     const cachedSet = new Set(cached.map((t) => t.conversationUuid));
     let pending = conversations.filter((c) => !cachedSet.has(c.uuid));
+    // Counted before any cap, so "pending" reported to the UI is the real
+    // amount of work left, not what this slice chose to attempt.
+    const uncachedTotal = pending.length;
     if (options.transcriptLimit) pending = pending.slice(0, options.transcriptLimit);
 
     await update({ transcriptsCached: cachedSet.size });
@@ -245,8 +331,15 @@ export async function runIngestion(options: IngestOptions): Promise<IngestProgre
     let fetched = 0;
     let failed = 0;
     let sinceCheckpoint = 0;
+    let ranOutOfTime = false;
 
     await pool(pending, TRANSCRIPT_CONCURRENCY, async (conversation) => {
+      // Stop cleanly at the budget rather than being killed mid-write. What is
+      // already stored stays stored, and the next run skips it.
+      if (Date.now() > deadline - TAIL_RESERVE_MS) {
+        ranOutOfTime = true;
+        return;
+      }
       const conversationId = localIds.get(conversation.uuid);
       if (!conversationId) return;
       try {
@@ -284,11 +377,29 @@ export async function runIngestion(options: IngestOptions): Promise<IngestProgre
       }
     });
 
-    await update({ transcriptsFetched: fetched, transcriptsFailed: failed, phase: "customers" });
+    const stillToFetch = Math.max(0, uncachedTotal - fetched);
+    await update({ transcriptsFetched: fetched, transcriptsFailed: failed, transcriptsPending: stillToFetch });
+
+    // Out of budget: report an interrupted run so the caller can continue,
+    // rather than starting a phase that cannot finish.
+    if (ranOutOfTime || conversationsTruncated || Date.now() > deadline - TAIL_RESERVE_MS) {
+      await update({ status: "interrupted", phase: "transcripts", finishedAt: new Date() });
+      return (await getIngestProgress(organizationId, run.id))!;
+    }
+
+    await update({ phase: "customers" });
 
     // --- customers (accounts + outcomes), stale-filtered and deduped ---
+    let customersTruncated = false;
     const { customers, droppedStale, droppedDuplicate } = await pullCustomers(client, {
       campaignStart: options.since,
+      onPage: async ({ pulled }) => {
+        await update({ customersFound: pulled });
+        if (Date.now() > deadline) {
+          customersTruncated = true;
+          return false;
+        }
+      },
     });
     // Persist what was pulled: debtors matched or created by phone, and
     // confirmed PTPs written as real promise rows so the commitments range and
@@ -302,6 +413,11 @@ export async function runIngestion(options: IngestOptions): Promise<IngestProgre
       droppedDuplicate,
       phase: "messaging",
     });
+
+    if (customersTruncated) {
+      await update({ status: "interrupted", phase: "customers", finishedAt: new Date() });
+      return (await getIngestProgress(organizationId, run.id))!;
+    }
 
     // --- messaging: non-voice flow steps (WhatsApp/SMS) from node history ---
     // Only possible when a flow is configured; skipped, never faked, otherwise.
@@ -326,6 +442,7 @@ export async function runIngestion(options: IngestOptions): Promise<IngestProgre
         transcriptsFetched: fetched,
         transcriptsCached: cachedSet.size,
         transcriptsFailed: failed,
+        transcriptsPending: stillToFetch,
         customers: customers.length,
         customersCreated: sync.created,
         customersUpdated: sync.updated,
@@ -347,6 +464,38 @@ export async function runIngestion(options: IngestOptions): Promise<IngestProgre
   }
 }
 
+/**
+ * Recover a run whose process was killed.
+ *
+ * The platform can terminate the request without warning, leaving a row that
+ * says "running" forever and a panel that spins for good. Every phase
+ * checkpoints, so a run that has not been touched for longer than any real gap
+ * between checkpoints is dead — mark it interrupted, which is the resumable
+ * state, rather than showing it as alive.
+ */
+export const STALE_RUN_MS = 180_000;
+
+export async function reconcileStalledRun(organizationId: string): Promise<void> {
+  const stale = await db.ingestionRun.findFirst({
+    where: {
+      organizationId,
+      status: "running",
+      updatedAt: { lt: new Date(Date.now() - STALE_RUN_MS) },
+    },
+    select: { id: true },
+  });
+  if (!stale) return;
+  await db.ingestionRun.update({
+    where: { id: stale.id },
+    data: {
+      status: "interrupted",
+      finishedAt: new Date(),
+      error:
+        "The run was cut off by the request time limit before it could finish. Nothing already stored was lost — continue to pick up where it stopped.",
+    },
+  });
+}
+
 export async function getIngestProgress(
   organizationId: string,
   runId?: string,
@@ -363,6 +512,7 @@ export async function getIngestProgress(
     transcriptsFetched: run.transcriptsFetched,
     transcriptsCached: run.transcriptsCached,
     transcriptsFailed: run.transcriptsFailed,
+    transcriptsPending: run.transcriptsPending,
     customersFound: run.customersFound,
     customersCreated: run.customersCreated,
     customersUpdated: run.customersUpdated,

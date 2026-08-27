@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AlertTriangle, Check, Loader2, RefreshCw, Trash2 } from "lucide-react";
+import { count } from "@/lib/format";
 
 // ---------------------------------------------------------------------------
 // Clearing the demo book.
@@ -84,7 +85,7 @@ export function ResetDataCard() {
           <Check size={15} className="text-[#3ecf9a]" /> Demo data cleared
         </h2>
         <p className="mt-2 text-[0.8125rem] leading-relaxed text-ink-2">
-          Removed <span className="num font-medium text-ink">{result.totalDeleted.toLocaleString("en-ZA")}</span>{" "}
+          Removed <span className="num font-medium text-ink">{count(result.totalDeleted)}</span>{" "}
           rows, revoked <span className="num font-medium text-ink">{result.keysRevoked}</span> API{" "}
           {result.keysRevoked === 1 ? "key" : "keys"} and removed{" "}
           <span className="num font-medium text-ink">{result.usersRemoved}</span> other user{" "}
@@ -135,7 +136,7 @@ export function ResetDataCard() {
                 {preview.removing.map((row) => (
                   <li key={row.label} className="flex justify-between gap-3 text-[0.78125rem] text-ink-2">
                     <span>{row.label}</span>
-                    <span className="num text-ink">{row.count.toLocaleString("en-ZA")}</span>
+                    <span className="num text-ink">{count(row.count)}</span>
                   </li>
                 ))}
                 {preview.removing.length === 0 && (
@@ -151,7 +152,7 @@ export function ResetDataCard() {
                 {preview.keeping.map((row) => (
                   <li key={row.label} className="flex justify-between gap-3 text-[0.78125rem] text-ink-2">
                     <span>{row.label}</span>
-                    <span className="num text-ink">{row.count.toLocaleString("en-ZA")}</span>
+                    <span className="num text-ink">{count(row.count)}</span>
                   </li>
                 ))}
               </ul>
@@ -227,7 +228,7 @@ export function ResetDataCard() {
               onClick={run}
             >
               {state === "working" ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
-              {state === "working" ? "Clearing…" : `Delete ${preview.totalRows.toLocaleString("en-ZA")} rows`}
+              {state === "working" ? "Clearing…" : `Delete ${count(preview.totalRows)} rows`}
             </button>
             <button className="btn btn-ghost" onClick={() => setPreview(null)} disabled={state === "working"}>
               Cancel

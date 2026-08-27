@@ -9,7 +9,7 @@ import {
   RefreshCw,
   ServerCog,
 } from "lucide-react";
-import { formatDateTime } from "@/lib/format";
+import { count, formatDateTime } from "@/lib/format";
 
 // ---------------------------------------------------------------------------
 // Ingestion control.
@@ -17,6 +17,11 @@ import { formatDateTime } from "@/lib/format";
 // A run is resumable by design — cached transcripts are never re-fetched — so
 // the honest thing to show is phase, counters and the fact that pressing Run
 // again continues rather than restarts.
+//
+// A book of a few thousand calls cannot be pulled inside one serverless
+// request. The server stops itself at its budget and reports "interrupted";
+// this panel then continues automatically, slice after slice, so the operator
+// sees one advancing progress bar instead of having to press Run eleven times.
 //
 // Two failures are configuration, not bugs, and are reported as such: Jobix not
 // configured on the server (501) and a workspace mismatch (409), which blocks
@@ -32,6 +37,7 @@ export type Progress = {
   transcriptsFetched: number;
   transcriptsCached: number;
   transcriptsFailed: number;
+  transcriptsPending: number;
   customersFound: number;
   customersCreated: number;
   customersUpdated: number;
@@ -75,13 +81,22 @@ async function fetchProgress(): Promise<Progress | null> {
 
 type StartFailure = { title: string; detail: string; tone: "warning" | "critical" };
 
-async function startRun(): Promise<StartFailure | null> {
+type SliceResult = { failure: StartFailure | null; progress: Progress | null };
+
+/** How many continuations to run without asking. A full first pull of a few
+ *  thousand calls takes a handful; the cap stops a runaway loop. */
+const MAX_AUTO_SLICES = 12;
+
+async function startRun(): Promise<SliceResult> {
   const response = await fetch("/api/ingest", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({}),
   });
-  if (response.ok) return null;
+  if (response.ok) {
+    const body = (await response.json().catch(() => null)) as Progress | null;
+    return { failure: null, progress: body && "runId" in body ? body : null };
+  }
 
   const body = (await response.json().catch(() => ({}))) as {
     error?: string;
@@ -90,33 +105,45 @@ async function startRun(): Promise<StartFailure | null> {
   };
   if (response.status === 501) {
     return {
+      failure: {
       title: "Jobix is not configured on this server",
       detail:
         body.message ??
         "The voice platform sign-in is not configured on the server. An administrator must set JOBIX_EMAIL and JOBIX_PASSWORD.",
       tone: "warning",
+      },
+      progress: null,
     };
   }
   if (response.status === 409) {
     return {
+      failure: {
       title: "Workspace mismatch — ingestion refused",
       detail:
         body.message ??
         "The token points at a different workspace than expected. The run was stopped before writing any data, because these endpoints return plausible data from the wrong workspace.",
       tone: "critical",
+      },
+      progress: null,
     };
   }
   if (response.status === 403) {
     return {
-      title: "Unavailable in demo mode",
-      detail: body.message ?? "Sign in with a real account to run ingestion.",
-      tone: "warning",
+      failure: {
+        title: "Unavailable in demo mode",
+        detail: body.message ?? "Sign in with a real account to run ingestion.",
+        tone: "warning",
+      },
+      progress: null,
     };
   }
   return {
-    title: "Ingestion failed to start",
-    detail: body.message ?? "Ingestion could not be started. Try again.",
-    tone: "critical",
+    failure: {
+      title: "Ingestion failed to start",
+      detail: body.message ?? "Ingestion could not be started. Try again.",
+      tone: "critical",
+    },
+    progress: null,
   };
 }
 
@@ -124,7 +151,7 @@ function Counter({ label, value, hint }: { label: string; value: number; hint?: 
   return (
     <div title={hint}>
       <p className="text-[0.6875rem] text-ink-3">{label}</p>
-      <p className="num text-[0.875rem] font-medium text-ink">{value.toLocaleString("en-ZA")}</p>
+      <p className="num text-[0.875rem] font-medium text-ink">{count(value)}</p>
     </div>
   );
 }
@@ -149,8 +176,9 @@ export function IngestionPanel({
   const [open, setOpen] = useState(initial?.status === "running");
   const [starts, setStarts] = useState(0);
 
-  // Poll while a run is in flight. The POST holds open for the whole run, so
-  // this is the only source of intermediate progress.
+  // Poll while a slice is in flight. The POST holds open for the whole slice,
+  // so this is the only source of intermediate progress. An interrupted status
+  // is NOT a stop — the slice effect below decides whether to continue.
   useEffect(() => {
     if (!running) return;
     let cancelled = false;
@@ -159,7 +187,7 @@ export function IngestionPanel({
         .then((next) => {
           if (cancelled || !next) return;
           setProgress(next);
-          if (next.status !== "running") setRunning(false);
+          if (next.status === "completed" || next.status === "failed") setRunning(false);
         })
         .catch(() => {
           /* a dropped poll is not a failed run — the next tick retries */
@@ -171,22 +199,33 @@ export function IngestionPanel({
     };
   }, [running]);
 
-  // Kick off a run when the button bumps the counter.
+  // Run one slice per bump of the counter, and bump it again while the server
+  // reports an interrupted run — that status means "resumable", so continuing
+  // is the correct behaviour rather than something to ask about.
   useEffect(() => {
     if (starts === 0) return;
     let cancelled = false;
     startRun()
-      .then((problem) => {
-        if (cancelled) return;
-        if (problem) {
-          setFailure(problem);
+      .then((result) => {
+        if (cancelled) return null;
+        if (result.failure) {
+          setFailure(result.failure);
           setRunning(false);
+          return null;
         }
-        return fetchProgress();
+        return result.progress ?? fetchProgress();
       })
       .then((next) => {
         if (cancelled || !next) return;
         setProgress(next);
+        if (next.status === "interrupted") {
+          if (starts < MAX_AUTO_SLICES) {
+            setStarts((n) => n + 1);
+          } else {
+            setRunning(false);
+          }
+          return;
+        }
         if (next.status !== "running") setRunning(false);
       })
       .catch(() => {
@@ -219,6 +258,9 @@ export function IngestionPanel({
         : undefined);
   const current = phaseIndex(progress?.phase ?? "conversations");
   const failed = progress?.status === "failed";
+  const paused = progress?.status === "interrupted";
+  const pending = progress?.transcriptsPending ?? 0;
+  const remainingNote = pending > 0 ? `${count(pending)} transcripts still to fetch` : null;
 
   return (
     <section className="glass mb-4">
@@ -228,14 +270,18 @@ export function IngestionPanel({
           <p className="text-[0.8125rem] font-medium text-ink">Jobix ingestion</p>
           <p className="truncate text-[0.71875rem] text-ink-3">
             {running
-              ? `Running — ${progress?.phase ?? "starting"}…`
+              ? `Running — ${progress?.phase ?? "starting"} (part ${starts} of the pull)${
+                  remainingNote ? ` · ${remainingNote}` : ""
+                }…`
               : blocked
                 ? blocked
-                : failed
-                  ? "Last run did not complete — open Detail for the reason."
-                  : progress?.finishedAt
-                    ? `Last run finished ${formatDateTime(progress.finishedAt)} · ${progress.conversationsFound.toLocaleString("en-ZA")} conversations`
-                    : "No ingestion run recorded. Pulls conversations, transcripts, customers and messaging steps."}
+                : paused
+                  ? `Paused at the request time limit${remainingNote ? ` — ${remainingNote}` : ""}. Continue picks up where it stopped.`
+                  : failed
+                    ? "Last run did not complete — open Detail for the reason."
+                    : progress?.finishedAt
+                      ? `Last run finished ${formatDateTime(progress.finishedAt)} · ${count(progress.conversationsFound)} conversations`
+                      : "No ingestion run recorded. Pulls conversations, transcripts, customers and messaging steps."}
           </p>
         </div>
         <button
@@ -259,7 +305,7 @@ export function IngestionPanel({
           }}
         >
           {running ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
-          {running ? "Running…" : progress ? "Run again" : "Run ingestion"}
+          {running ? "Running…" : paused ? "Continue" : progress ? "Run again" : "Run ingestion"}
         </button>
       </div>
 
@@ -305,7 +351,7 @@ export function IngestionPanel({
           </div>
 
           {progress && (
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-7">
               <Counter label="Conversations" value={progress.conversationsFound} hint="Calls returned by Jobix" />
               <Counter
                 label="Transcripts new"
@@ -313,6 +359,11 @@ export function IngestionPanel({
                 hint="Fetched this run — cached transcripts are never re-fetched"
               />
               <Counter label="Cached" value={progress.transcriptsCached} hint="Already stored before this run" />
+              <Counter
+                label="Still to fetch"
+                value={progress.transcriptsPending}
+                hint="Transcripts left after this part of the pull — the next part continues with these"
+              />
               <Counter
                 label="Failed"
                 value={progress.transcriptsFailed}
@@ -341,6 +392,18 @@ export function IngestionPanel({
 
           {progress?.workspaceNote && (
             <p className="text-[0.71875rem] text-ink-3">Workspace check: {progress.workspaceNote}</p>
+          )}
+
+          {paused && !running && (
+            <div className="rounded-lg border border-[rgba(57,135,229,0.35)] bg-accent-soft px-3 py-2.5">
+              <p className="text-[0.78125rem] font-medium text-ink">Paused, not failed</p>
+              <p className="mt-1 text-[0.71875rem] leading-relaxed text-ink-2">
+                A single server request cannot hold a pull of this size open, so the run stops itself before the
+                platform cuts it off and everything fetched so far is kept.{" "}
+                {remainingNote ? `There are ${remainingNote}. ` : ""}
+                Press Continue to carry on from this point — nothing already stored is fetched twice.
+              </p>
+            </div>
           )}
 
           {failure && (
@@ -373,9 +436,9 @@ export function IngestionPanel({
           )}
 
           <p className="border-t border-line-2 pt-2.5 text-[0.6875rem] leading-relaxed text-ink-3">
-            Runs are resumable: transcripts already stored are never fetched again, so pressing Run after an
-            interrupted run continues where it stopped. Refresh the page to recompute the analytics below with
-            the newly ingested data.
+            Runs are resumable: transcripts already stored are never fetched again. A large pull is done in
+            parts, continuing automatically until the book is complete or {MAX_AUTO_SLICES} parts have run.
+            Refresh the page to recompute the analytics below with the newly ingested data.
           </p>
 
           {diagnostic && (

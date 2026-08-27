@@ -10,7 +10,7 @@ import {
 } from "@/services/analytics/classify";
 import { demoAccountRows, demoAnalytics, demoClassifiableAccounts, demoMeta } from "@/services/analytics/demo";
 import { buildLiveAnalytics } from "@/services/analytics/live";
-import { getIngestProgress } from "@/services/jobix/ingest";
+import { getIngestProgress, reconcileStalledRun } from "@/services/jobix/ingest";
 import { loadJobixEnv } from "@/services/jobix/client";
 import { PageHeader } from "@/components/ui";
 import { AnalyticsView, type AnalyticsPayload } from "./AnalyticsView";
@@ -77,6 +77,7 @@ export default async function AnalyticsPage() {
   } else {
     const ctx = await getContext();
     const { result, rows } = await buildLiveAnalytics(ctx.organizationId);
+    await reconcileStalledRun(ctx.organizationId);
     const lastRun = await getIngestProgress(ctx.organizationId);
     ingestion = {
       // Only the presence of credentials crosses to the client, never a value.

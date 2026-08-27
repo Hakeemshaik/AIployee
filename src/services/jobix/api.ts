@@ -74,7 +74,12 @@ export type ConversationPullOptions = {
   /** Only these filters actually work; anything else throws. */
   filters?: { phone?: string; agents?: string };
   /** Called after each page so an ingestion can checkpoint. */
-  onPage?: (info: { page: number; pulled: number; meta: PagedMeta | null }) => void | Promise<void>;
+  /** Return false to stop paging (used to stay inside a run budget). */
+  onPage?: (info: {
+    page: number;
+    pulled: number;
+    meta: PagedMeta | null;
+  }) => void | boolean | Promise<void | boolean>;
 };
 
 /**
@@ -116,7 +121,10 @@ export async function pullConversations(
     }
 
     collected.push(...parsed);
-    await options.onPage?.({ page, pulled: collected.length, meta: payload.meta ?? null });
+    // A hook returning false stops paging — used to stay inside a run budget.
+    if ((await options.onPage?.({ page, pulled: collected.length, meta: payload.meta ?? null })) === false) {
+      break;
+    }
 
     // Because ordering is unreliable, only stop when the WHOLE page predates
     // the floor — never on the first old row.
@@ -249,7 +257,12 @@ function toCustomer(row: Record<string, unknown>): JobixCustomer | null {
  */
 export async function pullCustomers(
   client: JobixClient,
-  options: { campaignStart?: Date; maxPages?: number; onPage?: (info: { page: number; pulled: number }) => void | Promise<void> } = {},
+  options: {
+    campaignStart?: Date;
+    maxPages?: number;
+    /** Return false to stop paging (used to stay inside a run budget). */
+    onPage?: (info: { page: number; pulled: number }) => void | boolean | Promise<void | boolean>;
+  } = {},
 ): Promise<{ customers: JobixCustomer[]; rawCount: number; droppedStale: number; droppedDuplicate: number }> {
   const all: JobixCustomer[] = [];
   const maxPages = options.maxPages ?? 200;
@@ -262,7 +275,7 @@ export async function pullCustomers(
     const rows = payload.data ?? [];
     if (rows.length === 0) break;
     all.push(...rows.map(toCustomer).filter((c): c is JobixCustomer => c !== null));
-    await options.onPage?.({ page, pulled: all.length });
+    if ((await options.onPage?.({ page, pulled: all.length })) === false) break;
     if (payload.meta && !payload.meta.hasNextPage) break;
   }
 

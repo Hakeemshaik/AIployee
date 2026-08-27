@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { AlertTriangle, Download, PhoneOff, Search } from "lucide-react";
-import { money, percent } from "@/lib/format";
+import { count, money, percent } from "@/lib/format";
 import { Badge, GlassCard } from "@/components/ui";
 import { FunnelStep, Metric } from "@/components/Metric";
 import { CumulativeReachChart, ReachByHourChart } from "@/components/charts";
@@ -150,11 +150,11 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
     <div className="space-y-5">
       {/* KPI strip — every tile states its formula */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
-        <Metric label="Accounts" value={a.accounts.toLocaleString("en-ZA")} formula="accounts in book" />
-        <Metric label="Calls" value={a.calls.toLocaleString("en-ZA")} formula="total call records (not accounts)" />
-        <Metric label="Reached" value={a.reachedAccounts.toLocaleString("en-ZA")} formula={payload.formulas.reached} />
+        <Metric label="Accounts" value={count(a.accounts)} formula="accounts in book" />
+        <Metric label="Calls" value={count(a.calls)} formula="total call records (not accounts)" />
+        <Metric label="Reached" value={count(a.reachedAccounts)} formula={payload.formulas.reached} />
         <Metric label="RPC rate" value={percent(a.rpcRate)} formula={payload.formulas.rpcRate} tone="good" />
-        <Metric label="Promises" value={a.commitments.count.toLocaleString("en-ZA")} formula="accounts with a confirmed commitment" />
+        <Metric label="Promises" value={count(a.commitments.count)} formula="accounts with a confirmed commitment" />
         <Metric label="PTP rate" value={percent(a.ptpRate)} formula={payload.formulas.ptpRate} />
         <Metric
           label="Cash committed"
@@ -164,7 +164,7 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
         />
         <Metric
           label="Dead numbers"
-          value={a.deadNumberAccounts.toLocaleString("en-ZA")}
+          value={count(a.deadNumberAccounts)}
           formula={payload.formulas.dataQualityFailRate}
           tone={a.deadNumberAccounts > 0 ? "critical" : undefined}
           sub={`${percent(a.dataQualityFailRate, 0)} of dialled`}

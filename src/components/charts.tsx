@@ -14,7 +14,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { moneyCompact } from "@/lib/format";
+import { count, moneyCompact } from "@/lib/format";
 
 // ---------------------------------------------------------------------------
 // Chart primitives — validated dark-mode series palette, one axis per chart,
@@ -67,7 +67,7 @@ function GlassTooltip({
           <span className="text-ink-2">{row.name}:</span>{" "}
           <span className="num font-medium">
             {money && typeof row.value === "number"
-              ? `R${Math.round(row.value).toLocaleString("en-ZA")}`
+              ? `R${count(Math.round(row.value))}`
               : row.value}
           </span>
         </p>

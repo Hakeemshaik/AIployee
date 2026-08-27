@@ -6,7 +6,7 @@ import {
   money,
   moneyExact,
   percent,
-} from "./format";
+ count,} from "./format";
 
 // ---------------------------------------------------------------------------
 // These are cross-environment invariants, not cosmetics. Intl's en-ZA output
@@ -98,5 +98,29 @@ describe("percent", () => {
     expect(percent(0.2578, 0)).toBe("26%");
     expect(percent(null)).toBe("—");
     expect(percent(Number.NaN)).toBe("—");
+  });
+});
+
+describe("count", () => {
+  it("groups with a space, matching money", () => {
+    expect(count(2700)).toBe("2 700");
+    expect(count(1220)).toBe("1 220");
+    expect(count(999)).toBe("999");
+    expect(count(1_234_567)).toBe("1 234 567");
+  });
+
+  it("is stable regardless of the ICU build, unlike toLocaleString", () => {
+    // The whole point: no separator may come from the platform's locale data,
+    // because Node and Chromium disagree on en-ZA grouping.
+    expect(count(2700)).not.toContain(",");
+    expect(count(2700)).not.toContain("\u00a0");
+  });
+
+  it("handles zero, negatives and nothing", () => {
+    expect(count(0)).toBe("0");
+    expect(count(-4200)).toBe("-4 200");
+    expect(count(null)).toBe("—");
+    expect(count(undefined)).toBe("—");
+    expect(count(NaN)).toBe("—");
   });
 });

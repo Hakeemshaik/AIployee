@@ -4,7 +4,7 @@ import { z } from "zod";
 import { apiContext, requireRole } from "@/lib/auth";
 import { blockGuests, GuestBlockedError } from "@/lib/session";
 import { JobixError } from "@/services/jobix/client";
-import { getIngestProgress, runIngestion } from "@/services/jobix/ingest";
+import { getIngestProgress, reconcileStalledRun, runIngestion } from "@/services/jobix/ingest";
 
 // Ingestion holds this request open for the entire pull — conversations page
 // by page, then one request per uncached transcript. On Vercel the platform
@@ -23,6 +23,9 @@ const schema = z.object({
 export async function GET() {
   try {
     const ctx = await apiContext();
+    // A killed run leaves a row claiming to be alive; settle that before
+    // reporting, so the panel never spins on a dead run.
+    await reconcileStalledRun(ctx.organizationId);
     const progress = await getIngestProgress(ctx.organizationId);
     return NextResponse.json(progress ?? { status: "idle" });
   } catch {

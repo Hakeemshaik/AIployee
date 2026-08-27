@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Info } from "lucide-react";
+import { count as formatCount } from "@/lib/format";
 
 /**
  * A KPI tile whose formula is always available. The brief requires every
@@ -60,7 +61,7 @@ export function FunnelStep({
       <div className="mb-1 flex items-baseline justify-between gap-3">
         <span className="text-[0.8125rem] text-ink">{label}</span>
         <span className="num text-[0.8125rem] font-medium text-ink">
-          {count.toLocaleString("en-ZA")}
+          {formatCount(count)}
           {total > 0 && (
             <span className="ml-2 text-[0.6875rem] font-normal text-ink-3">
               {Math.round((count / total) * 100)}%
@@ -73,7 +74,7 @@ export function FunnelStep({
       </div>
       {dropped !== null && dropped > 0 && (
         <p className="mt-1 text-[0.6875rem] text-ink-3">
-          −{dropped.toLocaleString("en-ZA")} {dropReason}
+          −{formatCount(dropped)} {dropReason}
         </p>
       )}
     </div>

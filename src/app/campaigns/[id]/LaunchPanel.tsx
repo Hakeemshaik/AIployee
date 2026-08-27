@@ -11,7 +11,7 @@ import {
   Send,
   Users,
 } from "lucide-react";
-import { money } from "@/lib/format";
+import { count, money } from "@/lib/format";
 import { GlassCard } from "@/components/ui";
 
 // ---------------------------------------------------------------------------
@@ -161,7 +161,7 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
             </p>
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="rounded-full border border-[rgba(25,158,112,0.35)] bg-[rgba(25,158,112,0.1)] px-2.5 py-1 text-[0.6875rem] text-[#3ecf9a]">
-                Will be dialled <span className="num">{state.eligible.toLocaleString("en-ZA")}</span>
+                Will be dialled <span className="num">{count(state.eligible)}</span>
               </span>
               {state.excluded.map((entry) => (
                 <span
@@ -199,7 +199,7 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
             ) : (
               <div className="space-y-2">
                 <p className="text-[0.75rem] leading-relaxed text-ink-2">
-                  <span className="num font-medium text-ink">{list.rowCount.toLocaleString("en-ZA")}</span>{" "}
+                  <span className="num font-medium text-ink">{count(list.rowCount)}</span>{" "}
                   rows, batch <span className="num text-ink">{list.batchCode}</span> — already written into
                   the <span className="num">call</span> column, so the flow dials exactly these rows.
                 </p>
@@ -289,7 +289,7 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                   onClick={start}
                 >
                   {busy === "start" ? <Loader2 size={13} className="animate-spin" /> : <PhoneOutgoing size={13} />}
-                  Start calling {list ? `${list.rowCount.toLocaleString("en-ZA")} accounts` : ""}
+                  Start calling {list ? `${count(list.rowCount)} accounts` : ""}
                 </button>
               </div>
             )}

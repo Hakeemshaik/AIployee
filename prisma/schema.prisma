@@ -325,12 +325,15 @@ model IngestionRun {
   id             String    @id @default(cuid())
   organizationId String
   campaignId     String?
-  status         String    @default("running") // running | completed | failed | cancelled
+  /** interrupted = stopped at the request-duration ceiling, resumable. */
+  status         String    @default("running") // running | completed | interrupted | failed | cancelled
   phase          String    @default("conversations") // conversations | transcripts | customers | done
   conversationsFound Int   @default(0)
   transcriptsFetched Int   @default(0)
   transcriptsCached  Int   @default(0)
   transcriptsFailed  Int   @default(0)
+  /** Transcripts still to fetch when a run stops early. */
+  transcriptsPending Int   @default(0)
   customersFound     Int   @default(0)
   customersCreated   Int   @default(0)
   customersUpdated   Int   @default(0)
@@ -342,6 +345,8 @@ model IngestionRun {
   workspaceNote  String?
   error          String?
   startedAt      DateTime  @default(now())
+  /** Touched by every checkpoint — a stalled run is detected from this. */
+  updatedAt      DateTime  @updatedAt
   finishedAt     DateTime?
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
