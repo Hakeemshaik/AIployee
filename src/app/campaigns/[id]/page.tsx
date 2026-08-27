@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getContext, hasRole } from "@/lib/auth";
 import { label } from "@/lib/domain";
-import { count, duration, formatDate, formatDateTime, money, percent } from "@/lib/format";
+import { formatDate, money, percent } from "@/lib/format";
 import { getCampaign } from "@/services/campaigns";
 import { listDebtors } from "@/services/debtors";
 import { BackLink, Badge, GlassCard, Meta, PageHeader, StatCard } from "@/components/ui";
@@ -11,7 +11,9 @@ import { StatusControls } from "./StatusControls";
 import { LiveCampaign } from "./LiveCampaign";
 import { LaunchPanel } from "./LaunchPanel";
 import { getCampaignLiveState } from "@/services/campaign-live";
-import { campaignCallLog, MATCH_NOTES } from "@/services/campaign-calls";
+import { campaignCallLog } from "@/services/campaign-calls";
+import { BUCKET_EXPLANATIONS, BUCKET_LABELS } from "@/services/analytics/classify";
+import { CampaignCalls, type CampaignCallsPayload } from "./CampaignCalls";
 import { BookImporter } from "@/components/BookImporter";
 
 /**
@@ -156,108 +158,11 @@ export default async function CampaignDetailPage({
         note="Every call attributed to this campaign, with reach read from the transcript."
       />
       {callLog && (
-        <GlassCard
-          title={`Calls in this campaign (${count(callLog.totalCalls)})`}
-          subtitle={
-            callLog.batchCode
-              ? `Batch ${callLog.batchCode}${callLog.batchSentAt ? ` · sent ${formatDateTime(callLog.batchSentAt)}` : ""}`
-              : "No dialling batch has been sent for this campaign yet"
-          }
-          className="mb-4"
-          pad={false}
-        >
-          <div className="border-b border-line-2 px-5 pb-4">
-            <div className="flex flex-wrap gap-1.5">
-              <span className="rounded-full border border-line bg-white/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-2">
-                Accounts in campaign <span className="num">{count(callLog.accountsInCampaign)}</span>
-              </span>
-              <span className="rounded-full border border-line bg-white/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-2">
-                Dialled <span className="num">{count(callLog.accountsDialled)}</span>
-              </span>
-              <span className="rounded-full border border-[rgba(25,158,112,0.35)] bg-[rgba(25,158,112,0.1)] px-2.5 py-1 text-[0.6875rem] text-[#3ecf9a]">
-                Reached <span className="num">{count(callLog.reachedCalls)}</span> of{" "}
-                <span className="num">{count(callLog.totalCalls)}</span> calls
-              </span>
-              {callLog.batchCode && (
-                <span className="rounded-full border border-line bg-white/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-2">
-                  Carrying batch on the platform{" "}
-                  <span className="num">{count(callLog.accountsCarryingBatch)}</span>
-                </span>
-              )}
-              {callLog.callsBeforeBatch > 0 && (
-                <span className="rounded-full border border-line bg-white/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-3">
-                  Excluded, predate the batch <span className="num">{count(callLog.callsBeforeBatch)}</span>
-                </span>
-              )}
-            </div>
-            <p className="mt-2.5 text-[0.6875rem] leading-relaxed text-ink-3">
-              A call is tied to this campaign through the account it belongs to — by the voice platform&apos;s
-              own customer identifier where the call record carries one, otherwise by phone number. Reach is
-              read from the transcript, never from the platform&apos;s voicemail flag.
-              {callLog.batchSentAt
-                ? " Calls before this batch was sent belong to an earlier run and are excluded."
-                : " Without a sent batch every call to these accounts is listed, whenever it happened."}
-            </p>
-          </div>
-          {callLog.calls.length === 0 ? (
-            <p className="p-8 text-center text-[0.8125rem] text-ink-3">
-              No calls recorded for these accounts yet. Run ingestion on the Call analytics page after the
-              batch has dialled.
-            </p>
-          ) : (
-            <div className="scroll-x">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>When</th>
-                    <th>Account</th>
-                    <th className="text-right">Attempt</th>
-                    <th className="text-right">Talk time</th>
-                    <th>Agent</th>
-                    <th>Outcome</th>
-                    <th>Basis</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {callLog.calls.map((call) => (
-                    <tr key={call.conversationUuid}>
-                      <td className="num text-ink-3">{formatDateTime(call.startedAt)}</td>
-                      <td>
-                        <Link
-                          href={`/debtors/${call.debtorId}`}
-                          className="font-medium text-ink hover:text-accent"
-                        >
-                          {call.name}
-                        </Link>
-                        <span className="num ml-2 text-[0.6875rem] text-ink-3">{call.accountNumber}</span>
-                      </td>
-                      <td className="num text-right">{call.attempt}</td>
-                      <td className="num text-right">{duration(call.durationSeconds)}</td>
-                      <td className="text-ink-3">{call.agentName ?? "—"}</td>
-                      <td>
-                        <span
-                          className={call.reached ? "text-[#3ecf9a]" : "text-ink-3"}
-                          title={call.reason}
-                        >
-                          {call.reached ? "Reached" : "Not reached"}
-                        </span>
-                      </td>
-                      <td className="text-[0.6875rem] text-ink-3" title={MATCH_NOTES[call.matchedBy]}>
-                        {call.matchedBy === "contact_uuid" ? "Identifier" : "Phone"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          {callLog.truncated > 0 && (
-            <p className="border-t border-line-2 px-5 py-3 text-[0.6875rem] text-ink-3">
-              Showing the {count(callLog.calls.length)} most recent of{" "}
-              <span className="num">{count(callLog.totalCalls)}</span> calls.
-            </p>
-          )}
-        </GlassCard>
+        <CampaignCalls
+          log={JSON.parse(JSON.stringify(callLog)) as CampaignCallsPayload}
+          bucketLabels={BUCKET_LABELS}
+          bucketExplanations={BUCKET_EXPLANATIONS}
+        />
       )}
 
       <div className="mb-4 grid gap-4 xl:grid-cols-3">

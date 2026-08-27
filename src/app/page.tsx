@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { AlertTriangle, CalendarClock, PhoneCall, Sparkles } from "lucide-react";
 import { getContext } from "@/lib/auth";
+import { setupStatus } from "@/services/setup-status";
+import { SetupChecklist } from "@/components/SetupChecklist";
 import { label } from "@/lib/domain";
 import { formatDateTime, money, percent, relativeDays } from "@/lib/format";
 import { getDashboardData, getWorkQueue } from "@/services/dashboard";
@@ -19,9 +21,10 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const ctx = await getContext();
-  const [data, queue] = await Promise.all([
+  const [data, queue, setup] = await Promise.all([
     getDashboardData(ctx.organizationId),
     getWorkQueue(ctx.organizationId),
+    setupStatus(ctx.organizationId),
   ]);
   const m = data.metrics;
   const insight = data.insight;
@@ -33,6 +36,10 @@ export default async function DashboardPage() {
         title="Dashboard"
         description="Executive view of the collection operation — last 30 days unless stated."
       />
+
+      {/* Only while there is something left to do — a finished setup does not
+          need a permanent checklist taking the top of the dashboard. */}
+      {setup.done < setup.total && <SetupChecklist status={setup} compact />}
 
       <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <StatCard label="Total outstanding" value={money(m.totalOutstanding)} sub="across the full book" />

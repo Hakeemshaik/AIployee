@@ -3,6 +3,8 @@ import { getContext } from "@/lib/auth";
 import { EVENT_TYPES } from "@/lib/domain";
 import { formatDateTime } from "@/lib/format";
 import { getSettings } from "@/services/settings";
+import { setupStatus } from "@/services/setup-status";
+import { SetupChecklist } from "@/components/SetupChecklist";
 import { Badge, GlassCard, Meta, PageHeader } from "@/components/ui";
 import { ComplianceForm } from "./ComplianceForm";
 import { ResetDataCard } from "./ResetDataCard";
@@ -31,6 +33,7 @@ Content-Type: application/json
 export default async function SettingsPage() {
   const ctx = await getContext();
   const { compliance, apiKeys, users, org } = await getSettings(ctx.organizationId);
+  const setup = await setupStatus(ctx.organizationId);
   const aiLive = process.env.AI_PROVIDER === "claude" && !!process.env.ANTHROPIC_API_KEY;
 
   return (
@@ -39,6 +42,10 @@ export default async function SettingsPage() {
         title="Settings"
         description={`Organization, compliance guardrails and integrations for ${org.name}.`}
       />
+
+      <div className="mb-4">
+        <SetupChecklist status={setup} />
+      </div>
 
       <div className="mb-4 grid gap-4 xl:grid-cols-3">
         <GlassCard title="Organization">
