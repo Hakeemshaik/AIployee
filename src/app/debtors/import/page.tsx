@@ -2,7 +2,7 @@ import { getContext } from "@/lib/auth";
 import { listCampaignOptions } from "@/services/debtors";
 import { BackLink, GlassCard, PageHeader } from "@/components/ui";
 import { ImportForm } from "./ImportForm";
-import { FileImport } from "./FileImport";
+import { BookImporter } from "@/components/BookImporter";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Import debtors" };
@@ -20,7 +20,7 @@ export default async function ImportDebtorsPage() {
       />
       <div className="space-y-4">
         <GlassCard title="Upload a file" subtitle="Jobix workbook, platform template, or any client spreadsheet">
-          <FileImport campaigns={campaigns} />
+          <BookImporter campaigns={campaigns} />
         </GlassCard>
         <GlassCard title="Paste CSV" subtitle="The platform template, pasted as text">
           <ImportForm campaigns={campaigns} />

@@ -136,6 +136,7 @@ export async function syncConversations(
           externalId: c.id || null,
           phone: c.phone,
           contactName: c.contactName,
+          contactUuid: c.contactUuid,
           agentUuid: c.agentUuid,
           agentName: c.agentName,
           flowName: c.flowName,

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import * as XLSX from "xlsx";
 import { db } from "@/lib/db";
 import { JOBIX_COLUMNS } from "./jobix-export";
-import { commitBook, mapBook, parseSpreadsheet, previewBook } from "./book-import";
+import { commitBook, mapBook, parseAmount, parseSpreadsheet, previewBook } from "./book-import";
 
 function workbookBuffer(rows: Record<string, string | number>[], headers?: string[]): Buffer {
   const sheet = XLSX.utils.json_to_sheet(rows, headers ? { header: headers } : undefined);
@@ -114,6 +114,81 @@ describe("book import mapping", () => {
   });
 });
 
+describe("format choice", () => {
+  it("reads a file as the named format even when detection disagrees", () => {
+    // Headers of the platform template, but the operator insists on generic:
+    // the generic matcher recognises the same concepts by name, so the rows
+    // still map — the point is that the choice is honoured and reported.
+    const sheet = parseSpreadsheet(
+      workbookBuffer([
+        {
+          firstName: "Ayanda",
+          lastName: "Dube",
+          accountNumber: "ACC-9",
+          phone: "0825550199",
+          creditorName: "Rosebank Mews",
+          originalBalance: 3200,
+        },
+      ]),
+      "book.xlsx",
+    );
+
+    expect(mapBook(sheet).format).toBe("simple");
+
+    const forced = mapBook(sheet, "generic");
+    expect(forced.format).toBe("generic");
+    expect(forced.detectedFormat).toBe("simple");
+    expect(forced.rows[0].problem).toBeNull();
+  });
+
+  it("reports the detected format alongside the one applied", () => {
+    const sheet = parseSpreadsheet(
+      workbookBuffer([jobixRow()], [...JOBIX_COLUMNS]),
+      "batch.xlsx",
+    );
+    const mapped = mapBook(sheet, "auto");
+    expect(mapped.format).toBe("jobix");
+    expect(mapped.detectedFormat).toBe("jobix");
+  });
+});
+
+
+describe("parseAmount", () => {
+  it("reads the South African convention, where a comma is the decimal point", () => {
+    // The bug this pins: stripping the comma turned R 7 450,00 into 745 000.
+    expect(parseAmount("R 7 450,00")).toBe(7450);
+    expect(parseAmount("R 1 250,50")).toBe(1250.5);
+    expect(parseAmount("12 500,99")).toBe(12500.99);
+    expect(parseAmount("R 0,50")).toBe(0.5);
+  });
+
+  it("reads the English convention, where a comma groups thousands", () => {
+    expect(parseAmount("R 7,450.00")).toBe(7450);
+    expect(parseAmount("$1,234,567.89")).toBe(1234567.89);
+    expect(parseAmount("19,200.50")).toBe(19200.5);
+  });
+
+  it("treats a lone separator with three trailing digits as grouping", () => {
+    expect(parseAmount("7,450")).toBe(7450);
+    expect(parseAmount("12.500")).toBe(12500);
+    expect(parseAmount("1 234 567")).toBe(1234567);
+  });
+
+  it("treats a lone separator with one or two trailing digits as a decimal", () => {
+    expect(parseAmount("7450,5")).toBe(7450.5);
+    expect(parseAmount("7450.55")).toBe(7450.55);
+    expect(parseAmount("0,500")).toBe(0.5); // a bare zero can only be a fraction
+  });
+
+  it("handles plain numbers, negatives and nothing", () => {
+    expect(parseAmount("4500")).toBe(4500);
+    expect(parseAmount("-1 200,25")).toBe(-1200.25);
+    expect(parseAmount("")).toBeNull();
+    expect(parseAmount("No data available")).toBeNull();
+    expect(parseAmount("R")).toBeNull();
+  });
+});
+
 const url = process.env.DATABASE_URL ?? "";
 const scratch = process.env.TEST_DATABASE_RESET === "1" && /test|scratch|tmp/i.test(url);
 
@@ -168,6 +243,55 @@ describe.skipIf(!scratch)("book import (integration)", () => {
     const debtors = await db.debtor.findMany({ include: { accounts: true } });
     expect(debtors).toHaveLength(2);
     expect(debtors.every((debtor) => debtor.accounts[0].currentBalance === 4500)).toBe(true);
+  });
+
+  it("gives the review grid one row per file row, each with the verdict commit will reach", async () => {
+    await db.debtor.create({
+      data: {
+        organizationId: orgId,
+        firstName: "Already",
+        lastName: "Here",
+        accountNumber: "OLD-9",
+        phone: "+27825550105",
+      },
+    });
+
+    const sheet = parseSpreadsheet(
+      workbookBuffer(
+        [
+          jobixRow(),
+          jobixRow({ full_name: "Already Here", Phone: "+27825550105", phone: "+27825550105", tenant_code: "TC-105" }),
+          jobixRow({ full_name: "Dup Person", Phone: "+27825550100", phone: "+27825550100", tenant_code: "TC-106" }),
+          jobixRow({ full_name: "Broken Person", Phone: "12", phone: "12", tenant_code: "TC-107" }),
+        ],
+        [...JOBIX_COLUMNS],
+      ),
+      "batch.xlsx",
+    );
+
+    const preview = await previewBook(orgId, sheet);
+
+    expect(preview.grid.rows).toHaveLength(4);
+    expect(preview.grid.rows.map((row) => row.status)).toEqual([
+      "create",
+      "existing",
+      "duplicate",
+      "invalid",
+    ]);
+    // Row numbers count the header line, so the operator can find the row in
+    // the spreadsheet they uploaded.
+    expect(preview.grid.rows.map((row) => row.row)).toEqual([2, 3, 4, 5]);
+    // Every row that is not created says why.
+    expect(preview.grid.rows[0].note).toBeNull();
+    expect(preview.grid.rows[1].note).toMatch(/already on the platform/i);
+    expect(preview.grid.rows[2].note).toMatch(/appears earlier/i);
+    expect(preview.grid.rows[3].note).toMatch(/not a usable number/i);
+    // The cells are the mapped values, not the raw file.
+    expect(preview.grid.columns[0]).toBe("Name");
+    expect(preview.grid.rows[0].cells[0]).toBe("Test Person");
+    expect(preview.grid.rows[0].cells[3]).toBe(4500);
+    expect(preview.grid.truncated).toBe(0);
+    expect(await db.debtor.count()).toBe(1); // still nothing written
   });
 
   it("assigns existing debtors to the campaign instead of duplicating them", async () => {

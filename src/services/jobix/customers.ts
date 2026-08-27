@@ -125,6 +125,12 @@ export async function persistCustomers(
           // Set, never unset: clearing a DNC flag needs a human decision.
           ...(customer.doNotCall ? { doNotContact: true } : {}),
           ...(customer.modifiedAt ? { lastContactAt: customer.modifiedAt } : {}),
+          // The provider's own identifiers: its customer uuid, which its
+          // conversation records reference, and the batch code sitting in the
+          // record's `call` field. Together they let a campaign's calls be
+          // recognised from the record instead of inferred from a number.
+          providerContactUuid: customer.uuid,
+          ...(customer.callBatch ? { callBatch: customer.callBatch } : {}),
         },
       });
       debtorId = match.id;
@@ -143,6 +149,8 @@ export async function persistCustomers(
           status: nextStatus("active", customer),
           doNotContact: customer.doNotCall,
           lastContactAt: customer.modifiedAt ?? undefined,
+          providerContactUuid: customer.uuid,
+          callBatch: customer.callBatch,
         },
       });
       if (customer.totalDue !== null && customer.totalDue > 0) {

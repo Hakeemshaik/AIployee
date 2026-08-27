@@ -111,6 +111,13 @@ model Debtor {
   riskScore      Int       @default(50) // 0 (safe) – 100 (unlikely to recover)
   doNotContact   Boolean   @default(false)
   campaignId     String?
+  /** The voice platform's own customer uuid. Conversations carry a contact
+   *  uuid, so this gives calls a real identifier join instead of a phone
+   *  guess. */
+  providerContactUuid String?
+  /** Batch code the voice platform last held in this record's `call` field —
+   *  how a campaign's dialling batch is recognised on the record itself. */
+  callBatch      String?
   lastContactAt  DateTime?
   lastOutcome    String?
   createdAt      DateTime  @default(now())
@@ -129,6 +136,8 @@ model Debtor {
   @@index([organizationId, status])
   @@index([organizationId, campaignId])
   @@index([organizationId, phone])
+  @@index([organizationId, providerContactUuid])
+  @@index([organizationId, callBatch])
 }
 
 model DebtAccount {
@@ -277,6 +286,9 @@ model JobixConversation {
   externalId     Int?
   phone          String
   contactName    String?
+  /** The provider's customer uuid for this call, when the record carries one.
+   *  Lets a call be tied to a debtor by identifier rather than by number. */
+  contactUuid    String?
   agentUuid      String?
   agentName      String?
   flowName       String?
@@ -295,6 +307,7 @@ model JobixConversation {
   @@unique([organizationId, uuid])
   @@index([organizationId, startedAt])
   @@index([organizationId, phone])
+  @@index([organizationId, contactUuid])
 }
 
 // Cached transcript plus the derived reach signals. Keyed by conversation

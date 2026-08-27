@@ -65,6 +65,9 @@ export async function POST(request: Request) {
     }
     const message = err instanceof Error ? err.message : "internal_error";
     console.error("[ingest] failed:", err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    // `message` as well as `error`: the panel shows the reason to the operator,
+    // and a server error with no readable reason is what made the last round of
+    // debugging take a day.
+    return NextResponse.json({ error: message, message }, { status: 500 });
   }
 }

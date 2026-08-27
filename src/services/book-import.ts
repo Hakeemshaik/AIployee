@@ -36,8 +36,34 @@ export type BookRow = {
 
 export type RowIssue = { row: number; problem: string };
 
+export type BookFormat = "jobix" | "simple" | "generic";
+/** "auto" detects; naming a format forces that reading of the headers. */
+export type BookFormatChoice = BookFormat | "auto";
+
+/** What one row of the file becomes, and whether it will be written. */
+export type PreviewRow = {
+  row: number;
+  status: "create" | "existing" | "duplicate" | "invalid";
+  /** Why a row is not being created — always populated except for "create". */
+  note: string | null;
+  cells: (string | number | null)[];
+};
+
+/** The mapped sheet as it will land, for review before anything is written. */
+export type PreviewGrid = {
+  columns: string[];
+  rows: PreviewRow[];
+  /** Rows beyond the display cap — counted, never silently dropped. */
+  truncated: number;
+};
+
+export const PREVIEW_ROW_CAP = 500;
+
 export type BookPreview = {
-  format: "jobix" | "simple" | "generic";
+  format: BookFormat;
+  /** What the headers look like, regardless of the format that was applied —
+   *  so a forced choice that disagrees with the file is visible. */
+  detectedFormat: BookFormat;
   /** Which source column each concept was read from — the operator's check
    *  that a generic mapping guessed right. */
   mapping: Record<string, string>;
@@ -49,6 +75,8 @@ export type BookPreview = {
   invalid: RowIssue[];
   /** First rows that will be created, for a visual sanity check. */
   sample: { name: string; phone: string; balance: number; creditor: string }[];
+  /** The whole sheet as mapped, row by row, for review before importing. */
+  grid: PreviewGrid;
 };
 
 const norm = (header: string) => header.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -61,7 +89,9 @@ const GENERIC_HEADERS: Record<string, string[]> = {
   phone: ["phone", "phonenumber", "cell", "cellphone", "cellno", "mobile", "mobilenumber", "contactnumber", "tel", "telephone"],
   email: ["email", "emailaddress"],
   account: ["accountnumber", "account", "tenantcode", "reference", "accountref", "unitreference", "leaseref"],
-  balance: ["arrearsamount", "arrears", "totaldue", "amountdue", "balance", "currentbalance", "outstanding", "amountowing", "totalbalance"],
+  // Least specific last: an explicit arrears column beats a generic balance,
+  // and the platform template's own header is recognised by a generic read too.
+  balance: ["arrearsamount", "arrears", "totaldue", "amountdue", "balance", "currentbalance", "outstanding", "amountowing", "totalbalance", "originalbalance"],
   creditor: ["buildingname", "building", "creditorname", "creditor", "bodycorporate", "bodycorporatename", "complex", "client"],
   unit: ["unitnumber", "unit", "unitno", "mainunitno", "doorno"],
   city: ["city", "town", "location", "suburb"],
@@ -110,27 +140,71 @@ function splitFullName(full: string): { firstName: string; lastName: string } {
   return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
 }
 
-function parseAmount(raw: string): number | null {
-  const cleaned = raw.replace(/[R\s,]/gi, "").replace(/[^\d.-]/g, "");
-  if (!cleaned) return null;
-  const value = Number(cleaned);
-  return Number.isFinite(value) ? Math.round(value * 100) / 100 : null;
+/**
+ * Read a money amount written in any of the conventions clients actually send.
+ *
+ * This has to handle both separators, because South African sheets write
+ * "R 7 450,00" and English-formatted ones write "R 7,450.00". Stripping commas
+ * blindly turned the first into 745 000 — a hundredfold overstatement of the
+ * book that nothing downstream would have questioned.
+ *
+ * The rule: a separator followed by exactly three digits groups thousands;
+ * one followed by one or two digits is a decimal point. When both appear, the
+ * later one is the decimal point and the earlier one groups.
+ */
+export function parseAmount(raw: string): number | null {
+  // Keep only what can carry meaning; spaces (including non-breaking) and
+  // currency symbols always group or decorate, never decide the value.
+  const cleaned = raw.replace(/[\s\u00a0]/g, "").replace(/[^\d.,-]/g, "");
+  if (!cleaned || !/\d/.test(cleaned)) return null;
+
+  const negative = cleaned.startsWith("-");
+  let body = cleaned.replace(/-/g, "");
+
+  const lastComma = body.lastIndexOf(",");
+  const lastDot = body.lastIndexOf(".");
+
+  if (lastComma !== -1 && lastDot !== -1) {
+    // Both present: the later separator is the decimal point.
+    const decimalAt = Math.max(lastComma, lastDot);
+    const grouping = decimalAt === lastComma ? "." : ",";
+    body = body.split(grouping).join("");
+    const index = body.lastIndexOf(decimalAt === lastComma ? "," : ".");
+    body = `${body.slice(0, index).replace(/[.,]/g, "")}.${body.slice(index + 1)}`;
+  } else if (lastComma !== -1 || lastDot !== -1) {
+    const separator = lastComma !== -1 ? "," : ".";
+    const parts = body.split(separator);
+    const tail = parts[parts.length - 1];
+    const head = parts.slice(0, -1).join("");
+    // Three trailing digits group thousands — unless the leading part is a
+    // bare zero, where "0,500" can only mean a fraction of a rand.
+    const groups = tail.length === 3 && head !== "0";
+    body = groups || tail.length === 0 || tail.length > 3 ? `${head}${tail}` : `${head}.${tail}`;
+  }
+
+  const value = Number(body);
+  if (!Number.isFinite(value)) return null;
+  return Math.round((negative ? -value : value) * 100) / 100;
 }
 
 export type MappedBook = {
-  format: BookPreview["format"];
+  format: BookFormat;
+  detectedFormat: BookFormat;
   mapping: Record<string, string>;
   rows: { row: number; data: Partial<BookRow>; problem: string | null }[];
 };
 
-export function mapBook(sheet: ParsedSheet): MappedBook {
+export function mapBook(sheet: ParsedSheet, choice: BookFormatChoice = "auto"): MappedBook {
   const normalised = sheet.headers.map(norm);
   const has = (header: string) => normalised.includes(norm(header));
 
   const isJobix = has("full_name") && has("tenant_code") && (has("arrears_amount") || has("total_due"));
   const isSimple = has("firstName") && has("lastName") && has("accountNumber") && has("creditorName");
 
-  const format: BookPreview["format"] = isJobix ? "jobix" : isSimple ? "simple" : "generic";
+  const detectedFormat: BookFormat = isJobix ? "jobix" : isSimple ? "simple" : "generic";
+  // A named format wins over detection: an operator who knows the file is a
+  // Jobix workbook with a renamed header should be able to say so.
+  const format: BookFormat = choice === "auto" ? detectedFormat : choice;
 
   const col = (concept: string): string | null => {
     if (format === "jobix") {
@@ -219,16 +293,33 @@ export function mapBook(sheet: ParsedSheet): MappedBook {
     };
   });
 
-  return { format, mapping, rows };
+  return { format, detectedFormat, mapping, rows };
 }
 
 const phoneKey = (phone: string) => phone.replace(/[^\d]/g, "").slice(-9);
 
+/** Columns shown in the review grid, in the order an operator reads them. */
+const GRID_COLUMNS = ["Name", "Phone", "Account", "Amount owing", "Creditor / building", "Unit", "Email", "City"];
+
+function gridCells(data: Partial<BookRow>): (string | number | null)[] {
+  return [
+    `${data.firstName ?? ""} ${data.lastName ?? ""}`.trim(),
+    data.phone || null,
+    data.accountNumber || null,
+    data.originalBalance ?? null,
+    data.creditorName || null,
+    data.unit || null,
+    data.email || null,
+    data.city || null,
+  ];
+}
+
 export async function previewBook(
   organizationId: string,
   sheet: ParsedSheet,
+  choice: BookFormatChoice = "auto",
 ): Promise<BookPreview> {
-  const mapped = mapBook(sheet);
+  const mapped = mapBook(sheet, choice);
   const existing = await db.debtor.findMany({
     where: { organizationId },
     select: { phone: true },
@@ -242,24 +333,42 @@ export async function previewBook(
   let duplicateInFile = 0;
   const invalid: RowIssue[] = [];
   const sample: BookPreview["sample"] = [];
+  const gridRows: PreviewRow[] = [];
+
+  // Every row gets a verdict, and the verdict is the same one commitBook will
+  // reach — the grid is a rehearsal of the import, not a separate opinion.
+  const record = (row: number, status: PreviewRow["status"], note: string | null, data: Partial<BookRow>) => {
+    if (gridRows.length < PREVIEW_ROW_CAP) {
+      gridRows.push({ row, status, note, cells: gridCells(data) });
+    }
+  };
 
   for (const entry of mapped.rows) {
     if (entry.problem) {
       invalid.push({ row: entry.row, problem: entry.problem });
+      record(entry.row, "invalid", entry.problem, entry.data);
       continue;
     }
     const key = phoneKey(entry.data.phone!);
     if (seenInFile.has(key)) {
       duplicateInFile += 1;
+      record(entry.row, "duplicate", "the same phone number appears earlier in this file", entry.data);
       continue;
     }
     seenInFile.add(key);
     if (existingPhones.has(key)) {
       alreadyOnPlatform += 1;
+      record(
+        entry.row,
+        "existing",
+        "already on the platform — assigned to the campaign rather than duplicated",
+        entry.data,
+      );
       continue;
     }
     creatable += 1;
     creatableValue += entry.data.originalBalance!;
+    record(entry.row, "create", null, entry.data);
     if (sample.length < 5) {
       sample.push({
         name: `${entry.data.firstName} ${entry.data.lastName}`,
@@ -272,6 +381,7 @@ export async function previewBook(
 
   return {
     format: mapped.format,
+    detectedFormat: mapped.detectedFormat,
     mapping: mapped.mapping,
     totalRows: mapped.rows.length,
     creatable,
@@ -280,6 +390,11 @@ export async function previewBook(
     duplicateInFile,
     invalid: invalid.slice(0, 100),
     sample,
+    grid: {
+      columns: GRID_COLUMNS,
+      rows: gridRows,
+      truncated: Math.max(0, mapped.rows.length - gridRows.length),
+    },
   };
 }
 
@@ -298,13 +413,14 @@ export async function commitBook(
   userId: string,
   sheet: ParsedSheet,
   campaignId?: string,
+  choice: BookFormatChoice = "auto",
 ): Promise<BookCommitResult> {
   if (campaignId) {
     const campaign = await db.campaign.findFirst({ where: { id: campaignId, organizationId } });
     if (!campaign) throw new Error("Campaign not found.");
   }
 
-  const mapped = mapBook(sheet);
+  const mapped = mapBook(sheet, choice);
   const existing = await db.debtor.findMany({
     where: { organizationId },
     select: { id: true, phone: true, accountNumber: true },

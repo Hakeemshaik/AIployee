@@ -98,19 +98,26 @@ async function startRun(): Promise<SliceResult> {
     return { failure: null, progress: body && "runId" in body ? body : null };
   }
 
-  const body = (await response.json().catch(() => ({}))) as {
-    error?: string;
-    message?: string;
-    detail?: unknown;
-  };
+  // A body that is not JSON means the response did not come from the route at
+  // all — the platform's own error page. The commonest cause is the request
+  // exceeding the function duration ceiling, which must be named rather than
+  // hidden behind "try again".
+  const raw = await response.text();
+  let body: { error?: string; message?: string; detail?: unknown } = {};
+  let platformError = false;
+  try {
+    body = raw ? (JSON.parse(raw) as typeof body) : {};
+  } catch {
+    platformError = true;
+  }
   if (response.status === 501) {
     return {
       failure: {
-      title: "Jobix is not configured on this server",
-      detail:
-        body.message ??
-        "The voice platform sign-in is not configured on the server. An administrator must set JOBIX_EMAIL and JOBIX_PASSWORD.",
-      tone: "warning",
+        title: "Jobix is not configured on this server",
+        detail:
+          body.message ??
+          "The voice platform sign-in is not configured on the server. An administrator must set JOBIX_EMAIL and JOBIX_PASSWORD.",
+        tone: "warning",
       },
       progress: null,
     };
@@ -118,11 +125,11 @@ async function startRun(): Promise<SliceResult> {
   if (response.status === 409) {
     return {
       failure: {
-      title: "Workspace mismatch — ingestion refused",
-      detail:
-        body.message ??
-        "The token points at a different workspace than expected. The run was stopped before writing any data, because these endpoints return plausible data from the wrong workspace.",
-      tone: "critical",
+        title: "Workspace mismatch — ingestion refused",
+        detail:
+          body.message ??
+          "The token points at a different workspace than expected. The run was stopped before writing any data, because these endpoints return plausible data from the wrong workspace.",
+        tone: "critical",
       },
       progress: null,
     };
@@ -137,10 +144,27 @@ async function startRun(): Promise<SliceResult> {
       progress: null,
     };
   }
+  if (platformError || response.status === 504) {
+    return {
+      failure: {
+        title: "The run was cut off by the platform, not by Jobix",
+        detail:
+          "The server did not answer with a result — the request hit the hosting platform's time limit. Progress up to that point is kept, so press Continue to carry on from where it stopped.",
+        tone: "warning",
+      },
+      progress: null,
+    };
+  }
+  // The route reports a Jobix problem in `message` and an unexpected server
+  // error in `error`. Reading only one of them turned every server error into
+  // a contentless "try again".
+  const reason = body.message ?? body.error;
   return {
     failure: {
       title: "Ingestion failed to start",
-      detail: body.message ?? "Ingestion could not be started. Try again.",
+      detail: reason
+        ? `The server reported: ${reason}`
+        : `The server answered HTTP ${response.status} with no reason. Check the deployment logs for the /api/ingest request.`,
       tone: "critical",
     },
     progress: null,

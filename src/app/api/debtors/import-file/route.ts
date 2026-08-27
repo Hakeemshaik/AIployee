@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { authFailure } from "@/lib/api-errors";
 import { apiContext, requireRole } from "@/lib/auth";
-import { commitBook, parseSpreadsheet, previewBook } from "@/services/book-import";
+import {
+  commitBook,
+  parseSpreadsheet,
+  previewBook,
+  type BookFormatChoice,
+} from "@/services/book-import";
 
 // Book files parse in-memory; give the bigger ones headroom.
 export const maxDuration = 120;
@@ -31,6 +36,15 @@ export async function POST(request: Request) {
     }
     const mode = String(form.get("mode") ?? "preview");
     const campaignId = String(form.get("campaignId") ?? "") || undefined;
+    const requested = String(form.get("format") ?? "auto");
+    const FORMATS: BookFormatChoice[] = ["auto", "jobix", "simple", "generic"];
+    if (!FORMATS.includes(requested as BookFormatChoice)) {
+      return NextResponse.json(
+        { error: "validation_failed", message: `Unknown format "${requested}".` },
+        { status: 422 },
+      );
+    }
+    const format = requested as BookFormatChoice;
 
     let sheet;
     try {
@@ -46,10 +60,10 @@ export async function POST(request: Request) {
     }
 
     if (mode === "commit") {
-      const result = await commitBook(ctx.organizationId, ctx.userId, sheet, campaignId);
+      const result = await commitBook(ctx.organizationId, ctx.userId, sheet, campaignId, format);
       return NextResponse.json(result, { status: 201 });
     }
-    return NextResponse.json(await previewBook(ctx.organizationId, sheet));
+    return NextResponse.json(await previewBook(ctx.organizationId, sheet, format));
   } catch (err) {
     const denied = authFailure(err);
     if (denied) return denied;
