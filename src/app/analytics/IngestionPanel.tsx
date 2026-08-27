@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -9,19 +9,21 @@ import {
   RefreshCw,
   ServerCog,
 } from "lucide-react";
-import { count, formatDateTime } from "@/lib/format";
+import { count, formatDate, formatDateTime } from "@/lib/format";
 
 // ---------------------------------------------------------------------------
 // Ingestion control.
 //
-// A run is resumable by design — cached transcripts are never re-fetched — so
-// the honest thing to show is phase, counters and the fact that pressing Run
-// again continues rather than restarts.
+// Two things this has to get right, because both went wrong in practice:
 //
-// A book of a few thousand calls cannot be pulled inside one serverless
-// request. The server stops itself at its budget and reports "interrupted";
-// this panel then continues automatically, slice after slice, so the operator
-// sees one advancing progress bar instead of having to press Run eleven times.
+//   * How much to pull. Asking for the whole provider database is a punishment
+//     for a first run — so the operator picks a window, and the default is a
+//     week rather than everything.
+//   * Never look busy when nothing is happening. A pull of any size is done in
+//     parts; the server stops each part before the platform's request ceiling
+//     and reports "interrupted", which means resumable. Whoever notices that
+//     status first — the poller or the part that just finished — starts the
+//     next part, so a page reloaded mid-pull carries on instead of spinning.
 //
 // Two failures are configuration, not bugs, and are reported as such: Jobix not
 // configured on the server (501) and a workspace mismatch (409), which blocks
@@ -51,13 +53,42 @@ export type Progress = {
 };
 
 const PHASES = [
-  { key: "conversations", label: "Conversations" },
+  { key: "conversations", label: "Call list" },
   { key: "transcripts", label: "Transcripts" },
-  { key: "customers", label: "Customers" },
-  { key: "messaging", label: "Messaging" },
+  { key: "customers", label: "Accounts" },
+  { key: "messaging", label: "Messages" },
 ] as const;
 
 const POLL_MS = 2000;
+
+// --- how far back to pull ---------------------------------------------------
+
+type WindowKey = "today" | "yesterday" | "7d" | "30d" | "all";
+
+const WINDOWS: { key: WindowKey; label: string; days: number | null }[] = [
+  { key: "today", label: "Today", days: 0 },
+  { key: "yesterday", label: "Yesterday and today", days: 1 },
+  { key: "7d", label: "Last 7 days", days: 6 },
+  { key: "30d", label: "Last 30 days", days: 29 },
+  { key: "all", label: "Everything on the platform", days: null },
+];
+
+/**
+ * The instant a window starts: midnight South African time, that many days
+ * back. SAST is UTC+2 with no daylight saving, so this is exact arithmetic
+ * rather than a locale guess.
+ */
+function windowStart(key: WindowKey): Date | null {
+  const days = WINDOWS.find((w) => w.key === key)?.days ?? null;
+  if (days === null) return null;
+  const sastNow = new Date(Date.now() + 2 * 3_600_000);
+  const midnightSast = Date.UTC(
+    sastNow.getUTCFullYear(),
+    sastNow.getUTCMonth(),
+    sastNow.getUTCDate() - days,
+  );
+  return new Date(midnightSast - 2 * 3_600_000);
+}
 
 export type ServerDiagnostic = {
   vercelEnv: string | null;
@@ -66,10 +97,13 @@ export type ServerDiagnostic = {
   vars: Record<string, boolean>;
 };
 
-
 function phaseIndex(phase: string): number {
   const found = PHASES.findIndex((p) => p.key === phase);
   return found === -1 ? PHASES.length : found;
+}
+
+function phaseLabel(phase: string): string {
+  return PHASES.find((p) => p.key === phase)?.label.toLowerCase() ?? "starting";
 }
 
 async function fetchProgress(): Promise<Progress | null> {
@@ -83,15 +117,15 @@ type StartFailure = { title: string; detail: string; tone: "warning" | "critical
 
 type SliceResult = { failure: StartFailure | null; progress: Progress | null };
 
-/** How many continuations to run without asking. A full first pull of a few
- *  thousand calls takes a handful; the cap stops a runaway loop. */
-const MAX_AUTO_SLICES = 12;
+/** How many parts to run without asking. A first pull of a few thousand calls
+ *  takes a handful; the cap stops a runaway loop. */
+const MAX_AUTO_PARTS = 12;
 
-async function startRun(): Promise<SliceResult> {
+async function startRun(since: Date | null): Promise<SliceResult> {
   const response = await fetch("/api/ingest", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({}),
+    body: JSON.stringify(since ? { since: since.toISOString() } : {}),
   });
   if (response.ok) {
     const body = (await response.json().catch(() => null)) as Progress | null;
@@ -198,11 +232,40 @@ export function IngestionPanel({
   const [running, setRunning] = useState(initial?.status === "running");
   const [failure, setFailure] = useState<StartFailure | null>(null);
   const [open, setOpen] = useState(initial?.status === "running");
-  const [starts, setStarts] = useState(0);
+  const [slice, setSlice] = useState(0);
+  const [parts, setParts] = useState(0);
+  const [windowKey, setWindowKey] = useState<WindowKey>("7d");
 
-  // Poll while a slice is in flight. The POST holds open for the whole slice,
-  // so this is the only source of intermediate progress. An interrupted status
-  // is NOT a stop — the slice effect below decides whether to continue.
+  // Refs, because the poller's interval closure would otherwise read the
+  // values from the render that created it.
+  const inFlight = useRef(false);
+  const partsRef = useRef(0);
+  // Captured when Import is pressed, so every automatic part of the same pull
+  // uses the window the operator actually chose.
+  const windowRef = useRef<WindowKey>("7d");
+
+  /**
+   * One place decides what a status means, so the poller and the part that
+   * just finished cannot disagree — the bug that left a reloaded page
+   * spinning was exactly that disagreement.
+   */
+  const applyProgress = useCallback((next: Progress) => {
+    setProgress(next);
+    if (next.status === "completed" || next.status === "failed") {
+      setRunning(false);
+      return;
+    }
+    if (next.status === "interrupted") {
+      // Resumable. Continue unless a part is already in flight (that part will
+      // decide when it lands) or the automatic cap is reached.
+      if (inFlight.current) return;
+      if (partsRef.current < MAX_AUTO_PARTS) setSlice((n) => n + 1);
+      else setRunning(false);
+    }
+  }, []);
+
+  // Poll while a pull is in flight. The POST holds open for a whole part, so
+  // this is the only source of intermediate progress.
   useEffect(() => {
     if (!running) return;
     let cancelled = false;
@@ -210,8 +273,7 @@ export function IngestionPanel({
       fetchProgress()
         .then((next) => {
           if (cancelled || !next) return;
-          setProgress(next);
-          if (next.status === "completed" || next.status === "failed") setRunning(false);
+          applyProgress(next);
         })
         .catch(() => {
           /* a dropped poll is not a failed run — the next tick retries */
@@ -221,38 +283,37 @@ export function IngestionPanel({
       cancelled = true;
       clearInterval(timer);
     };
-  }, [running]);
+  }, [running, applyProgress]);
 
-  // Run one slice per bump of the counter, and bump it again while the server
-  // reports an interrupted run — that status means "resumable", so continuing
-  // is the correct behaviour rather than something to ask about.
+  // Run one part per bump of the counter.
   useEffect(() => {
-    if (starts === 0) return;
+    if (slice === 0) return;
     let cancelled = false;
-    startRun()
-      .then((result) => {
-        if (cancelled) return null;
+    inFlight.current = true;
+
+    startRun(windowStart(windowRef.current))
+      .then(async (result) => {
+        if (cancelled) return;
         if (result.failure) {
+          inFlight.current = false;
           setFailure(result.failure);
           setRunning(false);
-          return null;
-        }
-        return result.progress ?? fetchProgress();
-      })
-      .then((next) => {
-        if (cancelled || !next) return;
-        setProgress(next);
-        if (next.status === "interrupted") {
-          if (starts < MAX_AUTO_SLICES) {
-            setStarts((n) => n + 1);
-          } else {
-            setRunning(false);
-          }
           return;
         }
-        if (next.status !== "running") setRunning(false);
+        partsRef.current += 1;
+        setParts(partsRef.current);
+        const next = result.progress ?? (await fetchProgress());
+        if (cancelled || !next) {
+          inFlight.current = false;
+          return;
+        }
+        // Cleared before applying, so applyProgress is free to start the next
+        // part rather than assuming this one is still going.
+        inFlight.current = false;
+        applyProgress(next);
       })
       .catch(() => {
+        inFlight.current = false;
         if (cancelled) return;
         setFailure({
           title: "Ingestion failed to start",
@@ -261,10 +322,11 @@ export function IngestionPanel({
         });
         setRunning(false);
       });
+
     return () => {
       cancelled = true;
     };
-  }, [starts]);
+  }, [slice, applyProgress]);
 
   // A deployment carrying only the static token is configured on paper but
   // cannot authenticate — the dashboard API rejects that token on every
@@ -285,34 +347,54 @@ export function IngestionPanel({
   const paused = progress?.status === "interrupted";
   const pending = progress?.transcriptsPending ?? 0;
   const remainingNote = pending > 0 ? `${count(pending)} transcripts still to fetch` : null;
+  const from = windowStart(windowKey);
+  const windowLabel = WINDOWS.find((w) => w.key === windowKey)?.label ?? "";
 
   return (
     <section className="glass mb-4">
       <div className="flex flex-wrap items-center gap-3 px-4 py-3">
         <ServerCog size={15} className="shrink-0 text-accent" />
         <div className="min-w-0 flex-1">
-          <p className="text-[0.8125rem] font-medium text-ink">Jobix ingestion</p>
+          <p className="text-[0.8125rem] font-medium text-ink">Import from Jobix</p>
           <p className="truncate text-[0.71875rem] text-ink-3">
             {running
-              ? `Running — ${progress?.phase ?? "starting"} (part ${starts} of the pull)${
-                  remainingNote ? ` · ${remainingNote}` : ""
-                }…`
-              : blocked
+              ? `Working on the ${phaseLabel(progress?.phase ?? "conversations")}${
+                  parts > 1 ? `, part ${parts}` : ""
+                }${remainingNote ? ` · ${remainingNote}` : ""}…`
+              : failure
+                // A banner in the body is not enough when the panel is
+                // collapsed: the one line on show must carry the bad news.
+                ? failure.title
+                : blocked
                 ? blocked
                 : paused
-                  ? `Paused at the request time limit${remainingNote ? ` — ${remainingNote}` : ""}. Continue picks up where it stopped.`
+                  ? `Paused part way${remainingNote ? ` — ${remainingNote}` : ""}. Continue picks up where it stopped.`
                   : failed
-                    ? "Last run did not complete — open Detail for the reason."
+                    ? "Last import did not finish — open Detail for the reason."
                     : progress?.finishedAt
-                      ? `Last run finished ${formatDateTime(progress.finishedAt)} · ${count(progress.conversationsFound)} conversations`
-                      : "No ingestion run recorded. Pulls conversations, transcripts, customers and messaging steps."}
+                      ? `Last import finished ${formatDateTime(progress.finishedAt)} · ${count(progress.conversationsFound)} calls`
+                      : "Nothing imported yet. Choose how far back to pull, then press Import."}
           </p>
         </div>
+        <select
+          className="field w-auto min-w-[180px]"
+          value={windowKey}
+          onChange={(event) => setWindowKey(event.target.value as WindowKey)}
+          disabled={running}
+          aria-label="How far back to import"
+          title="Only calls from this date onward are pulled"
+        >
+          {WINDOWS.map((option) => (
+            <option key={option.key} value={option.key}>
+              {option.label}
+            </option>
+          ))}
+        </select>
         <button
           className="btn"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
-          aria-label={open ? "Hide ingestion detail" : "Show ingestion detail"}
+          aria-label={open ? "Hide import detail" : "Show import detail"}
         >
           <ChevronDown size={13} className={`transition-transform ${open ? "rotate-180" : ""}`} />
           Detail
@@ -320,34 +402,46 @@ export function IngestionPanel({
         <button
           className="btn btn-primary"
           disabled={running || !!blocked}
-          title={blocked ?? (running ? "An ingestion run is already in progress" : "Pull the latest data from Jobix")}
+          title={blocked ?? (running ? "An import is already running" : "Pull the latest data from Jobix")}
           onClick={() => {
             setFailure(null);
             setRunning(true);
             setOpen(true);
-            setStarts((n) => n + 1);
+            windowRef.current = windowKey;
+            partsRef.current = 0;
+            setParts(0);
+            setSlice((n) => n + 1);
           }}
         >
           {running ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
-          {running ? "Running…" : paused ? "Continue" : progress ? "Run again" : "Run ingestion"}
+          {running ? "Importing…" : paused ? "Continue" : progress ? "Import again" : "Import"}
         </button>
       </div>
 
       {open && (
         <div className="space-y-3.5 border-t border-line-2 px-4 py-3.5">
-          {/* A disabled Run button needs a reason on the page, not only in a
+          {/* A disabled button needs a reason on the page, not only in a
               tooltip — otherwise the panel reads as broken. */}
           {blocked && (
             <div className="rounded-lg border border-[rgba(250,178,25,0.3)] bg-[rgba(250,178,25,0.07)] px-3 py-2.5">
               <p className="flex items-start gap-2 text-[0.78125rem] font-medium text-[#f2c14e]">
                 <AlertTriangle size={13} className="mt-0.5 shrink-0" />
-                Ingestion is unavailable
+                Importing is unavailable
               </p>
               <p className="mt-1 pl-[1.3rem] text-[0.71875rem] leading-relaxed text-ink-2">{blocked}</p>
             </div>
           )}
 
-          {/* phase stepper */}
+          <p className="text-[0.71875rem] text-ink-2">
+            {from
+              ? `Pulling calls made on or after ${formatDate(from)} (${windowLabel.toLowerCase()}).`
+              : "Pulling every call on the platform, however old."}{" "}
+            <span className="text-ink-3">
+              A narrower window is faster: the slow part is one transcript request per call.
+            </span>
+          </p>
+
+          {/* what happens, in order */}
           <div className="flex flex-wrap items-center gap-1.5">
             {PHASES.map((phase, index) => {
               const done = progress?.status === "completed" || index < current;
@@ -368,7 +462,7 @@ export function IngestionPanel({
                   ) : active ? (
                     <Loader2 size={11} className="animate-spin" />
                   ) : null}
-                  {phase.label}
+                  {index + 1}. {phase.label}
                 </span>
               );
             })}
@@ -376,7 +470,7 @@ export function IngestionPanel({
 
           {progress && (
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-7">
-              <Counter label="Conversations" value={progress.conversationsFound} hint="Calls returned by Jobix" />
+              <Counter label="Calls" value={progress.conversationsFound} hint="Call records returned by Jobix" />
               <Counter
                 label="Transcripts new"
                 value={progress.transcriptsFetched}
@@ -386,7 +480,7 @@ export function IngestionPanel({
               <Counter
                 label="Still to fetch"
                 value={progress.transcriptsPending}
-                hint="Transcripts left after this part of the pull — the next part continues with these"
+                hint="Transcripts left after this part — the next part continues with these"
               />
               <Counter
                 label="Failed"
@@ -394,12 +488,12 @@ export function IngestionPanel({
                 hint="Transcript fetches that errored — a re-run retries only these"
               />
               <Counter
-                label="Customers"
+                label="Accounts"
                 value={progress.customersFound}
                 hint={`After stale and duplicate filtering — ${progress.customersCreated} new debtors created, ${progress.customersUpdated} existing updated by phone match`}
               />
               <Counter
-                label="Messaging"
+                label="Messages"
                 value={progress.messagingEvents}
                 hint="WhatsApp/SMS and filter steps from flow node history"
               />
@@ -409,7 +503,7 @@ export function IngestionPanel({
           {progress && (progress.droppedStale > 0 || progress.droppedDuplicate > 0) && (
             <p className="text-[0.71875rem] text-ink-3">
               Dropped <span className="num">{progress.droppedStale}</span> stale and{" "}
-              <span className="num">{progress.droppedDuplicate}</span> duplicate customer records — deduped by
+              <span className="num">{progress.droppedDuplicate}</span> duplicate account records — deduped by
               phone, keeping the most recently modified.
             </p>
           )}
@@ -422,10 +516,11 @@ export function IngestionPanel({
             <div className="rounded-lg border border-[rgba(57,135,229,0.35)] bg-accent-soft px-3 py-2.5">
               <p className="text-[0.78125rem] font-medium text-ink">Paused, not failed</p>
               <p className="mt-1 text-[0.71875rem] leading-relaxed text-ink-2">
-                A single server request cannot hold a pull of this size open, so the run stops itself before the
+                A single server request cannot hold a pull of this size open, so it stops itself before the
                 platform cuts it off and everything fetched so far is kept.{" "}
                 {remainingNote ? `There are ${remainingNote}. ` : ""}
-                Press Continue to carry on from this point — nothing already stored is fetched twice.
+                Press Continue to carry on from this point — nothing already stored is fetched twice. A shorter
+                window finishes in one part.
               </p>
             </div>
           )}
@@ -460,9 +555,9 @@ export function IngestionPanel({
           )}
 
           <p className="border-t border-line-2 pt-2.5 text-[0.6875rem] leading-relaxed text-ink-3">
-            Runs are resumable: transcripts already stored are never fetched again. A large pull is done in
-            parts, continuing automatically until the book is complete or {MAX_AUTO_SLICES} parts have run.
-            Refresh the page to recompute the analytics below with the newly ingested data.
+            Imports are resumable: a transcript already stored is never fetched again, so pressing Import after
+            an interrupted one continues rather than restarts. A large pull runs in parts automatically, up to{" "}
+            {MAX_AUTO_PARTS}. Refresh the page to recompute the analytics below with the newly imported data.
           </p>
 
           {diagnostic && (
