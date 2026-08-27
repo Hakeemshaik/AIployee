@@ -194,7 +194,7 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
         />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-3">
+      <div className="grid items-start gap-4 xl:grid-cols-3">
         <GlassCard title="Funnel" subtitle="Book → attempted → connected → conversation → promise">
           <div className="space-y-3.5">
             <FunnelStep label="Book" count={a.accounts} total={a.accounts} />
@@ -240,7 +240,7 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
         </GlassCard>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-3">
+      <div className="grid items-start gap-4 xl:grid-cols-3">
         <GlassCard
           className="xl:col-span-2"
           title="Cumulative reach by attempt"

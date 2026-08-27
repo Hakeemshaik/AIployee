@@ -8,9 +8,21 @@ import {
 // ---------------------------------------------------------------------------
 // Analytics over ingested Jobix data.
 //
-// Accounts come from the debtor book; calls and transcripts come from the
-// local Jobix cache, matched on phone number in E.164. Classification then
-// runs through exactly the same engine the demo uses.
+// Accounts come from the debtor book; calls and transcripts come from the local
+// Jobix cache. Classification then runs through exactly the same engine the
+// demo uses.
+//
+// Two things this file has to be careful about:
+//
+//   * WHICH CALLS BELONG TO AN ACCOUNT. A call is claimed by identifier first —
+//     the provider's customer uuid, stored on both sides at ingestion — and
+//     only what is left over is matched on phone number. Doing it in that
+//     order means a number shared by two records cannot hand the same call to
+//     both, and it honours the rule that a phone number is not a relationship.
+//   * WHAT IT READS. This runs on every page load, so it selects the columns
+//     it needs and nothing else. Selecting the whole transcript row pulled the
+//     full turn-by-turn JSON — up to 200 KB a call — for every call in the
+//     book, which is why the screen took as long as it did.
 // ---------------------------------------------------------------------------
 
 export type LiveAnalyticsRow = {
@@ -39,21 +51,63 @@ export async function buildLiveAnalytics(
 }> {
   const debtors = await db.debtor.findMany({
     where: { organizationId, ...(options.campaignId ? { campaignId: options.campaignId } : {}) },
-    include: { accounts: { select: { currentBalance: true, creditorName: true } }, promises: true },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
+      accountNumber: true,
+      status: true,
+      doNotContact: true,
+      providerContactUuid: true,
+      accounts: { select: { currentBalance: true, creditorName: true } },
+      promises: { select: { amount: true, status: true }, orderBy: { createdAt: "desc" } },
+    },
   });
 
   const conversations = await db.jobixConversation.findMany({
     where: { organizationId },
-    include: { transcript: true },
+    // Deliberately not `include: { transcript: true }` — that carries the full
+    // turn-by-turn JSON, which nothing here reads.
+    select: {
+      uuid: true,
+      phone: true,
+      contactUuid: true,
+      durationSeconds: true,
+      startedAt: true,
+      transcript: { select: { userTurns: true, userWords: true, userText: true } },
+    },
     orderBy: { startedAt: "asc" },
   });
 
-  const byPhone = new Map<string, typeof conversations>();
+  type Call = (typeof conversations)[number];
+
+  // --- claim calls: identifier first, then phone for whatever is left ------
+  const debtorByUuid = new Map<string, string>();
+  const debtorByPhone = new Map<string, string>();
+  for (const debtor of debtors) {
+    if (debtor.providerContactUuid) debtorByUuid.set(debtor.providerContactUuid, debtor.id);
+    const key = normalise(debtor.phone);
+    // First writer wins, so a duplicated number resolves the same way twice.
+    if (key && !debtorByPhone.has(key)) debtorByPhone.set(key, debtor.id);
+  }
+
+  const callsByDebtor = new Map<string, Call[]>();
+  const claim = (debtorId: string, call: Call) => {
+    const list = callsByDebtor.get(debtorId) ?? [];
+    list.push(call);
+    callsByDebtor.set(debtorId, list);
+  };
+
+  const unclaimed: Call[] = [];
   for (const conversation of conversations) {
-    const key = normalise(conversation.phone);
-    const list = byPhone.get(key) ?? [];
-    list.push(conversation);
-    byPhone.set(key, list);
+    const byIdentifier = conversation.contactUuid ? debtorByUuid.get(conversation.contactUuid) : undefined;
+    if (byIdentifier) claim(byIdentifier, conversation);
+    else unclaimed.push(conversation);
+  }
+  for (const conversation of unclaimed) {
+    const debtorId = debtorByPhone.get(normalise(conversation.phone));
+    if (debtorId) claim(debtorId, conversation);
   }
 
   const rows: LiveAnalyticsRow[] = [];
@@ -63,17 +117,20 @@ export async function buildLiveAnalytics(
 
   for (const debtor of debtors) {
     const balance = debtor.accounts.reduce((s, a) => s + a.currentBalance, 0);
-    const openPromise = debtor.promises.find((p) => p.status === "pending");
+    // A cancelled promise was withdrawn, so it is not a commitment. Broken and
+    // fulfilled ones were real commitments and still count as a PTP.
+    const commitments = debtor.promises.filter((p) => p.status !== "cancelled");
+    const openPromise = commitments.find((p) => p.status === "pending");
     const outcome = {
-      ptpConfirmed: debtor.promises.length > 0,
-      ptpAmount: openPromise?.amount ?? debtor.promises[0]?.amount ?? null,
+      ptpConfirmed: commitments.length > 0,
+      ptpAmount: openPromise?.amount ?? commitments[0]?.amount ?? null,
       disputed: debtor.status === "dispute",
       paidClaimed: debtor.status === "paid",
       escalated: debtor.status === "escalated",
       doNotCall: debtor.doNotContact,
     };
 
-    const matched = byPhone.get(normalise(debtor.phone)) ?? [];
+    const matched = callsByDebtor.get(debtor.id) ?? [];
     totalCalls += matched.length;
 
     accounts.push({

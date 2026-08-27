@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -232,6 +233,7 @@ export function IngestionPanel({
   /** What the running deployment sees — presence booleans and build identity, no values. */
   diagnostic?: ServerDiagnostic;
 }) {
+  const router = useRouter();
   const [progress, setProgress] = useState<Progress | null>(initial);
   const [running, setRunning] = useState(initial?.status === "running");
   const [failure, setFailure] = useState<StartFailure | null>(null);
@@ -255,20 +257,27 @@ export function IngestionPanel({
    * just finished cannot disagree — the bug that left a reloaded page
    * spinning was exactly that disagreement.
    */
-  const applyProgress = useCallback((next: Progress) => {
-    setProgress(next);
-    if (next.status === "completed" || next.status === "failed") {
-      setRunning(false);
-      return;
-    }
-    if (next.status === "interrupted") {
-      // Resumable. Continue unless a part is already in flight (that part will
-      // decide when it lands) or the automatic cap is reached.
-      if (inFlight.current) return;
-      if (partsRef.current < MAX_AUTO_PARTS) setSlice((n) => n + 1);
-      else setRunning(false);
-    }
-  }, []);
+  const applyProgress = useCallback(
+    (next: Progress) => {
+      setProgress(next);
+      if (next.status === "completed" || next.status === "failed") {
+        setRunning(false);
+        // The analytics below are server-rendered from the data this run just
+        // wrote, so they are stale the moment it finishes. Telling the operator
+        // to refresh was not a feature.
+        if (next.status === "completed") router.refresh();
+        return;
+      }
+      if (next.status === "interrupted") {
+        // Resumable. Continue unless a part is already in flight (that part
+        // will decide when it lands) or the automatic cap is reached.
+        if (inFlight.current) return;
+        if (partsRef.current < MAX_AUTO_PARTS) setSlice((n) => n + 1);
+        else setRunning(false);
+      }
+    },
+    [router],
+  );
 
   // Poll while a pull is in flight. The POST holds open for a whole part, so
   // this is the only source of intermediate progress.
