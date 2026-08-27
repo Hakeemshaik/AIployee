@@ -8,6 +8,7 @@ import {
   Loader2,
   RefreshCw,
   ServerCog,
+  Zap,
 } from "lucide-react";
 import { count, formatDate, formatDateTime } from "@/lib/format";
 
@@ -121,11 +122,14 @@ type SliceResult = { failure: StartFailure | null; progress: Progress | null };
  *  takes a handful; the cap stops a runaway loop. */
 const MAX_AUTO_PARTS = 12;
 
-async function startRun(since: Date | null): Promise<SliceResult> {
+async function startRun(since: Date | null, skipTranscripts: boolean): Promise<SliceResult> {
   const response = await fetch("/api/ingest", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(since ? { since: since.toISOString() } : {}),
+    body: JSON.stringify({
+      ...(since ? { since: since.toISOString() } : {}),
+      ...(skipTranscripts ? { skipTranscripts: true } : {}),
+    }),
   });
   if (response.ok) {
     const body = (await response.json().catch(() => null)) as Progress | null;
@@ -235,6 +239,7 @@ export function IngestionPanel({
   const [slice, setSlice] = useState(0);
   const [parts, setParts] = useState(0);
   const [windowKey, setWindowKey] = useState<WindowKey>("7d");
+  const [quick, setQuick] = useState(false);
 
   // Refs, because the poller's interval closure would otherwise read the
   // values from the render that created it.
@@ -243,6 +248,7 @@ export function IngestionPanel({
   // Captured when Import is pressed, so every automatic part of the same pull
   // uses the window the operator actually chose.
   const windowRef = useRef<WindowKey>("7d");
+  const quickRef = useRef(false);
 
   /**
    * One place decides what a status means, so the poller and the part that
@@ -291,7 +297,7 @@ export function IngestionPanel({
     let cancelled = false;
     inFlight.current = true;
 
-    startRun(windowStart(windowRef.current))
+    startRun(windowStart(windowRef.current), quickRef.current)
       .then(async (result) => {
         if (cancelled) return;
         if (result.failure) {
@@ -391,6 +397,16 @@ export function IngestionPanel({
           ))}
         </select>
         <button
+          className={`btn ${quick ? "border-[rgba(57,135,229,0.45)] bg-accent-soft text-ink" : ""}`}
+          onClick={() => setQuick((v) => !v)}
+          disabled={running}
+          aria-pressed={quick}
+          title="Pull the call list and accounts only. Seconds instead of minutes, but reach stays unverified until transcripts are fetched."
+        >
+          <Zap size={13} className={quick ? "text-accent" : ""} />
+          Numbers only
+        </button>
+        <button
           className="btn"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
@@ -408,13 +424,22 @@ export function IngestionPanel({
             setRunning(true);
             setOpen(true);
             windowRef.current = windowKey;
+            quickRef.current = quick;
             partsRef.current = 0;
             setParts(0);
             setSlice((n) => n + 1);
           }}
         >
           {running ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
-          {running ? "Importing…" : paused ? "Continue" : progress ? "Import again" : "Import"}
+          {running
+            ? "Importing…"
+            : paused
+              ? "Continue"
+              : quick
+                ? "Quick import"
+                : progress
+                  ? "Import again"
+                  : "Import"}
         </button>
       </div>
 
@@ -437,7 +462,9 @@ export function IngestionPanel({
               ? `Pulling calls made on or after ${formatDate(from)} (${windowLabel.toLowerCase()}).`
               : "Pulling every call on the platform, however old."}{" "}
             <span className="text-ink-3">
-              A narrower window is faster: the slow part is one transcript request per call.
+              {quick
+                ? "Numbers only: the call list and the accounts, no transcripts. Finishes in seconds — reach stays unverified until you import again without this on."
+                : "A narrower window is faster: the slow part is one transcript request per call."}
             </span>
           </p>
 

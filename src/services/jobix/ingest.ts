@@ -29,7 +29,9 @@ import { JobixClient, JobixError, loadJobixEnv } from "./client";
 // data is written.
 // ---------------------------------------------------------------------------
 
-const TRANSCRIPT_CONCURRENCY = 12;
+/** Parallel transcript fetches. The endpoint tolerates this comfortably; the
+ *  ceiling is the provider's, so it is env-tunable without a deploy. */
+const TRANSCRIPT_CONCURRENCY = Number(process.env.JOBIX_TRANSCRIPT_CONCURRENCY ?? 16);
 
 /** Default run budget. The route's maxDuration is 300s; this leaves margin to
  *  checkpoint and respond rather than being killed mid-write. */
@@ -47,6 +49,16 @@ export type IngestOptions = {
   campaignId?: string;
   /** Cap transcript fetches for a quick first pass. */
   transcriptLimit?: number;
+  /**
+   * Skip the transcript phase entirely.
+   *
+   * Transcripts are one request per call and dominate the time; the call list
+   * and the accounts are a handful of requests. Skipping them turns a pull of
+   * a few thousand calls from minutes into seconds, at the cost of reach: a
+   * call with no transcript counts as not reached, and the analytics screen
+   * says so rather than presenting an understated figure as final.
+   */
+  skipTranscripts?: boolean;
   /**
    * Wall-clock budget for the whole run. The request is killed at the
    * platform's duration ceiling, so the run stops itself before that and
@@ -334,7 +346,11 @@ export async function runIngestion(options: IngestOptions): Promise<IngestProgre
     let sinceCheckpoint = 0;
     let ranOutOfTime = false;
 
-    await pool(pending, TRANSCRIPT_CONCURRENCY, async (conversation) => {
+    // The fast pass records what is outstanding and moves on, so the numbers
+    // are on screen in seconds and a later run fills the transcripts in.
+    const wanted = options.skipTranscripts ? [] : pending;
+
+    await pool(wanted, TRANSCRIPT_CONCURRENCY, async (conversation) => {
       // Stop cleanly at the budget rather than being killed mid-write. What is
       // already stored stays stored, and the next run skips it.
       if (Date.now() > deadline - TAIL_RESERVE_MS) {

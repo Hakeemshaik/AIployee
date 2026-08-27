@@ -76,7 +76,7 @@ export default async function AnalyticsPage() {
     };
   } else {
     const ctx = await getContext();
-    const { result, rows } = await buildLiveAnalytics(ctx.organizationId);
+    const { result, rows, callsTotal, callsWithTranscript } = await buildLiveAnalytics(ctx.organizationId);
     await reconcileStalledRun(ctx.organizationId);
     const lastRun = await getIngestProgress(ctx.organizationId);
     ingestion = {
@@ -118,6 +118,7 @@ export default async function AnalyticsPage() {
       bucketLabels: BUCKET_LABELS,
       bucketExplanations: BUCKET_EXPLANATIONS,
       analytics: result.analytics,
+      transcripts: { total: callsTotal, withTranscript: callsWithTranscript },
       rows: rows.map((r) => {
         const c = classifiedById.get(r.accountId)!;
         return {

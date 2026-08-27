@@ -62,6 +62,9 @@ export type AnalyticsPayload = {
     escalated: boolean;
     doNotCall: boolean;
   }[];
+  /** Transcript coverage. Reach is read from transcripts, so a call without
+   *  one counts as not reached — the screen must be able to say how many. */
+  transcripts?: { total: number; withTranscript: number };
 };
 
 const BUCKET_ORDER: Bucket[] = [
@@ -146,8 +149,28 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
     URL.revokeObjectURL(url);
   }
 
+  const missingTranscripts = payload.transcripts
+    ? payload.transcripts.total - payload.transcripts.withTranscript
+    : 0;
+
   return (
     <div className="space-y-5">
+      {/* Reach is a transcript reading. Until every call has one, the reach and
+          PTP figures below are a floor, not a result — say so on the screen
+          rather than letting an understated number pass as final. */}
+      {missingTranscripts > 0 && (
+        <div className="rounded-lg border border-[rgba(250,178,25,0.3)] bg-[rgba(250,178,25,0.07)] px-3.5 py-2.5">
+          <p className="text-[0.78125rem] font-medium text-[#f2c14e]">
+            {count(missingTranscripts)} of {count(payload.transcripts!.total)} calls have no transcript yet
+          </p>
+          <p className="mt-1 text-[0.71875rem] leading-relaxed text-ink-2">
+            Reach is verified by reading the transcript, so those calls count as not reached. Every figure
+            below is a floor until they are fetched — import again with &ldquo;Numbers only&rdquo; switched off
+            to complete them.
+          </p>
+        </div>
+      )}
+
       {/* KPI strip — every tile states its formula */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
         <Metric label="Accounts" value={count(a.accounts)} formula="accounts in book" />

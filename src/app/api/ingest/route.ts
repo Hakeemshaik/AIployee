@@ -17,6 +17,8 @@ const schema = z.object({
   since: z.coerce.date().optional(),
   expectedAgentNames: z.array(z.string()).max(10).optional(),
   transcriptLimit: z.coerce.number().int().min(1).max(5000).optional(),
+  /** Numbers now, transcripts later. See IngestOptions.skipTranscripts. */
+  skipTranscripts: z.coerce.boolean().optional(),
 });
 
 // GET /api/ingest — progress of the latest run.
@@ -48,6 +50,7 @@ export async function POST(request: Request) {
       since: parsed.data.since,
       expectedAgentNames: parsed.data.expectedAgentNames,
       transcriptLimit: parsed.data.transcriptLimit,
+      skipTranscripts: parsed.data.skipTranscripts,
     });
     return NextResponse.json(progress, { status: 201 });
   } catch (err) {

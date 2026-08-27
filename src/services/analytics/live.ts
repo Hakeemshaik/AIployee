@@ -30,7 +30,13 @@ function normalise(phone: string): string {
 export async function buildLiveAnalytics(
   organizationId: string,
   options: { campaignId?: string } = {},
-): Promise<{ result: ClassifiedResult; rows: LiveAnalyticsRow[]; transcriptCoverage: number }> {
+): Promise<{
+  result: ClassifiedResult;
+  rows: LiveAnalyticsRow[];
+  transcriptCoverage: number;
+  callsTotal: number;
+  callsWithTranscript: number;
+}> {
   const debtors = await db.debtor.findMany({
     where: { organizationId, ...(options.campaignId ? { campaignId: options.campaignId } : {}) },
     include: { accounts: { select: { currentBalance: true, creditorName: true } }, promises: true },
@@ -108,5 +114,9 @@ export async function buildLiveAnalytics(
     result: classifyCampaign(accounts),
     rows,
     transcriptCoverage: totalCalls > 0 ? withTranscript / totalCalls : 0,
+    // Counts as well as the ratio: a call with no transcript counts as not
+    // reached, so the screen has to be able to say how many that is.
+    callsTotal: totalCalls,
+    callsWithTranscript: withTranscript,
   };
 }
