@@ -47,7 +47,7 @@ type LaunchState = {
   scheduleError: string | null;
 };
 
-type PreparedList = { csv: string; rowCount: number; batchCode: string };
+type PreparedList = { csv: string; rowCount: number; batchCode: string; callFlag: string | null };
 
 async function fetchState(campaignId: string): Promise<LaunchState> {
   const response = await fetch(`/api/campaigns/${campaignId}/launch`, { cache: "no-store" });
@@ -301,9 +301,20 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
             ) : (
               <div className="space-y-2">
                 <p className="text-[0.75rem] leading-relaxed text-ink-2">
-                  <span className="num font-medium text-ink">{count(list.rowCount)}</span>{" "}
-                  rows, batch <span className="num text-ink">{list.batchCode}</span> — already written into
-                  the <span className="num">call</span> column, so the flow dials exactly these rows.
+                  <span className="num font-medium text-ink">{count(list.rowCount)}</span> rows. Batch{" "}
+                  <span className="num text-ink">{list.batchCode}</span> is in the{" "}
+                  <span className="num">batch</span> column, which is how results come back to this campaign.
+                  {list.callFlag && (
+                    <>
+                      {" "}
+                      The <span className="num">call</span> column carries{" "}
+                      <span className="num text-ink">{list.callFlag}</span> — that is what the flow&apos;s
+                      entry filter must look for.
+                      {list.callFlag === list.batchCode
+                        ? " Because it is this run's code, the filter has to name it, which means editing the flow before every run. Set JOBIX_CALL_FLAG to a fixed word and the filter can be written once and left alone."
+                        : " It is the same every run, so the flow is configured once and never edited again."}
+                    </>
+                  )}
                 </p>
                 <div className="flex items-center gap-2">
                   <button className="btn" onClick={copyList}>

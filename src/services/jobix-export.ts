@@ -43,10 +43,16 @@ const EXCLUDED_STATUSES = ["paid", "opted_out", "dispute", "escalated", "legal",
 export type JobixExportOptions = {
   campaignId?: string;
   /**
-   * When set, written into every row's `call` column. The flow's entry filter
-   * gates on that field, so a list pasted with the code already in place is
-   * pre-armed: triggering the flow dials exactly these rows and nobody else,
-   * with no separate stamping step.
+   * This run's batch code. It goes in the `batch` column, which is the
+   * attribution key: the flow never writes to it, so results can still be tied
+   * back to this run long after dialling.
+   *
+   * The `call` column is separate, and is the flag the flow's entry filter
+   * reads. By default it carries the batch code too, which means the filter has
+   * to name that code — a flow edit before every run. Set JOBIX_CALL_FLAG to a
+   * fixed word instead and the filter can be written once and left alone: the
+   * platform decides who is dialled by which rows carry the flag, not by
+   * editing the flow.
    */
   batchCode?: string;
   /** Only accounts at least this many days overdue. */
@@ -59,6 +65,8 @@ export type JobixExport = {
   csv: string;
   rowCount: number;
   batch: string;
+  /** What went into the `call` column — what the flow's filter must look for. */
+  callFlag: string | null;
   excluded: { reason: string; count: number }[];
 };
 
@@ -95,7 +103,16 @@ export async function buildJobixExport(
   };
 
   const today = new Date();
-  const batch = `${(campaign?.name ?? "All accounts").replace(/[^A-Za-z0-9 -]/g, "").trim()} ${today.toISOString().slice(0, 10)}`;
+  // The batch column is machine-readable when a run code exists, because that
+  // is what results are matched on later. Without one it is a readable label
+  // for a plain export nobody is going to dial from.
+  const batch =
+    options.batchCode ??
+    `${(campaign?.name ?? "All accounts").replace(/[^A-Za-z0-9 -]/g, "").trim()} ${today.toISOString().slice(0, 10)}`;
+
+  // The flag the flow's entry filter looks for. A fixed word means the filter
+  // never has to be edited again.
+  const callFlag = process.env.JOBIX_CALL_FLAG?.trim() || options.batchCode;
 
   const rows: string[] = [];
   for (const debtor of debtors) {
@@ -146,7 +163,7 @@ export async function buildJobixExport(
       batch,
       language: "English",
       "month-of": today.toISOString().slice(0, 7),
-      ...(options.batchCode ? { call: options.batchCode } : {}),
+      ...(callFlag ? { call: callFlag } : {}),
     };
     rows.push(JOBIX_COLUMNS.map((c) => csvCell(values[c])).join(","));
   }
@@ -156,6 +173,7 @@ export async function buildJobixExport(
     csv,
     rowCount: rows.length,
     batch,
+    callFlag: callFlag ?? null,
     excluded: Object.entries(excluded)
       .map(([reason, count]) => ({ reason, count }))
       .sort((a, b) => b.count - a.count),

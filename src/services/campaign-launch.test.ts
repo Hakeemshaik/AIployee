@@ -81,9 +81,17 @@ describe.skipIf(!scratch)("campaign launch (integration)", () => {
     expect(prepared.batchCode).toMatch(/^[A-Z0-9-]{6,}$/i);
 
     const lines = prepared.csv.split("\n");
-    const callIndex = lines[0].split(",").indexOf("call");
+    const header = lines[0].split(",");
+    const cells = lines[1].split(",");
+    const callIndex = header.indexOf("call");
+    const batchIndex = header.indexOf("batch");
     expect(callIndex).toBe(JOBIX_COLUMNS.length - 1);
-    expect(lines[1].split(",")[callIndex]).toBe(prepared.batchCode);
+    // The batch column is the attribution key and carries the run code.
+    expect(cells[batchIndex]).toBe(prepared.batchCode);
+    // With no fixed flag configured, the call column carries the code too —
+    // which is the arrangement that makes the flow filter need editing.
+    expect(cells[callIndex]).toBe(prepared.batchCode);
+    expect(prepared.callFlag).toBe(prepared.batchCode);
 
     const campaign = await db.campaign.findUniqueOrThrow({ where: { id: campaignId } });
     expect(campaign.providerCampaignId).toBe(prepared.batchCode);
@@ -93,6 +101,23 @@ describe.skipIf(!scratch)("campaign launch (integration)", () => {
     const exported = await buildJobixExport(orgId, { campaignId });
     const lines = exported.csv.split("\n");
     expect(lines[1].split(",").at(-1)).toBe("");
+    expect(exported.callFlag).toBeNull();
+  });
+
+  it("a configured flag goes in the call column so the flow filter is fixed", async () => {
+    // The whole point: the flag is the same every run, so the flow's entry
+    // filter is written once. The run code still travels, in `batch`.
+    process.env.JOBIX_CALL_FLAG = "READY";
+    try {
+      const exported = await buildJobixExport(orgId, { campaignId, batchCode: "27AUG-ABCD" });
+      const header = exported.csv.split("\n")[0].split(",");
+      const cells = exported.csv.split("\n")[1].split(",");
+      expect(cells[header.indexOf("call")]).toBe("READY");
+      expect(cells[header.indexOf("batch")]).toBe("27AUG-ABCD");
+      expect(exported.callFlag).toBe("READY");
+    } finally {
+      delete process.env.JOBIX_CALL_FLAG;
+    }
   });
 
   it("refuses to start without confirmation, without the flag, and without a prepared list", async () => {

@@ -237,7 +237,10 @@ function toCustomer(row: Record<string, unknown>): JobixCustomer | null {
     paidClaimed: unwrapBoolean(fields.paid_already) || unwrapBoolean(fields.paid_claimed),
     escalated: unwrapBoolean(fields.escalation_flag) || unwrapBoolean(fields.escalate),
     doNotCall: unwrapBoolean(fields.dnc_flag) || unwrapBoolean(fields.do_not_contact),
-    callBatch: unwrapField(fields.call),
+    // The batch column first: the flow may clear `call` when a call completes,
+    // so attribution cannot depend on it. `call` stays as the fallback for
+    // records stamped before the batch column was used.
+    callBatch: unwrapField(fields.batch) ?? unwrapField(fields.call),
     modifiedAt: modifiedAt && !Number.isNaN(modifiedAt.getTime()) ? modifiedAt : null,
     raw: fields,
   };
