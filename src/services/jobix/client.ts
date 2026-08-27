@@ -158,7 +158,10 @@ export class JobixClient {
           throw new JobixError(
             this.sessionMode
               ? "Jobix rejected the session — check JOBIX_EMAIL and JOBIX_PASSWORD."
-              : "Jobix rejected the credentials (check JOBIX_TOKEN).",
+              // The static token is a dead end on this API: every /api/* endpoint
+              // rejects it. Point at the fix rather than at the variable that
+              // cannot work.
+              : "Jobix rejected the static API token. The dashboard API only accepts a sign-in — set JOBIX_EMAIL and JOBIX_PASSWORD.",
             "unauthorized",
           );
         }

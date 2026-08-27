@@ -203,7 +203,20 @@ export function IngestionPanel({
     };
   }, [starts]);
 
-  const blocked = disabledReason ?? (configured ? undefined : "The voice platform connection is not configured.");
+  // A deployment carrying only the static token is configured on paper but
+  // cannot authenticate — the dashboard API rejects that token on every
+  // endpoint. Say so before a run is spent finding out.
+  const tokenOnly =
+    !!diagnostic &&
+    diagnostic.vars.JOBIX_TOKEN &&
+    !(diagnostic.vars.JOBIX_EMAIL && diagnostic.vars.JOBIX_PASSWORD);
+  const blocked =
+    disabledReason ??
+    (!configured
+      ? "The voice platform connection is not configured."
+      : tokenOnly
+        ? "A sign-in is required: the dashboard API does not accept the static API token. Set JOBIX_EMAIL and JOBIX_PASSWORD."
+        : undefined);
   const current = phaseIndex(progress?.phase ?? "conversations");
   const failed = progress?.status === "failed";
 
@@ -216,12 +229,12 @@ export function IngestionPanel({
           <p className="truncate text-[0.71875rem] text-ink-3">
             {running
               ? `Running — ${progress?.phase ?? "starting"}…`
-              : failed
-                ? "Last run did not complete — open Detail for the reason."
-                : progress?.finishedAt
-                  ? `Last run finished ${formatDateTime(progress.finishedAt)} · ${progress.conversationsFound.toLocaleString("en-ZA")} conversations`
-                  : blocked
-                    ? blocked
+              : blocked
+                ? blocked
+                : failed
+                  ? "Last run did not complete — open Detail for the reason."
+                  : progress?.finishedAt
+                    ? `Last run finished ${formatDateTime(progress.finishedAt)} · ${progress.conversationsFound.toLocaleString("en-ZA")} conversations`
                     : "No ingestion run recorded. Pulls conversations, transcripts, customers and messaging steps."}
           </p>
         </div>
@@ -252,6 +265,18 @@ export function IngestionPanel({
 
       {open && (
         <div className="space-y-3.5 border-t border-line-2 px-4 py-3.5">
+          {/* A disabled Run button needs a reason on the page, not only in a
+              tooltip — otherwise the panel reads as broken. */}
+          {blocked && (
+            <div className="rounded-lg border border-[rgba(250,178,25,0.3)] bg-[rgba(250,178,25,0.07)] px-3 py-2.5">
+              <p className="flex items-start gap-2 text-[0.78125rem] font-medium text-[#f2c14e]">
+                <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+                Ingestion is unavailable
+              </p>
+              <p className="mt-1 pl-[1.3rem] text-[0.71875rem] leading-relaxed text-ink-2">{blocked}</p>
+            </div>
+          )}
+
           {/* phase stepper */}
           <div className="flex flex-wrap items-center gap-1.5">
             {PHASES.map((phase, index) => {
