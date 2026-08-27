@@ -3,7 +3,7 @@ import { z } from "zod";
 import { authFailure } from "@/lib/api-errors";
 import { apiContext, requireRole } from "@/lib/auth";
 import { JobixError } from "@/services/jobix/client";
-import { launchState, prepareLaunchList, startCampaignCalls } from "@/services/campaign-launch";
+import { checkArmed, launchState, prepareLaunchList, startCampaignCalls } from "@/services/campaign-launch";
 import { cancelSchedule, scheduleCampaign } from "@/services/campaign-schedule";
 
 function jobixFailure(err: unknown): NextResponse | null {
@@ -42,6 +42,7 @@ const schema = z.discriminatedUnion("action", [
     minutes: z.coerce.number().int().min(1).max(20_160).optional(),
   }),
   z.object({ action: z.literal("cancel_schedule") }),
+  z.object({ action: z.literal("check_armed") }),
 ]);
 
 // POST /api/campaigns/:id/launch — generate the paste list, or start the calls.
@@ -70,6 +71,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         );
       }
       return NextResponse.json(await scheduleCampaign(ctx.organizationId, ctx.userId, id, at));
+    }
+    if (parsed.data.action === "check_armed") {
+      return NextResponse.json(await checkArmed(ctx.organizationId, id));
     }
     if (parsed.data.action === "cancel_schedule") {
       return NextResponse.json(await cancelSchedule(ctx.organizationId, ctx.userId, id));

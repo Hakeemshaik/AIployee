@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { buildJobixExport, type JobixExport } from "@/services/jobix-export";
+import { pullCustomers } from "@/services/jobix/api";
 import { assertSingleOrganization } from "@/services/jobix/ingest";
 import { batchCode, checkCallingWindow } from "@/services/jobix/calling";
 import { JobixClient, JobixError, loadJobixEnv } from "@/services/jobix/client";
@@ -112,6 +113,82 @@ export async function prepareLaunchList(
     detail: { batchCode: code, rows: exported.rowCount, excluded: exported.excluded },
   });
   return { ...exported, batchCode: code };
+}
+
+export type ArmedCheck = {
+  /** What the flow's entry filter will look for. */
+  flag: string | null;
+  /** Records carrying anything in the `call` column — everything that dials. */
+  armed: number;
+  /** Of those, how many carry this run's batch code in `batch`. */
+  armedForThisBatch: number;
+  /** Records carrying the flag but a different batch — a previous run's
+   *  leftovers, which would be dialled again. */
+  armedForOtherBatch: number;
+  /** How much of the customer database was actually read. */
+  scanned: number;
+  complete: boolean;
+  verdict: string;
+};
+
+/**
+ * Count what is actually armed to dial on the voice platform right now.
+ *
+ * With a fixed flag in the `call` column the flow's filter never changes, which
+ * is the point — but it also means anything left carrying that flag from an
+ * earlier run dials again. Nothing in the platform can see that; only the
+ * provider's own records can answer it. So this reads them and says plainly
+ * whether what is armed matches what this run intends.
+ *
+ * Advisory, not a gate: on a large database this cannot always finish inside a
+ * request, so it reports how much it read rather than pretending to certainty.
+ */
+export async function checkArmed(
+  organizationId: string,
+  campaignId: string,
+  options: { budgetMs?: number } = {},
+): Promise<ArmedCheck> {
+  const campaign = await campaignOrThrow(organizationId, campaignId);
+  const env = loadJobixEnv();
+  if (!env) throw new JobixError("Jobix is not configured on this server.", "not_configured");
+
+  const flag = process.env.JOBIX_CALL_FLAG?.trim() || campaign.providerCampaignId;
+  const deadline = Date.now() + (options.budgetMs ?? 45_000);
+  let truncated = false;
+
+  const client = new JobixClient(env);
+  const { customers } = await pullCustomers(client, {
+    onPage: () => {
+      if (Date.now() > deadline) {
+        truncated = true;
+        return false;
+      }
+    },
+  });
+
+  const armedRecords = customers.filter((c) => !!c.callFlag);
+  const armedForThisBatch = armedRecords.filter(
+    (c) => campaign.providerCampaignId && c.callBatch === campaign.providerCampaignId,
+  ).length;
+  const armedForOtherBatch = armedRecords.length - armedForThisBatch;
+
+  const verdict = truncated
+    ? `Read ${customers.length} records before running out of time — treat these counts as a floor, not a total.`
+    : armedForOtherBatch > 0
+      ? `${armedForOtherBatch} records are armed but do not belong to this run. Triggering the flow would dial them too. Clear their call field on the platform, or make sure the flow clears it when a call finishes.`
+      : armedRecords.length === 0
+        ? "Nothing is armed. Paste the dialling list first, or the flow will dial nobody."
+        : `${armedRecords.length} records armed, all belonging to this run.`;
+
+  return {
+    flag: flag ?? null,
+    armed: armedRecords.length,
+    armedForThisBatch,
+    armedForOtherBatch,
+    scanned: customers.length,
+    complete: !truncated,
+    verdict,
+  };
 }
 
 export type StartCallsResult = {

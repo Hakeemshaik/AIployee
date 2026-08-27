@@ -210,6 +210,9 @@ export type JobixCustomer = {
   escalated: boolean;
   doNotCall: boolean;
   callBatch: string | null;
+  /** The raw `call` field — the flag the flow's entry filter reads. Kept apart
+   *  from callBatch so "is this record armed to dial" can be answered. */
+  callFlag: string | null;
   /** When the provider last wrote to this record. */
   modifiedAt: Date | null;
   raw: Record<string, unknown>;
@@ -241,6 +244,7 @@ function toCustomer(row: Record<string, unknown>): JobixCustomer | null {
     // so attribution cannot depend on it. `call` stays as the fallback for
     // records stamped before the batch column was used.
     callBatch: unwrapField(fields.batch) ?? unwrapField(fields.call),
+    callFlag: unwrapField(fields.call),
     modifiedAt: modifiedAt && !Number.isNaN(modifiedAt.getTime()) ? modifiedAt : null,
     raw: fields,
   };

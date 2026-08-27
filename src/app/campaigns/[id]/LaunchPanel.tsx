@@ -10,6 +10,7 @@ import {
   CalendarClock,
   RefreshCw,
   Send,
+  ShieldCheck,
   Users,
   X,
 } from "lucide-react";
@@ -49,6 +50,17 @@ type LaunchState = {
 
 type PreparedList = { csv: string; rowCount: number; batchCode: string; callFlag: string | null };
 
+/** What the voice platform says is actually armed to dial right now. */
+type ArmedCheck = {
+  flag: string | null;
+  armed: number;
+  armedForThisBatch: number;
+  armedForOtherBatch: number;
+  scanned: number;
+  complete: boolean;
+  verdict: string;
+};
+
 async function fetchState(campaignId: string): Promise<LaunchState> {
   const response = await fetch(`/api/campaigns/${campaignId}/launch`, { cache: "no-store" });
   const body = (await response.json()) as LaunchState & { message?: string };
@@ -63,7 +75,8 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
   const [list, setList] = useState<PreparedList | null>(null);
   const [pasted, setPasted] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [busy, setBusy] = useState<"list" | "start" | "schedule" | "cancel" | null>(null);
+  const [busy, setBusy] = useState<"list" | "start" | "schedule" | "cancel" | "armed" | null>(null);
+  const [armed, setArmed] = useState<ArmedCheck | null>(null);
   const [when, setWhen] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const [actionError, setActionError] = useState<string | null>(null);
@@ -115,6 +128,25 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // The textarea below remains selectable for manual copying.
+    }
+  }
+
+  async function checkArmed() {
+    setBusy("armed");
+    setActionError(null);
+    try {
+      const response = await fetch(`/api/campaigns/${campaignId}/launch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "check_armed" }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.message ?? "The check could not be run.");
+      setArmed(body as ArmedCheck);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "The check could not be run.");
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -379,6 +411,15 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                 <button
+                  className="btn"
+                  disabled={busy !== null}
+                  title="Ask the voice platform how many records are armed to dial right now"
+                  onClick={checkArmed}
+                >
+                  {busy === "armed" ? <Loader2 size={13} className="animate-spin" /> : <ShieldCheck size={13} />}
+                  Check who is armed
+                </button>
+                <button
                   className="btn btn-primary"
                   disabled={
                     busy !== null ||
@@ -406,6 +447,29 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                   Start calling now {list ? `(${count(list.rowCount)})` : ""}
                 </button>
                 </div>
+
+                {armed && (
+                  <div
+                    className={`rounded-lg border px-3 py-2.5 ${
+                      armed.armedForOtherBatch > 0 || !armed.complete
+                        ? "border-[rgba(250,178,25,0.3)] bg-[rgba(250,178,25,0.07)]"
+                        : "border-[rgba(25,158,112,0.35)] bg-[rgba(25,158,112,0.08)]"
+                    }`}
+                  >
+                    <p className="text-[0.78125rem] font-medium text-ink">
+                      <span className="num">{count(armed.armed)}</span> records armed to dial
+                      {armed.flag ? (
+                        <>
+                          {" "}
+                          (<span className="num">call = {armed.flag}</span>)
+                        </>
+                      ) : null}
+                      {" · "}
+                      <span className="num">{count(armed.armedForThisBatch)}</span> from this run
+                    </p>
+                    <p className="mt-1 text-[0.71875rem] leading-relaxed text-ink-2">{armed.verdict}</p>
+                  </div>
+                )}
 
                 {/* Or set a time. The presets exist because "in five minutes"
                     is how a test run is actually described. */}
