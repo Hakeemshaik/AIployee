@@ -135,7 +135,7 @@ describe.skipIf(!scratch)("campaign launch (integration)", () => {
     // are hard stops before any network call.
     await expect(
       startCampaignCalls(orgId, userId, campaignId, { confirmed: true }),
-    ).rejects.toThrow(/(dialling list first|calling window)/i);
+    ).rejects.toThrow(/(dialling list|calling window)/i);
     delete process.env.JOBIX_CALLING_ENABLED;
   });
 

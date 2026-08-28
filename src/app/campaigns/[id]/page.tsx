@@ -163,7 +163,7 @@ export default async function CampaignDetailPage({
       <StepHeading
         number={2}
         title="Send the dialling list and start calling"
-        note="Generates the paste table with this run's batch code, then triggers the flow."
+        note="Writes these accounts into Jobix with this run's batch code, then triggers the flow."
       />
       <div className="mb-4">
         <LaunchPanel campaignId={campaign.id} canLaunch={canControl} />

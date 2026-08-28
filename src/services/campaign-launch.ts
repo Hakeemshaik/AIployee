@@ -227,7 +227,7 @@ export async function startCampaignCalls(
   const code = campaign.providerCampaignId;
   if (!code) {
     throw new JobixError(
-      "Generate and paste the dialling list first — there is no batch code to dial against.",
+      "Send the dialling list to Jobix first — there is no batch code to dial against.",
       "rejected",
     );
   }
