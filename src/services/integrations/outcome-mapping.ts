@@ -1,8 +1,12 @@
 import type { CallOutcome } from "@/lib/domain";
-import type { ProviderCall } from "../types";
 
 // ---------------------------------------------------------------------------
 // Provider result -> canonical internal outcome.
+//
+// Kept when the rest of the old provider layer was deleted, because the
+// vocabulary problem is real and outlives any one integration: whatever posts
+// a call result, "ptp" and "payment_promised" and "promise_to_pay" have to
+// become one word before a dashboard can count them.
 //
 // Jobix reports a call status and (for connected calls) a result/structured
 // payload. Both are mapped here onto the platform's own outcome vocabulary so
@@ -13,7 +17,10 @@ import type { ProviderCall } from "../types";
 // transcript analysis rather than being guessed.
 // ---------------------------------------------------------------------------
 
-export const DEFAULT_STATUS_MAP: Record<string, ProviderCall["status"]> = {
+/** The call statuses the platform stores. */
+export type CallStatus = "completed" | "no_answer" | "busy" | "voicemail" | "failed";
+
+export const DEFAULT_STATUS_MAP: Record<string, CallStatus> = {
   completed: "completed",
   answered: "completed",
   finished: "completed",
@@ -71,7 +78,7 @@ function normalizeKey(value: string): string {
 export function mapStatus(
   raw: string | null | undefined,
   overrides: Record<string, string> = {},
-): ProviderCall["status"] {
+): CallStatus {
   if (!raw) return "failed";
   const key = normalizeKey(raw);
   const override = overrides[key];

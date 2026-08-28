@@ -193,7 +193,7 @@ model Campaign {
   scheduledBy        String?
   /** Why a scheduled start did not go ahead. */
   scheduleError      String?
-  idempotencyKey     String? // guards against duplicate provider campaigns on retry
+  idempotencyKey     String? // unused since starting a run became a batch code; kept so no migration is needed to drop a column nothing reads
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 

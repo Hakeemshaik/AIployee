@@ -2,8 +2,10 @@ import { createHash } from "crypto";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { label, type RedialFilter } from "@/lib/domain";
-import { getVoiceProvider, ProviderError } from "@/services/voice";
-import { eligibleContacts, toProviderContacts } from "@/services/campaign-control";
+import { JobixError } from "@/services/jobix/client";
+import { batchCode } from "@/services/jobix/calling";
+import { buildJobixExport } from "@/services/jobix-export";
+import { eligibleContacts } from "@/services/campaign-control";
 
 // ---------------------------------------------------------------------------
 // Redial engine.
@@ -16,7 +18,7 @@ import { eligibleContacts, toProviderContacts } from "@/services/campaign-contro
 //
 // Filters are applied to per-campaign contact state (CampaignContact), so
 // attempt counts and outcomes are campaign-specific, and the retry ceiling is
-// enforced before anything is handed to the provider.
+// enforced before a single number reaches a dialling list.
 // ---------------------------------------------------------------------------
 
 /** Which stored outcomes each filter targets. */
@@ -39,9 +41,12 @@ export type RedialResult = {
   batchId: string;
   filter: RedialFilter;
   contactCount: number;
-  providerCampaignId: string | null;
-  provider: string;
-  manualStep?: string;
+  /** This batch's code, written to the `batch` column of every row. */
+  batchCode: string | null;
+  /** The paste table for exactly these contacts. */
+  csv: string;
+  rowCount: number;
+  nextStep: string;
 };
 
 /**
@@ -134,7 +139,7 @@ export async function createRedialBatch({
   const { selected } = await selectContacts(organizationId, campaignId, filter, retryCeiling);
 
   if (selected.length === 0) {
-    throw new ProviderError(
+    throw new JobixError(
       `No contacts match "${label(filter)}" that are still within the ${retryCeiling}-attempt limit.`,
       "rejected",
     );
@@ -149,12 +154,22 @@ export async function createRedialBatch({
 
   const existing = await db.redialBatch.findUnique({ where: { idempotencyKey: key } });
   if (existing) {
+    // Same filter over the same contacts at the same attempt counts: hand back
+    // the batch that already exists, with its list, rather than making a
+    // second one that would dial everybody twice.
+    const replay = await buildJobixExport(organizationId, {
+      campaignId,
+      batchCode: existing.providerCampaignId ?? undefined,
+      debtorIds: selected.map((c) => c.debtorId),
+    });
     return {
       batchId: existing.id,
       filter,
       contactCount: existing.contactCount,
-      providerCampaignId: existing.providerCampaignId,
-      provider: "existing batch (idempotent replay)",
+      batchCode: existing.providerCampaignId,
+      csv: replay.csv,
+      rowCount: replay.rowCount,
+      nextStep: `This batch already exists (${existing.contactCount} contact${existing.contactCount === 1 ? "" : "s"}). Its list is below — nothing new was created.`,
     };
   }
 
@@ -171,38 +186,34 @@ export async function createRedialBatch({
     },
   });
 
-  const { provider, reason } = await getVoiceProvider(organizationId);
+  // A redial batch is a dialling list for exactly the filtered contacts.
+  //
+  // This used to hand them to the provider abstraction, which — having no real
+  // campaign API behind it — created nothing, sent nothing, and reported a
+  // batch "queued" with a contact count. The count was right and everything
+  // else about it was fiction. The batch now carries a code of its own, so its
+  // calls come back attributed to it, and the list is returned to be pasted
+  // exactly like a campaign launch.
+  const code = batchCode();
   try {
-    const providerCampaignId = (
-      await provider.createCampaign({
-        name: `${campaign.name} — ${label(filter)} redial`,
-        agentExternalId: campaign.agent?.externalId ?? null,
-        callingHoursStart: campaign.callingHoursStart,
-        callingHoursEnd: campaign.callingHoursEnd,
-        maxAttempts: retryCeiling,
-        retryIntervalHours: campaign.retryIntervalHours,
-        timezone: campaign.organization.timezone,
-        idempotencyKey: key,
-      })
-    ).providerCampaignId;
-
-    // ONLY the filtered contacts are sent.
-    await provider.addContacts(providerCampaignId, toProviderContacts(selected));
-
-    let status = "queued";
-    let manualStep: string | undefined;
-    if (provider.capabilities.has("startCampaign")) {
-      await provider.startCampaign(providerCampaignId);
-      status = "running";
-    } else {
-      manualStep =
-        "Paste this batch's list into the voice platform and start it there — this integration cannot start a run by API.";
+    const list = await buildJobixExport(organizationId, {
+      campaignId,
+      batchCode: code,
+      debtorIds: selected.map((c) => c.debtorId),
+    });
+    if (list.rowCount === 0) {
+      throw new JobixError(
+        "Every contact in this batch was excluded when the dialling list was built — none has a usable number and an outstanding balance.",
+        "rejected",
+      );
     }
 
     await db.$transaction([
       db.redialBatch.update({
         where: { id: batch.id },
-        data: { status, providerCampaignId, providerError: null },
+        // "prepared", not "queued": the voice platform does not have it until
+        // the list is pasted in.
+        data: { status: "prepared", providerCampaignId: code, providerError: null },
       }),
       db.campaignContact.updateMany({
         where: { id: { in: selected.map((c) => c.id) } },
@@ -217,24 +228,20 @@ export async function createRedialBatch({
       action: "redial.batch_created",
       entityType: "redial_batch",
       entityId: batch.id,
-      detail: { campaignId, filter, contacts: selected.length, provider: provider.name },
+      detail: { campaignId, filter, contacts: selected.length, batchCode: code, rows: list.rowCount },
     });
 
     return {
       batchId: batch.id,
       filter,
       contactCount: selected.length,
-      providerCampaignId,
-      provider: `${provider.name} — ${reason}`,
-      manualStep,
+      batchCode: code,
+      csv: list.csv,
+      rowCount: list.rowCount,
+      nextStep: `${list.rowCount} contact${list.rowCount === 1 ? "" : "s"} ready as batch ${code}. Paste the list into Jobix, then start the run — only these contacts carry the batch.`,
     };
   } catch (err) {
-    const detail =
-      err instanceof ProviderError
-        ? `${err.message}${err.detail ? ` (${err.detail})` : ""}`
-        : err instanceof Error
-          ? err.message
-          : "Unknown integration error";
+    const detail = err instanceof Error ? err.message : "The redial list could not be built";
     await db.redialBatch.update({
       where: { id: batch.id },
       data: { status: "failed", providerError: detail.slice(0, 500) },

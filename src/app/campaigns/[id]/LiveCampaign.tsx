@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import {
   Activity,
   AlertTriangle,
+  Check,
+  ClipboardCopy,
   PhoneCall,
   RotateCcw,
   Square,
@@ -35,10 +37,10 @@ type LiveState = {
 };
 
 const REDIAL_BUTTONS: { filter: string; title: string; icon: typeof RotateCcw }[] = [
-  { filter: "no_answer", title: "Redial no answers", icon: RotateCcw },
-  { filter: "busy", title: "Retry busy numbers", icon: PhoneCall },
-  { filter: "callback_due", title: "Run callbacks due", icon: Activity },
-  { filter: "failed", title: "Retry failed calls", icon: AlertTriangle },
+  { filter: "no_answer", title: "List no answers", icon: RotateCcw },
+  { filter: "busy", title: "List busy numbers", icon: PhoneCall },
+  { filter: "callback_due", title: "List callbacks due", icon: Activity },
+  { filter: "failed", title: "List failed calls", icon: AlertTriangle },
 ];
 
 function maskPhone(phone: string) {
@@ -62,7 +64,8 @@ export function LiveCampaign({
   const [state, setState] = useState<LiveState>(initial);
   const [live, setLive] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
-  const [notice, setNotice] = useState<{ kind: "ok" | "note" | "error"; text: string } | null>(null);
+  const [notice, setNotice] = useState<{ kind: "ok" | "note" | "error"; text: string; csv?: string } | null>(null);
+  const [copied, setCopied] = useState(false);
   const sourceRef = useRef<EventSource | null>(null);
 
   // Stream state changes instead of refreshing the page.
@@ -125,7 +128,10 @@ export function LiveCampaign({
   async function redial(filter: string) {
     const count = state.redial[filter] ?? 0;
     if (count === 0) return;
-    if (!window.confirm(`Send ${count} contact${count === 1 ? "" : "s"} to the voice platform as a ${label(filter)} redial batch?`)) return;
+    // "Prepare", not "send": the batch becomes a list to paste, and saying so
+    // in the question is the difference between an operator who pastes it and
+    // one who thinks calls are already going out.
+    if (!window.confirm(`Prepare a ${label(filter)} redial list for ${count} contact${count === 1 ? "" : "s"}?`)) return;
     setBusy(filter);
     setNotice(null);
     try {
@@ -135,16 +141,23 @@ export function LiveCampaign({
         body: JSON.stringify({ filter }),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.message ?? "The redial batch could not be sent.");
-      setNotice({
-        kind: "ok",
-        text: `Redial batch created with ${body.contactCount} contact${body.contactCount === 1 ? "" : "s"} — only the filtered contacts were sent.${body.manualStep ? ` ${body.manualStep}` : ""}`,
-      });
+      if (!res.ok) throw new Error(body.message ?? "The redial list could not be prepared.");
+      setNotice({ kind: "note", text: body.nextStep, csv: body.csv });
       router.refresh();
     } catch (err) {
-      setNotice({ kind: "error", text: err instanceof Error ? err.message : "The redial batch could not be sent." });
+      setNotice({ kind: "error", text: err instanceof Error ? err.message : "The redial list could not be prepared." });
     } finally {
       setBusy(null);
+    }
+  }
+
+  async function copyList(csv: string) {
+    try {
+      await navigator.clipboard.writeText(csv);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
     }
   }
 
@@ -205,6 +218,16 @@ export function LiveCampaign({
             }`}
           >
             {notice.text}
+            {notice.csv && (
+              <button
+                className="btn mt-2 block"
+                onClick={() => copyList(notice.csv!)}
+                title="Copy the paste table for this batch"
+              >
+                {copied ? <Check size={13} /> : <ClipboardCopy size={13} />}
+                {copied ? "Copied" : "Copy the list"}
+              </button>
+            )}
           </p>
         )}
       </GlassCard>
@@ -251,7 +274,7 @@ export function LiveCampaign({
 
         {/* redial actions */}
         <div className="space-y-4">
-          <GlassCard title="Redial actions" subtitle="Each button sends only its filtered contacts">
+          <GlassCard title="Redial actions" subtitle="Each button prepares a list of only its filtered contacts">
             <ul className="space-y-2.5">
               {REDIAL_BUTTONS.map(({ filter, title, icon: Icon }) => {
                 const count = state.redial[filter] ?? 0;
@@ -267,15 +290,16 @@ export function LiveCampaign({
                       title={canControl ? title : "Your role cannot redial contacts"}
                     >
                       <Icon size={12} />
-                      {busy === filter ? "Sending…" : title}
+                      {busy === filter ? "Preparing…" : title}
                     </button>
                   </li>
                 );
               })}
             </ul>
             <p className="mt-3 text-[0.65625rem] leading-relaxed text-ink-3">
-              Contacts at the attempt limit, settled accounts, disputes and opt-outs are excluded
-              automatically.
+              Each list carries its own batch code, so its calls come back attributed to it. Paste it
+              into Jobix and start the run there, the same as a first dial. Contacts at the attempt
+              limit, settled accounts, disputes and opt-outs are excluded automatically.
             </p>
           </GlassCard>
 

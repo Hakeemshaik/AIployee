@@ -3,7 +3,6 @@ import { authFailure, jobixFailure } from "@/lib/api-errors";
 import { z } from "zod";
 import { apiContext, requireRole } from "@/lib/auth";
 import { pauseCampaign, startCampaign, stopCampaign } from "@/services/campaign-control";
-import { ProviderError } from "@/services/voice";
 
 const schema = z.object({ action: z.enum(["start", "pause", "stop"]) });
 
@@ -34,13 +33,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // its refusals arrive here — as answers, not failures.
     const jobix = jobixFailure(err);
     if (jobix) return jobix;
-    if (err instanceof ProviderError) {
-      // The operator sees the real integration error, never a fake success.
-      return NextResponse.json(
-        { error: err.code, message: err.message, detail: err.detail },
-        { status: err.code === "unsupported" || err.code === "not_configured" ? 501 : 502 },
-      );
-    }
     const message = err instanceof Error ? err.message : "internal_error";
     const status = message.includes("not found") ? 404 : message.includes("not permitted") ? 403 : 500;
     if (status === 500) console.error("[campaigns/control] failed:", err);

@@ -56,6 +56,11 @@ export type JobixExportOptions = {
    * editing the flow.
    */
   batchCode?: string;
+  /**
+   * Only these accounts. Used by redial, where the whole point is that the
+   * batch contains the filtered contacts and nobody else.
+   */
+  debtorIds?: string[];
   /** Only accounts at least this many days overdue. */
   minDaysOverdue?: number;
   /** Only accounts owing at least this much. */
@@ -90,7 +95,11 @@ export async function buildJobixExport(
   if (options.campaignId && !campaign) throw new Error("Campaign not found");
 
   const debtors = await db.debtor.findMany({
-    where: { organizationId, ...(campaign ? { campaignId: campaign.id } : {}) },
+    where: {
+      organizationId,
+      ...(campaign ? { campaignId: campaign.id } : {}),
+      ...(options.debtorIds ? { id: { in: options.debtorIds } } : {}),
+    },
     include: {
       accounts: { orderBy: { createdAt: "asc" } },
       campaign: { select: { name: true } },

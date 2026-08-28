@@ -128,7 +128,14 @@ export default async function SettingsPage() {
       </GlassCard>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <GlassCard title="Voice platform integration" subtitle="Inbound webhook for completed calls">
+        {/* Named for what it is. Jobix results do NOT arrive here — they are
+            pulled in by ingestion on the Call analytics page — and calling this
+            "the voice platform integration" had a reader believing this was the
+            live pipe. It is a working ingress for a provider that can post. */}
+        <GlassCard
+          title="Inbound call webhook"
+          subtitle="For a provider that can post results — Jobix results arrive through ingestion"
+        >
           <div className="mb-3 flex items-start gap-3 rounded-lg border border-line bg-white/[0.03] p-3">
             <Webhook size={15} className="mt-0.5 shrink-0 text-accent" />
             <div className="min-w-0">
@@ -139,6 +146,11 @@ export default async function SettingsPage() {
                 Authenticated with a Bearer API key scoped to <code>voice:ingest</code>. The call is
                 stored, the transcript analysed, promises and escalations created, and campaign
                 metrics updated — one request drives the whole workflow.
+              </p>
+              <p className="mt-1.5 text-[0.6875rem] leading-relaxed text-ink-3">
+                Nothing posts here today. Jobix has no outbound webhook for call results, so results
+                come from the import on the Call analytics page. This endpoint is for a provider that
+                can push, and for your own systems.
               </p>
             </div>
           </div>
