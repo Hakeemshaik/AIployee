@@ -241,6 +241,26 @@ export async function startCampaignCalls(
     );
   }
 
+  // --- do not trigger a flow that will dial nobody -------------------------
+  //
+  // The trigger carries no audience: Jobix dials whatever the flow's own entry
+  // filter matches at run time. So if nothing on the platform carries the flag
+  // that filter reads, this "start" is a request that runs the flow, matches
+  // zero customers, exits, and reports success — which is exactly how a run
+  // ended with nobody called and nothing to look at.
+  //
+  // Checked by reading the platform, and only a COMPLETED read may refuse: on
+  // a large customer database this cannot always finish inside a request, and
+  // blocking a real run on an unfinished count would be worse than the thing
+  // it prevents.
+  const armedCheck = await checkArmed(organizationId, campaignId, { budgetMs: 30_000 });
+  if (armedCheck.complete && armedCheck.armed === 0) {
+    throw new JobixError(
+      `Nothing on the platform is armed to dial. ${armedCheck.scanned} customer records were read and none carries a value in the \`call\` column${armedCheck.flag ? `, so the flow's filter looking for ${armedCheck.flag} would match nobody` : ""}. Send the dialling list first, and check the call flag under Settings matches what the flow's entry filter reads.`,
+      "rejected",
+    );
+  }
+
   // The client's own flow id comes from the environment; the saved setting
   // wins, so changing flows never needs a redeploy.
   const client = new JobixClient({ ...env, flowUuid: flow.flowUuid });
@@ -264,10 +284,14 @@ export async function startCampaignCalls(
     detail: { batchCode: code, flowUuid: flow.flowUuid },
   });
 
+  const leftovers =
+    armedCheck.armedForOtherBatch > 0
+      ? ` ${armedCheck.armedForOtherBatch} armed records do not belong to this run and will be dialled too — clear their call field, or let the flow clear it when a call finishes.`
+      : "";
   return {
     triggered: true,
     batchCode: code,
-    message: `The flow is running. Jobix dials the accounts whose call field carries ${code}. Run ingestion afterwards to pull the results in.`,
+    message: `The flow is running against the ${armedCheck.armed} record(s) armed with ${armedCheck.flag ?? code}.${leftovers} Run ingestion afterwards to pull the results in.`,
   };
 }
 

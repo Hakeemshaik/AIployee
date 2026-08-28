@@ -70,7 +70,10 @@ export type PushResult = {
   scanned: number;
   /** False when the read ran out of time — confirmed is then a floor. */
   scanComplete: boolean;
-  /** True when every row was written and armed. */
+  /** True when the call column carries the configured flag rather than this
+   *  run's code standing in for one. */
+  flagIsFixed: boolean;
+  /** True when every row was written, armed with a usable flag, and found. */
   complete: boolean;
   nextStep: string;
 };
@@ -188,6 +191,12 @@ export async function pushDiallingList(
 
   const flow = await loadFlowConfig(organizationId);
   const callFlag = callColumnValue(flow, options.batchCode) ?? null;
+  // Whether that value is the CONFIGURED flag or this run's code standing in
+  // for one. The difference decides whether the flow's filter can match: a
+  // filter reads a fixed value, so a per-run code matches nothing until
+  // somebody edits the flow. Reporting that as "armed" is how a run ends with
+  // nobody called and no error anywhere.
+  const flagIsFixed = !!flow.callFlag;
 
   const list = await buildJobixExport(organizationId, {
     campaignId: options.campaignId,
@@ -320,9 +329,12 @@ export async function pushDiallingList(
     }
   }
 
-  const complete = failures.length === 0 && armed === list.rowCount && confirmed === list.rowCount;
+  const complete =
+    failures.length === 0 && armed === list.rowCount && confirmed === list.rowCount && flagIsFixed;
   const missing = writtenRows.length - confirmed;
-  const nextStep = !callFlag
+  const nextStep = !flagIsFixed && callFlag
+    ? `${armed} customers written and stamped with ${callFlag} — this run's code, because no fixed call flag is configured. A flow's entry filter matches ONE value, so unless the filter names ${callFlag} exactly, nothing will dial. Set the call flag under Settings to the word your filter looks for, then send again.`
+    : !callFlag
     ? `${writtenRows.length} customers are in Jobix, but nothing is armed: no call flag is configured, so the flow's filter will match nobody. Set one under Settings.`
     : complete
       ? `${armed} customers written, armed with ${callFlag}, and confirmed present on the platform. Start the calls — the flow dials exactly these.`
@@ -347,6 +359,7 @@ export async function pushDiallingList(
       confirmed,
       scanned,
       callFlag,
+      flagIsFixed,
       failed: failures.length,
     },
   });
@@ -358,6 +371,7 @@ export async function pushDiallingList(
     confirmed,
     scanned,
     scanComplete,
+    flagIsFixed,
     callFlag,
     attempted: list.rowCount,
     failures: failures.slice(0, 50),

@@ -479,3 +479,78 @@ describe.skipIf(!scratch)("a write is not the same fact as a customer existing",
     delete process.env.JOBIX_CONFIRM_BUDGET_MS;
   });
 });
+
+describe.skipIf(!scratch)("a per-run code is not a usable flag", () => {
+  let orgId = "";
+  let userId = "";
+  let campaignId = "";
+
+  beforeEach(async () => {
+    writes.length = 0;
+    postWrite.mockClear();
+    await db.campaignContact.deleteMany();
+    await db.debtAccount.deleteMany();
+    await db.debtor.deleteMany();
+    await db.campaign.deleteMany();
+    await db.auditLog.deleteMany();
+    await db.integrationSettings.deleteMany();
+    await db.user.deleteMany();
+    await db.organization.deleteMany();
+    const org = await db.organization.create({ data: { name: "Flag Co", slug: "flag-co" } });
+    orgId = org.id;
+    userId = (
+      await db.user.create({
+        data: { organizationId: orgId, name: "Ops", email: "flag@example.com", role: "admin" },
+      })
+    ).id;
+    campaignId = (
+      await db.campaign.create({ data: { organizationId: orgId, name: "Run", status: "draft" } })
+    ).id;
+    const debtor = await db.debtor.create({
+      data: {
+        organizationId: orgId,
+        campaignId,
+        firstName: "Tester",
+        lastName: "One",
+        accountNumber: "FLAG-1",
+        phone: "+27825104242",
+      },
+    });
+    await db.debtAccount.create({
+      data: {
+        organizationId: orgId,
+        debtorId: debtor.id,
+        reference: "FLAG-1",
+        creditorName: "Mafadi",
+        originalBalance: 1086,
+        currentBalance: 1086,
+        dueDate: new Date("2026-07-01"),
+        daysOverdue: 40,
+      },
+    });
+    delete process.env.JOBIX_CALL_FLAG;
+  });
+
+  it("refuses to call a run armed with its own batch code finished", async () => {
+    // The failure this pins: the flow's filter reads ONE fixed value, so a
+    // per-run code matches nothing and the run dials nobody — while the
+    // platform said "written and armed" and looked done.
+    const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-4EIV" });
+    expect(result.callFlag).toBe("28AUG-4EIV");
+    expect(result.flagIsFixed).toBe(false);
+    expect(result.complete).toBe(false);
+    expect(result.nextStep).toMatch(/no fixed call flag is configured/i);
+    expect(result.nextStep).toMatch(/nothing will dial/i);
+  });
+
+  it("is finished once a fixed flag is configured", async () => {
+    await db.integrationSettings.create({
+      data: { organizationId: orgId, provider: "jobix", callFlag: "READY" },
+    });
+    const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-4EIV" });
+    expect(result.callFlag).toBe("READY");
+    expect(result.flagIsFixed).toBe(true);
+    expect(result.complete).toBe(true);
+    expect(result.nextStep).toMatch(/confirmed present/i);
+  });
+});

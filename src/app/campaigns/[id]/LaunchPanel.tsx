@@ -76,6 +76,7 @@ type SendResult = {
   confirmed: number;
   scanned: number;
   scanComplete: boolean;
+  flagIsFixed: boolean;
   callFlag: string | null;
   complete: boolean;
   nextStep: string;
