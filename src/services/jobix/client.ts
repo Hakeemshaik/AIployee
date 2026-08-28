@@ -124,6 +124,29 @@ export class JobixClient {
   }
 
   /**
+   * Bearer for the WRITE API, which is a different service from the dashboard.
+   *
+   * The dashboard's /api/* endpoints accept only the short-lived tokens a login
+   * mints — established by testing the profile key against every plausible
+   * header and host. The write API is not that service: it lives on another
+   * host and authorises the workspace with `company_key` in the body, so the
+   * static profile key is the credential it was built for.
+   *
+   * That distinction matters because a failing dashboard sign-in was blocking
+   * customer writes that never needed a session at all. So the static token is
+   * used here when there is one, and the session is the fallback.
+   */
+  private async writeBearer(force = false): Promise<string> {
+    if (this.env.token && !force) return this.env.token;
+    if (this.sessionMode) {
+      const { getSessionToken } = await import("./auth");
+      return getSessionToken(this.env.base, this.env.email!, this.env.password!, { force });
+    }
+    if (this.env.token) return this.env.token;
+    throw new JobixError("No credential is configured for the write API.", "not_configured");
+  }
+
+  /**
    * GET against the dashboard API with retry + backoff. These endpoints time
    * out under sustained paging, so transient failures are retried rather than
    * aborting a long ingestion.
@@ -211,7 +234,7 @@ export class JobixClient {
 
   /** POST against the write API base (customer/save lives there). */
   async postWrite<T>(path: string, body: unknown): Promise<T> {
-    return this.post(`${this.env.apiBase}${path}`, body);
+    return this.post(`${this.env.apiBase}${path}`, body, false, true);
   }
 
   /**
@@ -223,14 +246,20 @@ export class JobixClient {
     return this.post(`${this.env.base}${path}`, body);
   }
 
-  private async post<T>(url: string, body: unknown, relogged = false): Promise<T> {
+  private async post<T>(
+    url: string,
+    body: unknown,
+    retried = false,
+    writeApi = false,
+  ): Promise<T> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     try {
+      const token = writeApi ? await this.writeBearer(retried) : await this.bearer(retried);
       const response = await fetch(url, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${await this.bearer()}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
           Accept: "application/json",
         },
@@ -239,9 +268,11 @@ export class JobixClient {
         cache: "no-store",
       });
       const text = await response.text();
-      if ((response.status === 401 || response.status === 403) && this.sessionMode && !relogged) {
-        await this.bearer(true);
-        return this.post(url, body, true);
+      // One retry with the other credential. On the dashboard that means a
+      // freshly minted session token (they expire hourly); on the write API it
+      // means falling back from the static key to a session, or the reverse.
+      if ((response.status === 401 || response.status === 403) && !retried) {
+        if (writeApi || this.sessionMode) return this.post(url, body, true, writeApi);
       }
       if (!response.ok) {
         throw new JobixError(

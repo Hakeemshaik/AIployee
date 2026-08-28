@@ -38,6 +38,21 @@ import { callColumnValue, loadFlowConfig } from "@/services/flow-config";
 
 export type PushFailure = { suid: string; name: string; reason: string };
 
+/**
+ * The message plus whatever Jobix said underneath it.
+ *
+ * "Jobix rejected the sign-in" on its own does not distinguish a wrong
+ * password from a locked account, a captcha requirement or a rate limit — and
+ * the provider's own words, which the error already carries, are exactly what
+ * separates them. Credential-shaped text is stripped before it gets here.
+ */
+function describe(err: unknown): string {
+  if (err instanceof JobixError) {
+    return err.detail ? `${err.message} Jobix said: ${err.detail.slice(0, 300)}` : err.message;
+  }
+  return err instanceof Error ? err.message : "The write failed";
+}
+
 export type PushResult = {
   batchCode: string;
   /** Customers written with their fields, before arming. */
@@ -162,6 +177,25 @@ export async function pushDiallingList(
   const failures: PushFailure[] = [];
   const writtenRows: JobixRow[] = [];
 
+  /**
+   * A per-row failure, unless it is the kind that will repeat for every row.
+   *
+   * A rejected credential or an unreachable host is one problem with the
+   * deployment, not five hundred problems with five hundred accounts. Listing
+   * it per contact buries the actual message under its own copies, so those
+   * abort the push and are reported once, with what Jobix said.
+   */
+  const record = (row: JobixRow, err: unknown, prefix = ""): void => {
+    if (err instanceof JobixError && (err.code === "unauthorized" || err.code === "unavailable" || err.code === "not_configured")) {
+      throw err;
+    }
+    failures.push({
+      suid: row.suid,
+      name: row.name,
+      reason: prefix + describe(err),
+    });
+  };
+
   // --- pass 1: the customers themselves, unarmed ---------------------------
   for (const row of list.rows) {
     const values = contactValues(row);
@@ -179,11 +213,7 @@ export async function pushDiallingList(
         });
       }
     } catch (err) {
-      failures.push({
-        suid: row.suid,
-        name: row.name,
-        reason: err instanceof Error ? err.message : "The write failed",
-      });
+      record(row, err);
     }
   }
 
@@ -198,11 +228,7 @@ export async function pushDiallingList(
         });
         armed += 1;
       } catch (err) {
-        failures.push({
-          suid: row.suid,
-          name: row.name,
-          reason: `Written, but arming failed: ${err instanceof Error ? err.message : "unknown error"}`,
-        });
+        record(row, err, "Written, but arming failed: ");
       }
     }
   }

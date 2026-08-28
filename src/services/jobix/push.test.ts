@@ -210,3 +210,96 @@ describe.skipIf(!scratch)("pushing customers to Jobix (integration)", () => {
     expect(entry!.detail).toContain('"armed":2');
   });
 });
+
+describe.skipIf(!scratch)("a credential failure is one problem, not one per contact", () => {
+  let orgId = "";
+  let userId = "";
+  let campaignId = "";
+
+  beforeEach(async () => {
+    writes.length = 0;
+    postWrite.mockClear();
+    await db.campaignContact.deleteMany();
+    await db.debtAccount.deleteMany();
+    await db.debtor.deleteMany();
+    await db.campaign.deleteMany();
+    await db.auditLog.deleteMany();
+    await db.integrationSettings.deleteMany();
+    await db.user.deleteMany();
+    await db.organization.deleteMany();
+    const org = await db.organization.create({ data: { name: "Auth Co", slug: "auth-co" } });
+    orgId = org.id;
+    userId = (
+      await db.user.create({
+        data: { organizationId: orgId, name: "Ops", email: "auth@example.com", role: "admin" },
+      })
+    ).id;
+    campaignId = (
+      await db.campaign.create({ data: { organizationId: orgId, name: "Run", status: "draft" } })
+    ).id;
+    for (const n of [1, 2, 3]) {
+      const debtor = await db.debtor.create({
+        data: {
+          organizationId: orgId,
+          campaignId,
+          firstName: "Person",
+          lastName: `N${n}`,
+          accountNumber: `AUTH-${n}`,
+          phone: `+2782200000${n}`,
+        },
+      });
+      await db.debtAccount.create({
+        data: {
+          organizationId: orgId,
+          debtorId: debtor.id,
+          reference: `AUTH-${n}`,
+          creditorName: "Mafadi",
+          originalBalance: 1000,
+          currentBalance: 1000,
+          dueDate: new Date("2026-07-01"),
+          daysOverdue: 30,
+        },
+      });
+    }
+    process.env.JOBIX_CALL_FLAG = "READY";
+  });
+
+  it("stops at the first rejected credential instead of listing it per row", async () => {
+    const { JobixError } = await import("./client");
+    postWrite.mockImplementation(async () => {
+      throw new JobixError(
+        "Jobix rejected the sign-in — check JOBIX_EMAIL and JOBIX_PASSWORD.",
+        "unauthorized",
+        '{"message":"invalid credentials"}',
+      );
+    });
+
+    await expect(
+      pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-AUTH" }),
+    ).rejects.toThrow(/rejected the sign-in/i);
+    // One attempt, not one per contact.
+    expect(postWrite).toHaveBeenCalledTimes(1);
+  });
+
+  it("carries what Jobix said, which is what separates the causes", async () => {
+    const { JobixError } = await import("./client");
+    let first = true;
+    postWrite.mockImplementation(async (path: string, body: unknown) => {
+      if (first) {
+        first = false;
+        throw new JobixError("The write was refused.", "rejected", '{"error":"phone already in use"}');
+      }
+      const payload = body as {
+        customer_data: { main: { suid: string }; values: Record<string, unknown> };
+      };
+      writes.push({ path, suid: payload.customer_data.main.suid, values: payload.customer_data.values });
+      return { uuid: `provider-uuid-${payload.customer_data.main.suid}` };
+    });
+
+    const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-AUTH" });
+    expect(result.failures).toHaveLength(1);
+    expect(result.failures[0].reason).toContain("phone already in use");
+    // The other two still went, because that failure was about one row.
+    expect(result.written).toBe(2);
+  });
+});
