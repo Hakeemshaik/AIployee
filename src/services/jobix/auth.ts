@@ -104,10 +104,21 @@ async function login(base: string, email: string, password: string): Promise<str
       );
     }
     if (!response.ok) {
+      // The status alone is not actionable. A 422 is a VALIDATION failure —
+      // the credential may be perfectly good and the request shape wrong — and
+      // the body names the field, so it belongs in the message rather than in a
+      // detail nobody sees. Anything credential-shaped is stripped first.
+      const said = redact(text).trim().slice(0, 400);
+      // The host is named too: a JOBIX_BASE pointing anywhere but the
+      // dashboard sends this POST to an endpoint that validates differently,
+      // and produces exactly this kind of failure with a correct password.
+      const where = `${base}/api/auth/login`;
       throw new JobixError(
-        `Jobix sign-in failed (HTTP ${response.status}).`,
+        response.status === 422
+          ? `Jobix would not accept the sign-in request — HTTP 422, a validation error rather than a wrong password. Posted to ${where}.${said ? ` Jobix said: ${said}` : ""}`
+          : `Jobix sign-in failed (HTTP ${response.status}) at ${where}.${said ? ` Jobix said: ${said}` : ""}`,
         "rejected",
-        redact(text),
+        said,
       );
     }
     let body: unknown = null;

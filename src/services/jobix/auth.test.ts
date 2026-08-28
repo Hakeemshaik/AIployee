@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { extractAccessToken, jwtExpiryMs } from "./auth";
 
 // A structurally valid JWT with a known exp (not a real credential).
@@ -48,5 +48,47 @@ describe("extractAccessToken", () => {
   it("returns null when nothing usable exists", () => {
     expect(extractAccessToken(null, [])).toBeNull();
     expect(extractAccessToken({ ok: true }, ["_ga=x"])).toBeNull();
+  });
+});
+
+describe("a refused sign-in says enough to act on", () => {
+  // The failure that sent this in circles was "Jobix sign-in failed (HTTP 422)"
+  // — a status with no field, no host and no reply, which is indistinguishable
+  // from a wrong password when it is usually neither.
+  const realFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  function respondWith(status: number, body: string) {
+    globalThis.fetch = (async () =>
+      new Response(body, { status, headers: { "Content-Type": "application/json" } })) as typeof fetch;
+  }
+
+  it("names the failing field and the host on a 422", async () => {
+    respondWith(422, JSON.stringify({ errors: { reCaptcha: ["The re captcha field is required."] } }));
+    const { signInWith } = await import("./auth");
+    await expect(signInWith("https://dashboard.example.test", "ops@example.test", "pw")).rejects.toThrow(
+      /422.*validation error.*dashboard\.example\.test\/api\/auth\/login.*re captcha/is,
+    );
+  });
+
+  it("distinguishes a wrong password from a refused request", async () => {
+    respondWith(401, JSON.stringify({ message: "invalid credentials" }));
+    const { signInWith } = await import("./auth");
+    await expect(signInWith("https://dashboard.example.test", "ops@example.test", "pw")).rejects.toThrow(
+      /the email or password is wrong/i,
+    );
+  });
+
+  it("never repeats a credential back in the message", async () => {
+    respondWith(422, JSON.stringify({ message: "token=abcdef1234567890 rejected" }));
+    const { signInWith } = await import("./auth");
+    const failure = await signInWith("https://dashboard.example.test", "ops@example.test", "pw").catch(
+      (err: Error) => err.message,
+    );
+    expect(failure).not.toContain("abcdef1234567890");
+    expect(failure).toContain("[redacted]");
   });
 });
