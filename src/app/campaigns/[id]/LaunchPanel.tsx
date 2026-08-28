@@ -68,14 +68,26 @@ async function fetchState(campaignId: string): Promise<LaunchState> {
   return body;
 }
 
+type SendResult = {
+  batchCode: string;
+  written: number;
+  armed: number;
+  attempted: number;
+  callFlag: string | null;
+  complete: boolean;
+  nextStep: string;
+  failures: { suid: string; name: string; reason: string }[];
+};
+
 export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; canLaunch: boolean }) {
   const [state, setState] = useState<LaunchState | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [refresh, setRefresh] = useState(0);
   const [list, setList] = useState<PreparedList | null>(null);
   const [pasted, setPasted] = useState(false);
+  const [sent, setSent] = useState<SendResult | null>(null);
   const [copied, setCopied] = useState(false);
-  const [busy, setBusy] = useState<"list" | "start" | "schedule" | "cancel" | "armed" | null>(null);
+  const [busy, setBusy] = useState<"list" | "send" | "start" | "schedule" | "cancel" | "armed" | null>(null);
   const [armed, setArmed] = useState<ArmedCheck | null>(null);
   const [when, setWhen] = useState("");
   const [now, setNow] = useState(() => Date.now());
@@ -112,9 +124,43 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
       if (!response.ok) throw new Error(body.message ?? "The dialling list could not be generated.");
       setList(body as PreparedList);
       setPasted(false);
+      setSent(null);
       setRefresh((n) => n + 1);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "The dialling list could not be generated.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function sendList() {
+    if (!list) return;
+    if (
+      !window.confirm(
+        `Write ${list.rowCount} customer${list.rowCount === 1 ? "" : "s"} into Jobix and arm them to dial?\n\n` +
+          "Each is created or updated with every field. Nothing is called until you start the run.",
+      )
+    ) {
+      return;
+    }
+    setBusy("send");
+    setActionError(null);
+    try {
+      const response = await fetch(`/api/campaigns/${campaignId}/launch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "send_list", confirmed: true }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.message ?? "The list could not be sent.");
+      const result = body as SendResult;
+      setSent(result);
+      // The send is the paste, so the manual confirmation is satisfied by it —
+      // but only when everything actually landed and is armed.
+      setPasted(result.complete);
+      setRefresh((n) => n + 1);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "The list could not be sent.");
     } finally {
       setBusy(null);
     }
@@ -348,31 +394,81 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                     </>
                   )}
                 </p>
-                <div className="flex items-center gap-2">
-                  <button className="btn" onClick={copyList}>
-                    {copied ? <Check size={13} /> : <ClipboardCopy size={13} />}
-                    {copied ? "Copied" : "Copy table"}
+                <div className="flex flex-wrap items-center gap-2">
+                  <button className="btn btn-primary" onClick={sendList} disabled={busy !== null}>
+                    {busy === "send" ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : (
+                      <Send size={13} />
+                    )}
+                    Send to Jobix ({count(list.rowCount)})
                   </button>
                   <span className="text-[0.71875rem] text-ink-3">
-                    Paste it into the Jobix dashboard: Database, paste box, import.
+                    Creates or updates each customer with every field, then arms them to dial.
                   </span>
                 </div>
-                <textarea
-                  readOnly
-                  value={list.csv}
-                  rows={4}
-                  className="field num w-full text-[0.65625rem] leading-relaxed"
-                  onFocus={(event) => event.currentTarget.select()}
-                />
-                <label className="flex items-start gap-2 text-[0.75rem] text-ink-2">
-                  <input
-                    type="checkbox"
-                    checked={pasted}
-                    onChange={(event) => setPasted(event.target.checked)}
-                    className="mt-0.5 h-3.5 w-3.5 accent-[#3987e5]"
-                  />
-                  I have pasted this list into Jobix and the import completed.
-                </label>
+
+                {sent && (
+                  <div
+                    className={`rounded-lg border px-3 py-2.5 text-[0.78125rem] ${
+                      sent.complete
+                        ? "border-[rgba(25,158,112,0.35)] bg-[rgba(25,158,112,0.08)] text-ink"
+                        : "border-[rgba(242,193,78,0.35)] bg-[rgba(242,193,78,0.08)] text-ink"
+                    }`}
+                  >
+                    <p className="flex items-start gap-2">
+                      {sent.complete ? (
+                        <Check size={14} className="mt-0.5 shrink-0 text-[#3ecf9a]" />
+                      ) : (
+                        <AlertTriangle size={13} className="mt-0.5 shrink-0 text-[#f2c14e]" />
+                      )}
+                      {sent.nextStep}
+                    </p>
+                    {sent.failures.length > 0 && (
+                      <ul className="mt-2 space-y-1 pl-[1.4rem] text-[0.71875rem] text-ink-2">
+                        {sent.failures.map((failure) => (
+                          <li key={failure.suid}>
+                            <span className="num text-ink-3">{failure.suid}</span> {failure.name} —{" "}
+                            {failure.reason}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+
+                {/* The paste route stays available. If a write is refused —
+                    a workspace permission, a field the workspace validates
+                    differently — pasting the same table still works, and
+                    losing an hour to a blocked button would not. */}
+                <details className="text-[0.71875rem] text-ink-3">
+                  <summary className="cursor-pointer">Paste it by hand instead</summary>
+                  <div className="mt-2 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <button className="btn" onClick={copyList}>
+                        {copied ? <Check size={13} /> : <ClipboardCopy size={13} />}
+                        {copied ? "Copied" : "Copy table"}
+                      </button>
+                      <span>Jobix dashboard: Database, paste box, import.</span>
+                    </div>
+                    <textarea
+                      readOnly
+                      value={list.csv}
+                      rows={4}
+                      className="field num w-full text-[0.65625rem] leading-relaxed"
+                      onFocus={(event) => event.currentTarget.select()}
+                    />
+                    <label className="flex items-start gap-2 text-[0.75rem] text-ink-2">
+                      <input
+                        type="checkbox"
+                        checked={pasted}
+                        onChange={(event) => setPasted(event.target.checked)}
+                        className="mt-0.5 h-3.5 w-3.5 accent-[#3987e5]"
+                      />
+                      I have pasted this list into Jobix and the import completed.
+                    </label>
+                  </div>
+                </details>
               </div>
             )}
           </div>
@@ -432,7 +528,7 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                     !list
                       ? "Generate and paste the dialling list first"
                       : !pasted
-                        ? "Confirm the list has been pasted into Jobix"
+                        ? "Send the list to Jobix first, or confirm you pasted it by hand"
                         : !state.callingEnabled
                           ? "Calling is disabled on this deployment"
                           : !state.triggerConfigured
@@ -490,7 +586,7 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                         disabled={busy !== null || !pasted}
                         title={
                           !pasted
-                            ? "Confirm the list has been pasted into Jobix first"
+                            ? "Send the list to Jobix first, or confirm you pasted it by hand"
                             : `Start this campaign ${option.label.toLowerCase()}`
                         }
                         onClick={() => {

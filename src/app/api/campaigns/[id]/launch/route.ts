@@ -34,6 +34,9 @@ const schema = z.discriminatedUnion("action", [
     minutes: z.coerce.number().int().min(1).max(20_160).optional(),
   }),
   z.object({ action: z.literal("cancel_schedule") }),
+  // Writing the book into Jobix over the API, so the paste step disappears.
+  // Confirmed explicitly: it creates and updates customers on a live dialler.
+  z.object({ action: z.literal("send_list"), confirmed: z.literal(true) }),
   z.object({ action: z.literal("check_armed") }),
 ]);
 
@@ -63,6 +66,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         );
       }
       return NextResponse.json(await scheduleCampaign(ctx.organizationId, ctx.userId, id, at));
+    }
+    if (parsed.data.action === "send_list") {
+      const { pushCampaignList } = await import("@/services/campaign-launch");
+      return NextResponse.json(await pushCampaignList(ctx.organizationId, ctx.userId, id));
     }
     if (parsed.data.action === "check_armed") {
       return NextResponse.json(await checkArmed(ctx.organizationId, id));

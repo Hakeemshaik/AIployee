@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { blockGuests } from "@/lib/session";
 import { callColumnValue, loadFlowConfig } from "@/services/flow-config";
 import { audit } from "@/lib/audit";
 import { buildJobixExport, type JobixExport } from "@/services/jobix-export";
@@ -268,4 +269,29 @@ export async function startCampaignCalls(
     batchCode: code,
     message: `The flow is running. Jobix dials the accounts whose call field carries ${code}. Run ingestion afterwards to pull the results in.`,
   };
+}
+
+/**
+ * Write this campaign's dialling list into Jobix over the API.
+ *
+ * Replaces the paste: the customers are created or updated with every field,
+ * then armed, and the campaign remembers the batch code so Start dials against
+ * it and the call log can attribute results back.
+ */
+export async function pushCampaignList(organizationId: string, userId: string, campaignId: string) {
+  await blockGuests("send a dialling list to the voice platform");
+  const campaign = await campaignOrThrow(organizationId, campaignId);
+  await assertSingleOrganization();
+
+  // A fresh code per send, so two sends are two runs and never one blurred
+  // together — the same rule the paste path follows.
+  const code = batchCode();
+  const { pushDiallingList } = await import("@/services/jobix/push");
+  const result = await pushDiallingList(organizationId, userId, { campaignId, batchCode: code });
+
+  await db.campaign.update({
+    where: { id: campaign.id },
+    data: { providerCampaignId: code, providerError: null },
+  });
+  return result;
 }

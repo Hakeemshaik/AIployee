@@ -67,9 +67,28 @@ export type JobixExportOptions = {
   minBalance?: number;
 };
 
+/**
+ * One account's fields, before they become either a pasted row or an API
+ * write.
+ *
+ * Both paths need exactly the same values, and the API path needs them keyed
+ * rather than joined with commas — so the values are built once here and the
+ * CSV is a rendering of them, not a separate construction.
+ */
+export type JobixRow = {
+  debtorId: string;
+  /** The caller's own stable id for this customer. The write API upserts on
+   *  it, so it has to be the account number and nothing else. */
+  suid: string;
+  name: string;
+  phone: string;
+  values: Record<string, string | number>;
+};
+
 export type JobixExport = {
   csv: string;
   rowCount: number;
+  rows: JobixRow[];
   batch: string;
   /** What went into the `call` column — what the flow's filter must look for. */
   callFlag: string | null;
@@ -125,7 +144,7 @@ export async function buildJobixExport(
   // file export and the in-app dialler always write the same thing.
   const callFlag = callColumnValue(await loadFlowConfig(organizationId), options.batchCode);
 
-  const rows: string[] = [];
+  const rows: JobixRow[] = [];
   for (const debtor of debtors) {
     if (debtor.doNotContact) {
       skip("do-not-contact flag");
@@ -157,6 +176,8 @@ export async function buildJobixExport(
     const name = `${debtor.firstName} ${debtor.lastName}`.trim();
     const amount = Math.round(balance);
     const values: Record<string, string | number> = {
+      SUID: debtor.accountNumber,
+      suid: debtor.accountNumber,
       Name: name,
       name: name,
       full_name: name,
@@ -176,13 +197,23 @@ export async function buildJobixExport(
       "month-of": today.toISOString().slice(0, 7),
       ...(callFlag ? { call: callFlag } : {}),
     };
-    rows.push(JOBIX_COLUMNS.map((c) => csvCell(values[c])).join(","));
+    rows.push({
+      debtorId: debtor.id,
+      suid: debtor.accountNumber,
+      name,
+      phone: debtor.phone,
+      values,
+    });
   }
 
-  const csv = [JOBIX_COLUMNS.join(","), ...rows].join("\n");
+  const csv = [
+    JOBIX_COLUMNS.join(","),
+    ...rows.map((row) => JOBIX_COLUMNS.map((c) => csvCell(row.values[c])).join(",")),
+  ].join("\n");
   return {
     csv,
     rowCount: rows.length,
+    rows,
     batch,
     callFlag: callFlag ?? null,
     excluded: Object.entries(excluded)
