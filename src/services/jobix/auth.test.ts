@@ -70,7 +70,7 @@ describe("a refused sign-in says enough to act on", () => {
     respondWith(422, JSON.stringify({ errors: { reCaptcha: ["The re captcha field is required."] } }));
     const { signInWith } = await import("./auth");
     await expect(signInWith("https://dashboard.example.test", "ops@example.test", "pw")).rejects.toThrow(
-      /422.*validation error.*dashboard\.example\.test\/api\/auth\/login.*re captcha/is,
+      /422[\s\S]*validation error[\s\S]*dashboard\.example\.test\/api\/auth\/login[\s\S]*re captcha/i,
     );
   });
 
