@@ -109,6 +109,19 @@ export function ConnectionCard({
     >
       <p className="mb-3 text-[0.78125rem] leading-relaxed text-ink-2">{status.summary}</p>
 
+      {status.envEmail && (
+        <p className="mb-3 text-[0.71875rem] leading-relaxed text-ink-3">
+          The environment&apos;s sign-in email, exactly as this server reads it:{" "}
+          <span className="num text-ink">{status.envEmail}</span>
+        </p>
+      )}
+      {status.envEmailProblem && (
+        <p className="mb-3 flex items-start gap-2 rounded-lg border border-[rgba(242,193,78,0.35)] bg-[rgba(242,193,78,0.08)] px-3 py-2 text-[0.78125rem] text-ink">
+          <AlertTriangle size={13} className="mt-0.5 shrink-0 text-[#f2c14e]" />
+          {status.envEmailProblem}
+        </p>
+      )}
+
       <dl className="mb-4 space-y-1.5">
         {status.vars.map((entry) => {
           const style = STATE_STYLE[entry.state];

@@ -92,3 +92,48 @@ describe("a refused sign-in says enough to act on", () => {
     expect(failure).toContain("[redacted]");
   });
 });
+
+describe("emailProblem", () => {
+  // The address this platform signs in with carries a + tag, and + is what
+  // config values lose: URL-decoding turns it into a space. That produces a
+  // 422 from the provider which says nothing about a mangled address, so it is
+  // caught here instead — before a round trip, with the reason in words.
+  it("passes a plus-tagged address, which is a perfectly ordinary one", async () => {
+    const { emailProblem } = await import("./auth");
+    expect(emailProblem("hakeem+mafadi@aiployee.co.za")).toBeNull();
+    expect(emailProblem("ops@example.com")).toBeNull();
+  });
+
+  it("names the plus-became-a-space case, because that is the one that happens", async () => {
+    const { emailProblem } = await import("./auth");
+    const problem = emailProblem("hakeem mafadi@aiployee.co.za");
+    expect(problem).toMatch(/space/i);
+    expect(problem).toMatch(/URL-decoded/i);
+  });
+
+  it("catches an empty, malformed or quote-wrapped value", async () => {
+    const { emailProblem } = await import("./auth");
+    expect(emailProblem("")).toMatch(/empty/i);
+    expect(emailProblem("   ")).toMatch(/empty/i);
+    expect(emailProblem("not-an-email")).toMatch(/not a valid address/i);
+    expect(emailProblem('"ops@example.com"')).toMatch(/quotes|not a valid address/i);
+  });
+
+  it("refuses before the request rather than after a 422", async () => {
+    let called = false;
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async () => {
+      called = true;
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+    try {
+      const { signInWith } = await import("./auth");
+      await expect(
+        signInWith("https://dashboard.example.test", "hakeem mafadi@aiployee.co.za", "pw"),
+      ).rejects.toThrow(/space/i);
+      expect(called).toBe(false);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+});

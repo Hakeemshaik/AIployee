@@ -80,7 +80,32 @@ export async function signInWith(base: string, email: string, password: string):
   return login(base, email, password);
 }
 
+/**
+ * What is wrong with this email, before Jobix is asked.
+ *
+ * The sign-in email here carries a + tag, and + is the character config values
+ * lose: anything that URL-decodes a value turns it into a SPACE, so
+ * "hakeem+mafadi@…" arrives as "hakeem mafadi@…" and the login fails
+ * validation with a 422 that looks nothing like a mangled address. Checking
+ * here turns a round trip and a status code into a sentence.
+ */
+export function emailProblem(email: string): string | null {
+  if (email.trim() === "") return "The sign-in email is empty.";
+  if (/\s/.test(email)) {
+    return `The sign-in email contains a space ("${email}"). A + in an email becomes a space when a value is URL-decoded, so an address like name+tag@example.com arrives as "name tag@example.com" — re-enter it, and check for quotes around the value.`;
+  }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return `The sign-in email is not a valid address ("${email}").`;
+  }
+  if (email !== email.trim() || /^["']|["']$/.test(email)) {
+    return `The sign-in email is wrapped in quotes or padding ("${email}"). Store the bare value.`;
+  }
+  return null;
+}
+
 async function login(base: string, email: string, password: string): Promise<string> {
+  const problem = emailProblem(email);
+  if (problem) throw new JobixError(problem, "not_configured");
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), LOGIN_TIMEOUT_MS);
   try {

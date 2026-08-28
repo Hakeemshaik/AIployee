@@ -1,4 +1,5 @@
 import { resolveJobixEnv, JobixClient, JobixError } from "@/services/jobix/client";
+import { emailProblem } from "@/services/jobix/auth";
 
 // ---------------------------------------------------------------------------
 // What the running server can actually see, and whether it works.
@@ -39,6 +40,14 @@ export type ConnectionStatus = {
   /** True when a sign-in could be attempted at all. */
   canTest: boolean;
   summary: string;
+  /** The sign-in email the environment holds, exactly as the server sees it. */
+  envEmail: string | null;
+  /**
+   * What is visibly wrong with it. A + tag is the case that matters: any
+   * URL-decoding turns + into a space, and the address then fails validation
+   * on the provider's side with a status code that says nothing about why.
+   */
+  envEmailProblem: string | null;
 };
 
 function stateOf(name: string): VarState {
@@ -67,7 +76,10 @@ export function connectionStatus(): ConnectionStatus {
       ? "The sign-in variables are present but blank on this deployment. A blank value is what a failed paste, or a variable saved for a different environment, looks like from here."
       : "The sign-in variables are not on this deployment. Sign in below instead, which needs no redeploy — or add them and redeploy, since a deployment only sees the variables that existed when it was built.";
 
+  const rawEmail = process.env.JOBIX_EMAIL ?? null;
   return {
+    envEmail: rawEmail,
+    envEmailProblem: rawEmail ? emailProblem(rawEmail) : null,
     environment: process.env.VERCEL_ENV ?? null,
     branch: process.env.VERCEL_GIT_COMMIT_REF ?? null,
     commit: (process.env.VERCEL_GIT_COMMIT_SHA ?? "").slice(0, 7) || null,
