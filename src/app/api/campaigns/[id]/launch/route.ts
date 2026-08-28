@@ -1,17 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { authFailure } from "@/lib/api-errors";
+import { authFailure, jobixFailure } from "@/lib/api-errors";
 import { apiContext, requireRole } from "@/lib/auth";
-import { JobixError } from "@/services/jobix/client";
 import { checkArmed, launchState, prepareLaunchList, startCampaignCalls } from "@/services/campaign-launch";
 import { cancelSchedule, scheduleCampaign } from "@/services/campaign-schedule";
-
-function jobixFailure(err: unknown): NextResponse | null {
-  if (!(err instanceof JobixError)) return null;
-  const status =
-    err.code === "not_found" ? 404 : err.code === "not_configured" ? 501 : err.code === "rejected" ? 409 : 502;
-  return NextResponse.json({ error: err.code, message: err.message }, { status });
-}
 
 // GET /api/campaigns/:id/launch — categorised contacts and launch readiness.
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { authFailure } from "@/lib/api-errors";
+import { authFailure, jobixFailure } from "@/lib/api-errors";
 import { z } from "zod";
 import { apiContext, requireRole } from "@/lib/auth";
 import { pauseCampaign, startCampaign, stopCampaign } from "@/services/campaign-control";
@@ -30,6 +30,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   } catch (err) {
     const denied = authFailure(err);
     if (denied) return denied;
+    // Start now runs the real launch path when the platform is connected, so
+    // its refusals arrive here — as answers, not failures.
+    const jobix = jobixFailure(err);
+    if (jobix) return jobix;
     if (err instanceof ProviderError) {
       // The operator sees the real integration error, never a fake success.
       return NextResponse.json(

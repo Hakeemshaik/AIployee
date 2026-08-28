@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { NotAuthenticatedError, NotPermittedError } from "@/lib/auth";
 import { GuestBlockedError } from "@/lib/session";
+import { JobixError } from "@/services/jobix/client";
 
 /**
  * Map an authentication or authorization failure to a response.
@@ -20,4 +21,18 @@ export function authFailure(err: unknown): NextResponse | null {
     return NextResponse.json({ error: "not_permitted", message: err.message }, { status: 403 });
   }
   return null;
+}
+
+/**
+ * Map a voice-platform failure to a response.
+ *
+ * Shared because these are not internal errors and must not be logged or
+ * answered as such: "paste the list first" and "calling is disabled on this
+ * deployment" are answers, and a 500 with a stack trace buries them.
+ */
+export function jobixFailure(err: unknown): NextResponse | null {
+  if (!(err instanceof JobixError)) return null;
+  const status =
+    err.code === "not_found" ? 404 : err.code === "not_configured" ? 501 : err.code === "rejected" ? 409 : 502;
+  return NextResponse.json({ error: err.code, message: err.message }, { status });
 }

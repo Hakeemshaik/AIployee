@@ -7,7 +7,6 @@ import {
   Activity,
   AlertTriangle,
   PhoneCall,
-  Play,
   RotateCcw,
   Square,
   Pause as PauseIcon,
@@ -63,7 +62,7 @@ export function LiveCampaign({
   const [state, setState] = useState<LiveState>(initial);
   const [live, setLive] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
-  const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [notice, setNotice] = useState<{ kind: "ok" | "note" | "error"; text: string } | null>(null);
   const sourceRef = useRef<EventSource | null>(null);
 
   // Stream state changes instead of refreshing the page.
@@ -108,9 +107,10 @@ export function LiveCampaign({
       const body = await res.json();
       if (!res.ok) throw new Error(body.message ?? "The campaign could not be updated.");
       setNotice({
-        kind: "ok",
-        text:
-          action === "start"
+        kind: body.note ? "note" : "ok",
+        text: body.note
+          ? body.note
+          : action === "start"
             ? `${body.contactsQueued} contacts queued via ${body.provider}.${body.manualStep ? ` ${body.manualStep}` : ""}`
             : `Campaign ${body.status}.`,
       });
@@ -174,9 +174,10 @@ export function LiveCampaign({
           </div>
           {canControl && (
             <div className="flex flex-wrap items-center gap-2">
-              <button className="btn btn-primary" disabled={busy !== null || isLive} onClick={() => control("start")}>
-                <Play size={13} /> {busy === "start" ? "Starting…" : "Start campaign"}
-              </button>
+              {/* No Start here. Starting a run means sending the dialling list
+                  first, which is step 2 below — a second Start button on this
+                  bar could only either duplicate that or skip the list, and
+                  skipping it starts a run that dials nobody. */}
               <button className="btn" disabled={busy !== null || !isLive} onClick={() => control("pause")}>
                 <PauseIcon size={13} /> Pause
               </button>
@@ -197,7 +198,10 @@ export function LiveCampaign({
             className={`mt-3 rounded-lg border px-3 py-2 text-[0.78125rem] ${
               notice.kind === "ok"
                 ? "border-[rgba(12,163,12,0.3)] bg-[rgba(12,163,12,0.08)] text-[#5fc46a]"
-                : "border-[rgba(208,59,59,0.35)] bg-[rgba(208,59,59,0.08)] text-[#ec8181]"
+                : notice.kind === "note"
+                  ? // Something the operator has to go and do, not a failure.
+                    "border-line bg-white/[0.03] text-ink-2"
+                  : "border-[rgba(208,59,59,0.35)] bg-[rgba(208,59,59,0.08)] text-[#ec8181]"
             }`}
           >
             {notice.text}

@@ -1,5 +1,6 @@
 import { createHash } from "crypto";
 import { db } from "@/lib/db";
+import { loadJobixEnv } from "@/services/jobix/client";
 import { audit } from "@/lib/audit";
 import { emitEvent } from "@/lib/events";
 import { getVoiceProvider } from "@/services/voice";
@@ -134,6 +135,28 @@ export async function startCampaign(
     );
   }
 
+  // The real connection first.
+  //
+  // Below this line is the provider abstraction, whose Jobix implementation
+  // expects a REST campaign API that the real Jobix does not have — so it
+  // resolves to the manual-paste stub, which reports contacts "queued" while
+  // nothing at all reaches the voice platform. That is the worst possible
+  // answer: it looks like a start. When a dashboard sign-in is configured, the
+  // launch path that genuinely dials handles this instead, and its refusals
+  // ("paste the list first", "calling is disabled") are surfaced as they are.
+  const signIn = loadJobixEnv();
+  if (signIn?.email && signIn?.password) {
+    const { startCampaignCalls } = await import("@/services/campaign-launch");
+    const started = await startCampaignCalls(organizationId, userId, campaignId, { confirmed: true });
+    return {
+      status: "running",
+      providerCampaignId: started.batchCode,
+      contactsQueued: contacts.length,
+      provider: "Jobix — dashboard sign-in, flow trigger",
+      manualStep: started.message,
+    };
+  }
+
   const { provider, reason } = await getVoiceProvider(organizationId);
   const key = campaign.idempotencyKey ?? idempotencyKey(campaignId, contacts.map((c) => c.debtorId));
 
@@ -239,7 +262,7 @@ async function transition(
   userId: string,
   campaignId: string,
   action: "pause" | "stop",
-): Promise<{ status: string }> {
+): Promise<{ status: string; note?: string }> {
   const campaign = await db.campaign.findFirst({ where: { id: campaignId, organizationId } });
   if (!campaign) throw new Error("Campaign not found");
 
@@ -252,15 +275,18 @@ async function transition(
       if (action === "pause") await provider.pauseCampaign(campaign.providerCampaignId);
       else await provider.stopCampaign(campaign.providerCampaignId);
     } else if (campaign.providerCampaignId) {
-      // No API for it — record locally and tell the operator plainly.
+      // No API for it. Recorded here and said plainly — but NOT written to
+      // providerError, which the page renders as a red integration failure. A
+      // known limitation of the platform is not something going wrong, and
+      // dressing it as one teaches the operator to ignore real errors.
       await db.campaign.update({
         where: { id: campaignId },
-        data: {
-          status: nextStatus,
-          providerError: `Marked ${nextStatus} in AIployee. The voice platform integration cannot ${action} by API — ${action} the run in its dashboard too.`,
-        },
+        data: { status: nextStatus, providerError: null },
       });
-      return { status: nextStatus };
+      return {
+        status: nextStatus,
+        note: `Marked ${nextStatus} here. The voice platform has no API to ${action} a run, so ${action} it in the Jobix dashboard as well — calls already dialling will otherwise carry on.`,
+      };
     }
     await db.campaign.update({
       where: { id: campaignId },

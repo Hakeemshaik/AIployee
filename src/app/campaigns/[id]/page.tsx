@@ -66,6 +66,14 @@ export default async function CampaignDetailPage({
         description={campaign.description ?? undefined}
         actions={
           <div className="flex flex-wrap items-center justify-end gap-2">
+            {/* A draft campaign has nothing to press up here on purpose: the
+                only thing that starts a run is step 2, and a button in the
+                header could only flip a status without dialling anyone. */}
+            {campaign.status === "draft" && (
+              <span className="text-[0.71875rem] text-ink-3">
+                Send the dialling list in step 2 below to start calling.
+              </span>
+            )}
             <StatusControls campaignId={campaign.id} status={campaign.status} />
           </div>
         }
