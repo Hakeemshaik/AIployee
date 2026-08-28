@@ -14,6 +14,7 @@ const saveSchema = z.object({
   flowUuid: z.string().max(400).optional(),
   triggerNodeUuid: z.string().max(200).optional(),
   callFlag: z.string().max(120).optional(),
+  flowStart: z.enum(["insert", "trigger"]).optional(),
 });
 
 const inspectSchema = z.object({ inspect: z.string().min(1).max(400) });

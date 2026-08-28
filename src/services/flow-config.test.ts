@@ -36,6 +36,8 @@ describe("callColumnValue", () => {
     triggerNodeUuid: null,
     triggerNodeUuidSource: "unset" as const,
     callFlagSource: "saved" as const,
+    flowStart: "insert" as const,
+    flowStartSource: "unset" as const,
     triggerReady: false,
   };
 

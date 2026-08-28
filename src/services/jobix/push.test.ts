@@ -98,6 +98,21 @@ const { pushDiallingList } = await import("./push");
 const api = await import("./api");
 
 /**
+ * Put the workspace in trigger mode.
+ *
+ * The default is "insert", because that is what a Jobix flow built on the
+ * Insert Customer event does — so a test about the two-pass write has to say it
+ * is about the other kind of flow.
+ */
+async function startsOnTrigger(organizationId: string) {
+  await db.integrationSettings.upsert({
+    where: { organizationId },
+    create: { organizationId, provider: "jobix", flowStart: "trigger" },
+    update: { flowStart: "trigger" },
+  });
+}
+
+/**
  * The default: the workspace echoes back whatever the writes created.
  * Re-applied before every test, because a mockResolvedValue in one test
  * otherwise silently answers the reads in the next.
@@ -206,6 +221,7 @@ describe.skipIf(!scratch)("pushing customers to Jobix (integration)", () => {
   });
 
   it("writes every customer unarmed first, and only then arms them", async () => {
+    await startsOnTrigger(orgId);
     const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-TEST" });
 
     expect(result.written).toBe(2);
@@ -229,6 +245,7 @@ describe.skipIf(!scratch)("pushing customers to Jobix (integration)", () => {
   });
 
   it("keys the write on the account number, which is what the API upserts on", async () => {
+    await startsOnTrigger(orgId);
     await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-TEST" });
     expect(writes.every((w) => w.path === "/v1/customer/save")).toBe(true);
     expect(writes.map((w) => w.suid).sort()).toEqual(["PUSH-1", "PUSH-1", "PUSH-2", "PUSH-2"]);
@@ -466,6 +483,7 @@ describe.skipIf(!scratch)("a write is not the same fact as a customer existing",
   });
 
   it("puts the phone and name in the identity block, not only in the fields", async () => {
+    await startsOnTrigger(orgId);
     await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-CONF" });
     const create = writes[0];
     // A customer created with its identity buried in fields has nothing for
@@ -683,5 +701,93 @@ describe.skipIf(!scratch)("a per-run code is not a usable flag", () => {
     expect(result.flagIsFixed).toBe(true);
     expect(result.complete).toBe(true);
     expect(result.nextStep).toMatch(/confirmed present/i);
+  });
+});
+
+describe.skipIf(!scratch)("how the flow starts decides how a customer is written", () => {
+  let orgId = "";
+  let userId = "";
+  let campaignId = "";
+
+  beforeEach(async () => {
+    writes.length = 0;
+    postWrite.mockClear();
+    customersEchoWrites();
+    await db.campaignContact.deleteMany();
+    await db.debtAccount.deleteMany();
+    await db.debtor.deleteMany();
+    await db.campaign.deleteMany();
+    await db.auditLog.deleteMany();
+    await db.integrationSettings.deleteMany();
+    await db.user.deleteMany();
+    await db.organization.deleteMany();
+    const org = await db.organization.create({ data: { name: "Start Co", slug: "start-co" } });
+    orgId = org.id;
+    userId = (
+      await db.user.create({
+        data: { organizationId: orgId, name: "Ops", email: "start@example.com", role: "admin" },
+      })
+    ).id;
+    campaignId = (
+      await db.campaign.create({ data: { organizationId: orgId, name: "Run", status: "draft" } })
+    ).id;
+    const debtor = await db.debtor.create({
+      data: {
+        organizationId: orgId,
+        campaignId,
+        firstName: "Tester",
+        lastName: "One",
+        accountNumber: "START-1",
+        phone: "+27825104242",
+      },
+    });
+    await db.debtAccount.create({
+      data: {
+        organizationId: orgId,
+        debtorId: debtor.id,
+        reference: "START-1",
+        creditorName: "Mafadi",
+        originalBalance: 1086,
+        currentBalance: 1086,
+        dueDate: new Date("2026-07-01"),
+        daysOverdue: 40,
+      },
+    });
+    process.env.JOBIX_CALL_FLAG = "READY";
+  });
+
+  it("arms the very first write when the flow starts on a customer being written", async () => {
+    // The failure this pins: an Insert Customer event fires on the WRITE. Hold
+    // the flag back for a second pass and the event has already gone by, the
+    // update raises nothing, and no phone ever rings — with every count
+    // reporting success.
+    await db.integrationSettings.create({
+      data: { organizationId: orgId, provider: "jobix", callFlag: "READY", flowStart: "insert" },
+    });
+    const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-START" });
+    expect(writes).toHaveLength(1);
+    expect(writes[0].values.call).toBe("READY");
+    expect(result.armed).toBe(1);
+    expect(result.dialledOnWrite).toBe(true);
+    expect(result.nextStep).toMatch(/already going out/i);
+    expect(result.nextStep).toMatch(/nothing further to press/i);
+  });
+
+  it("keeps the two passes when the run starts by firing the trigger node", async () => {
+    await db.integrationSettings.create({
+      data: { organizationId: orgId, provider: "jobix", callFlag: "READY", flowStart: "trigger" },
+    });
+    const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-START" });
+    expect(writes).toHaveLength(2);
+    expect(writes[0].values.call).toBeUndefined();
+    expect(writes[1].values.call).toBe("READY");
+    expect(result.dialledOnWrite).toBe(false);
+    expect(result.nextStep).toMatch(/Start the calls/i);
+  });
+
+  it("defaults to arming on write, because that is what a Jobix flow does", async () => {
+    const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-START" });
+    expect(result.dialledOnWrite).toBe(true);
+    expect(writes[0].values.call).toBe("READY");
   });
 });

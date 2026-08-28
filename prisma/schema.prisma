@@ -398,6 +398,9 @@ model IntegrationSettings {
   flowUuid        String? // the id in the flow's URL: /automation/<uuid>
   triggerNodeUuid String? // the entry node the Run button triggers
   callFlag        String? // the fixed value the flow's entry filter matches on
+  // How the flow begins: "insert" (its event is Insert Customer, so writing an
+  // armed customer dials immediately) or "trigger" (its Run node is fired).
+  flowStart       String?
   pollEnabled    Boolean @default(false)
   pollCursor     String? // newest provider record already ingested
   lastSyncAt     DateTime?

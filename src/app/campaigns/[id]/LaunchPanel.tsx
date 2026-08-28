@@ -43,6 +43,8 @@ type LaunchState = {
   excluded: { reason: string; count: number }[];
   window: { allowed: boolean; reason: string; sastTime: string };
   callingEnabled: boolean;
+  /** "insert" means writing a customer is what dials them. */
+  flowStart: "insert" | "trigger";
   triggerConfigured: boolean;
   scheduledFor: string | null;
   scheduleError: string | null;
@@ -81,6 +83,7 @@ type SendResult = {
   scanned: number;
   scanComplete: boolean;
   flagIsFixed: boolean;
+  dialledOnWrite: boolean;
   callFlag: string | null;
   complete: boolean;
   nextStep: string;
@@ -143,10 +146,16 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
 
   async function sendList() {
     if (!list) return;
+    // Whether this is a staging step or the start of the run depends on how the
+    // flow begins, and the question has to say which.
+    const dialsNow = state?.flowStart === "insert";
     if (
       !window.confirm(
-        `Write ${list.rowCount} customer${list.rowCount === 1 ? "" : "s"} into Jobix and arm them to dial?\n\n` +
-          "Each is created or updated with every field. Nothing is called until you start the run.",
+        dialsNow
+          ? `Call ${list.rowCount} account${list.rowCount === 1 ? "" : "s"} now?\n\n` +
+              "This flow starts when a customer is written, so each account is written with the call flag set and the phone rings as it lands. There is no separate start."
+          : `Write ${list.rowCount} customer${list.rowCount === 1 ? "" : "s"} into Jobix and arm them to dial?\n\n` +
+              "Each is created or updated with every field. Nothing is called until you start the run.",
       )
     ) {
       return;
@@ -409,10 +418,14 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                     ) : (
                       <Send size={13} />
                     )}
-                    Send to Jobix ({count(list.rowCount)})
+                    {state.flowStart === "insert"
+                      ? `Send and call (${count(list.rowCount)})`
+                      : `Send to Jobix (${count(list.rowCount)})`}
                   </button>
                   <span className="text-[0.71875rem] text-ink-3">
-                    Creates or updates each customer with every field, then arms them to dial.
+                    {state.flowStart === "insert"
+                      ? "Writes each customer with every field and the call flag set — this flow dials as each one lands."
+                      : "Creates or updates each customer with every field, then arms them to dial."}
                   </span>
                 </div>
 

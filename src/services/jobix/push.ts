@@ -13,24 +13,22 @@ import { callColumnValue, loadFlowConfig } from "@/services/flow-config";
 // makes this possible at all, and it removes the paste step: the platform can
 // put the book into the voice platform itself, with every field populated.
 //
-// SEQUENCING, and it is not incidental.
+// SEQUENCING, which depends entirely on how the flow begins.
 //
-// The flow starts on an Insert Customer event and gates on the `call` column.
-// So writing a new customer with the flag already set would fire the flow the
-// instant the row lands — mid-upload, one call at a time, before the rest of
-// the list exists, and with no chance to check what was written. Worse, a
-// second dial can then come from the flow trigger.
+// A flow whose entry is an Insert Customer event fires when a customer is
+// WRITTEN. Nothing else starts it: arming a customer that already exists is an
+// update, and an update raises no event. So for that flow the customer must be
+// written with the flag already in place — one write, and the call happens.
+// This is how a form gets an immediate call-back: it submits one customer, and
+// that insert IS the trigger.
 //
-// So it goes in two passes:
+// A flow driven by its Run node is the opposite. There, customers can be
+// written unarmed, armed in a second pass, and dialled only when a person fires
+// the node — which keeps a large upload from ringing phones as rows land.
 //
-//   1. WRITE every customer with all fields and the batch code, and `call`
-//      DELIBERATELY EMPTY. New customers fire the insert event, the filter
-//      does not match, the flow exits. Nobody is called.
-//   2. ARM them: a second write setting `call` to the flag. This is an update,
-//      not an insert, so it does not fire the event either.
-//
-// Dialling then happens exactly once, when the flow is triggered — a single
-// deliberate act, against a list that is already fully in place and countable.
+// Writing for the wrong one is silent: the platform writes, reports success,
+// and no phone ever rings. So it is a setting, not a guess, and the mode
+// decides whether a single armed write or two passes happen here.
 //
 // Nothing here reports a write it did not make. Every failure carries what
 // Jobix actually said, and a partial push says how far it got.
@@ -82,6 +80,9 @@ export type PushResult = {
   /** True when the call column carries the configured flag rather than this
    *  run's code standing in for one. */
   flagIsFixed: boolean;
+  /** True when the write itself started the flow, so calls are already going
+   *  out and no separate start is needed. */
+  dialledOnWrite: boolean;
   /** True when every row was written, armed with a usable flag, and found. */
   complete: boolean;
   nextStep: string;
@@ -256,6 +257,9 @@ export async function pushDiallingList(
   // somebody edits the flow. Reporting that as "armed" is how a run ends with
   // nobody called and no error anywhere.
   const flagIsFixed = !!flow.callFlag;
+  // On an insert-started flow the flag has to be in the FIRST write, because
+  // that write is what starts the flow. Anywhere else and it never dials.
+  const armOnWrite = flow.flowStart === "insert";
 
   const list = await buildJobixExport(organizationId, {
     campaignId: options.campaignId,
@@ -331,9 +335,14 @@ export async function pushDiallingList(
   // --- pass 1: the customers themselves, unarmed ---------------------------
   for (const row of list.rows) {
     const values = contactValues(row);
-    // Whatever the flag is, it must not go in on this pass: a new customer
-    // fires the flow's insert event, and an armed row would be dialled here.
-    delete values.call;
+    if (armOnWrite && callFlag) {
+      // This write is the trigger. The flag goes in now or the flow never runs.
+      values.call = callFlag;
+    } else {
+      // Held back deliberately: on a trigger-started flow nobody should be
+      // dialled until a person fires the node.
+      delete values.call;
+    }
     try {
       const email = row.values.email ?? row.values.Email;
       const known = bySuid.get(row.suid);
@@ -370,8 +379,11 @@ export async function pushDiallingList(
   }
 
   // --- pass 2: arm what landed --------------------------------------------
-  let armed = 0;
-  if (callFlag) {
+  //
+  // Skipped when the first write already carried the flag: a second write would
+  // be an update to a customer the flow is already calling.
+  let armed = armOnWrite && callFlag ? writtenRows.length : 0;
+  if (callFlag && !armOnWrite) {
     for (const row of writtenRows) {
       try {
         // Arming is an update to a record that already exists, so the
@@ -456,7 +468,9 @@ export async function pushDiallingList(
     : !callFlag
     ? `${writtenRows.length} customers are in Jobix, but nothing is armed: no call flag is configured, so the flow's filter will match nobody. Set one under Settings.`
     : complete
-      ? `${armed} customers written, armed with ${callFlag}, and confirmed present on the platform${made ? ` — ${made}` : ""}. Start the calls — the flow dials exactly these.`
+      ? armOnWrite
+        ? `${armed} customers written with ${callFlag} in the call column and confirmed present on the platform${made ? ` — ${made}` : ""}. The flow starts on a customer being written, so the calls are already going out — there is nothing further to press.`
+        : `${armed} customers written, armed with ${callFlag}, and confirmed present on the platform${made ? ` — ${made}` : ""}. Start the calls — the flow dials exactly these.`
       : failures.length > 0
         ? `${writtenRows.length} of ${list.rowCount} written, ${armed} armed. Fix the failures below before starting, or start and dial only what is armed.`
         : !scanComplete
@@ -499,6 +513,7 @@ export async function pushDiallingList(
     scanned,
     scanComplete,
     flagIsFixed,
+    dialledOnWrite: armOnWrite && !!callFlag,
     callFlag,
     attempted: list.rowCount,
     failures: failures.slice(0, 50),

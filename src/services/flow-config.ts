@@ -27,6 +27,26 @@ import { audit } from "@/lib/audit";
  */
 export class FlowConfigError extends Error {}
 
+/**
+ * How the flow begins, and therefore how a customer has to be written.
+ *
+ * "insert" — the flow's entry is an Insert Customer event. Writing a customer
+ *   whose `call` column already carries the flag fires the flow for that
+ *   customer, and the call happens there and then. This is how Speed to Lead
+ *   gets an immediate call-back from a form: it submits one customer, and that
+ *   insert is the trigger. Nothing else is needed, and nothing else works —
+ *   arming an EXISTING customer is an update, which fires no event at all.
+ *
+ * "trigger" — the run starts by firing the flow's Run node, which dials
+ *   whatever its filter matches at that moment. Customers can then be written
+ *   unarmed first and armed afterwards, so nobody is called until a person
+ *   presses Start.
+ *
+ * Getting this wrong is silent: the platform writes, reports success, and the
+ * phone never rings.
+ */
+export type FlowStart = "insert" | "trigger";
+
 export type FlowSettingSource = "saved" | "environment" | "unset";
 
 export type FlowConfig = {
@@ -41,6 +61,10 @@ export type FlowConfig = {
    */
   callFlag: string | null;
   callFlagSource: FlowSettingSource;
+  /** How this flow begins. Defaults to "insert", which is what a Jobix flow
+   *  built from the Insert Customer event does. */
+  flowStart: FlowStart;
+  flowStartSource: FlowSettingSource;
   /** Both ids present, so a run can actually be triggered. */
   triggerReady: boolean;
 };
@@ -56,7 +80,7 @@ function resolve(saved: string | null | undefined, envName: string): [string | n
 export async function loadFlowConfig(organizationId: string): Promise<FlowConfig> {
   const settings = await db.integrationSettings.findUnique({
     where: { organizationId },
-    select: { flowUuid: true, triggerNodeUuid: true, callFlag: true },
+    select: { flowUuid: true, triggerNodeUuid: true, callFlag: true, flowStart: true },
   });
 
   const [flowUuid, flowUuidSource] = resolve(settings?.flowUuid, "JOBIX_FLOW_UUID");
@@ -65,8 +89,12 @@ export async function loadFlowConfig(organizationId: string): Promise<FlowConfig
     "JOBIX_TRIGGER_NODE_UUID",
   );
   const [callFlag, callFlagSource] = resolve(settings?.callFlag, "JOBIX_CALL_FLAG");
+  const [startRaw, flowStartSource] = resolve(settings?.flowStart, "JOBIX_FLOW_START");
+  const flowStart: FlowStart = startRaw === "trigger" ? "trigger" : "insert";
 
   return {
+    flowStart,
+    flowStartSource: startRaw ? flowStartSource : "unset",
     flowUuid,
     flowUuidSource,
     triggerNodeUuid,
@@ -108,6 +136,7 @@ export type FlowConfigInput = {
   flowUuid?: string | null;
   triggerNodeUuid?: string | null;
   callFlag?: string | null;
+  flowStart?: string | null;
 };
 
 /** Empty string clears a value back to the environment fallback. */
@@ -137,6 +166,9 @@ export async function saveFlowConfig(
       ? { triggerNodeUuid: normalise(input.triggerNodeUuid) }
       : {}),
     ...(normalise(input.callFlag) !== undefined ? { callFlag: normalise(input.callFlag) } : {}),
+    ...(normalise(input.flowStart) !== undefined
+      ? { flowStart: normalise(input.flowStart) === "trigger" ? "trigger" : "insert" }
+      : {}),
   };
 
   await db.integrationSettings.upsert({

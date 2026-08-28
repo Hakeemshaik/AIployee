@@ -40,6 +40,8 @@ export type LaunchState = {
   excluded: { reason: string; count: number }[];
   window: { allowed: boolean; reason: string; sastTime: string };
   callingEnabled: boolean;
+  /** How the flow begins, which decides whether sending the list dials. */
+  flowStart: "insert" | "trigger";
   triggerConfigured: boolean;
   /** A pending scheduled start, when one is set. */
   scheduledFor: Date | null;
@@ -61,6 +63,7 @@ export async function launchState(
   campaignId: string,
 ): Promise<LaunchState> {
   const campaign = await campaignOrThrow(organizationId, campaignId);
+  const launchFlow = await loadFlowConfig(organizationId);
   const preview = await buildJobixExport(organizationId, { campaignId });
   const eligibleValue = campaign.debtors.reduce(
     (sum, debtor) => sum + debtor.accounts.reduce((s, a) => s + a.currentBalance, 0),
@@ -77,7 +80,8 @@ export async function launchState(
     excluded: preview.excluded,
     window: checkCallingWindow(),
     callingEnabled: process.env.JOBIX_CALLING_ENABLED === "true",
-    triggerConfigured: (await loadFlowConfig(organizationId)).triggerReady,
+    flowStart: launchFlow.flowStart,
+    triggerConfigured: launchFlow.triggerReady,
     scheduledFor: campaign.scheduledFor,
     scheduleError: campaign.scheduleError,
   };
@@ -306,6 +310,27 @@ export async function pushCampaignList(organizationId: string, userId: string, c
   await blockGuests("send a dialling list to the voice platform");
   const campaign = await campaignOrThrow(organizationId, campaignId);
   await assertSingleOrganization();
+
+  // On an insert-started flow, WRITING the customer is what dials them. So this
+  // is not a staging step there — it is the start of the run, and it has to
+  // pass every gate a start passes. Sending a book at midnight because the
+  // write looked harmless is exactly the failure those gates exist for.
+  const flow = await loadFlowConfig(organizationId);
+  if (flow.flowStart === "insert") {
+    if (process.env.JOBIX_CALLING_ENABLED !== "true") {
+      throw new JobixError(
+        "This flow starts when a customer is written, so sending the list would begin calling — and calling is disabled on this deployment. Enable it, or set the flow to start on its trigger node under Settings.",
+        "not_configured",
+      );
+    }
+    const window = checkCallingWindow();
+    if (!window.allowed) {
+      throw new JobixError(
+        `${window.reason} This flow dials as each customer is written, so the list cannot be sent outside calling hours.`,
+        "rejected",
+      );
+    }
+  }
 
   // A fresh code per send, so two sends are two runs and never one blurred
   // together — the same rule the paste path follows.

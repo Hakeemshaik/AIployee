@@ -51,6 +51,7 @@ export function FlowCard({ initial, canEdit }: { initial: FlowConfig; canEdit: b
   const [flowInput, setFlowInput] = useState(initial.flowUuid ?? "");
   const [nodeInput, setNodeInput] = useState(initial.triggerNodeUuid ?? "");
   const [flagInput, setFlagInput] = useState(initial.callFlag ?? "");
+  const [start, setStart] = useState<"insert" | "trigger">(initial.flowStart);
   const [inspection, setInspection] = useState<FlowInspection | null>(null);
   const [busy, setBusy] = useState<"read" | "save" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +89,7 @@ export function FlowCard({ initial, canEdit }: { initial: FlowConfig; canEdit: b
 
   async function save() {
     const payload = (await post(
-      { flowUuid: flowInput, triggerNodeUuid: nodeInput, callFlag: flagInput },
+      { flowUuid: flowInput, triggerNodeUuid: nodeInput, callFlag: flagInput, flowStart: start },
       "save",
     )) as FlowConfig | null;
     if (!payload) return;
@@ -112,17 +113,19 @@ export function FlowCard({ initial, canEdit }: { initial: FlowConfig; canEdit: b
     >
       <p
         className={`mb-3 flex items-start gap-2 text-[0.78125rem] leading-relaxed ${
-          config.triggerReady ? "text-ink-2" : "text-[#f2c14e]"
+          start === "insert" || config.triggerReady ? "text-ink-2" : "text-[#f2c14e]"
         }`}
       >
-        {config.triggerReady ? (
+        {start === "insert" || config.triggerReady ? (
           <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-[#3ecf9a]" />
         ) : (
           <AlertTriangle size={14} className="mt-0.5 shrink-0" />
         )}
-        {config.triggerReady
-          ? "The flow and its trigger node are set, so the platform can start a run itself."
-          : "Without both the flow and its trigger node the platform prepares the list but cannot start the run — you press Run in Jobix instead."}
+        {start === "insert"
+          ? "This flow runs when a customer is written, so no trigger node is needed — sending a dialling list starts the calls."
+          : config.triggerReady
+            ? "The flow and its trigger node are set, so the platform can start a run itself."
+            : "Without both the flow and its trigger node the platform prepares the list but cannot start the run — you press Run in Jobix instead."}
       </p>
 
       <div className="space-y-3">
@@ -148,6 +151,44 @@ export function FlowCard({ initial, canEdit }: { initial: FlowConfig; canEdit: b
             Paste the whole address from the browser — the id is taken out of it.
           </span>
         </label>
+
+        {/* The setting that decides whether anything dials at all. A flow whose
+            entry is an Insert Customer event runs when a customer is WRITTEN —
+            arming one that already exists is an update, and an update raises no
+            event, so writing for the wrong mode never rings a phone and never
+            reports an error. */}
+        <fieldset className="block">
+          <span className="mb-1 flex items-baseline justify-between">
+            <span className="text-[0.71875rem] text-ink-2">The flow starts when…</span>
+            <SourceTag source={config.flowStartSource} />
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {(
+              [
+                { value: "insert", label: "A customer is written" },
+                { value: "trigger", label: "The trigger node is fired" },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setStart(option.value)}
+                disabled={!canEdit}
+                className={`rounded-full border px-2.5 py-1 text-[0.6875rem] transition-colors ${
+                  start === option.value
+                    ? "border-[rgba(57,135,229,0.45)] bg-accent-soft text-ink"
+                    : "border-line bg-white/[0.03] text-ink-2 hover:text-ink"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <span className="mt-1 block text-[0.65625rem] leading-relaxed text-ink-3">
+            {start === "insert"
+              ? "Your flow's first node is an event holding Insert Customer. Sending a dialling list writes each account with the call flag already set, which fires the flow and places the call there and then — so sending IS starting, and it needs calling enabled and the hours to be open."
+              : "The run begins when the platform fires the flow's Run node. Accounts are written unarmed, armed afterwards, and nobody is dialled until you press Start."}
+          </span>
+        </fieldset>
 
         <label className="block">
           <span className="mb-1 flex items-baseline justify-between">
