@@ -77,6 +77,35 @@ export function loadJobixEnv(): JobixEnv | null {
   };
 }
 
+/**
+ * The environment, with a sign-in saved in the app overlaid on it.
+ *
+ * `loadJobixEnv` cannot see the database — it is synchronous and used in
+ * render paths — so every gate that asks "is Jobix configured?" would answer
+ * no for a deployment whose credential lives in the app rather than in an
+ * environment variable. This is that question's async form, and the gates use
+ * it.
+ */
+export async function resolveJobixEnv(): Promise<JobixEnv | null> {
+  const env = loadJobixEnv();
+  let stored: { email: string; password: string } | null = null;
+  try {
+    const { storedSignIn } = await import("./credentials");
+    stored = await storedSignIn();
+  } catch {
+    // No store available; the environment alone decides.
+  }
+  if (!stored) return env;
+  const base = env ?? {
+    base: (process.env.JOBIX_BASE ?? "https://dashboard.jobix.ai").replace(/\/$/, ""),
+    apiBase: (process.env.JOBIX_API_BASE ?? "https://dashboard-api.jobix.ai").replace(/\/$/, ""),
+    token: process.env.JOBIX_TOKEN ?? process.env.JOBIX_API_KEY,
+    companyKey: process.env.JOBIX_COMPANY_KEY,
+    flowUuid: process.env.JOBIX_FLOW_UUID,
+  };
+  return { ...base, email: stored.email, password: stored.password };
+}
+
 /** Strip anything credential-shaped from text before it can be logged. */
 export function redact(text: string): string {
   return text
@@ -114,13 +143,41 @@ export class JobixClient {
     return !!(this.env.email && this.env.password);
   }
 
+  /**
+   * The sign-in to use: the one an admin saved in the app, else the
+   * environment's.
+   *
+   * Resolved here rather than at every call site, so a credential saved in the
+   * app works for reading, writing, triggering and every scheduled job without
+   * each of them having to know where it came from. Stored wins because it was
+   * verified against Jobix when it was saved, while an environment variable is
+   * only ever assumed to be right.
+   */
+  private async credentials(): Promise<{ email: string; password: string } | null> {
+    try {
+      const { storedSignIn } = await import("./credentials");
+      const stored = await storedSignIn();
+      if (stored) return stored;
+    } catch {
+      // The store is unreachable (no database, a rotated key). The environment
+      // is still worth trying — failing here would take down a deployment that
+      // never used the stored credential at all.
+    }
+    return this.sessionMode ? { email: this.env.email!, password: this.env.password! } : null;
+  }
+
   /** Bearer token for a request — a fresh session token, or the static one. */
   private async bearer(force = false): Promise<string> {
-    if (this.sessionMode) {
+    const credentials = await this.credentials();
+    if (credentials) {
       const { getSessionToken } = await import("./auth");
-      return getSessionToken(this.env.base, this.env.email!, this.env.password!, { force });
+      return getSessionToken(this.env.base, credentials.email, credentials.password, { force });
     }
-    return this.env.token!;
+    if (this.env.token) return this.env.token;
+    throw new JobixError(
+      "No Jobix sign-in is available. Sign in under Settings, or set JOBIX_EMAIL and JOBIX_PASSWORD.",
+      "not_configured",
+    );
   }
 
   /**
@@ -138,9 +195,10 @@ export class JobixClient {
    */
   private async writeBearer(force = false): Promise<string> {
     if (this.env.token && !force) return this.env.token;
-    if (this.sessionMode) {
+    const credentials = await this.credentials();
+    if (credentials) {
       const { getSessionToken } = await import("./auth");
-      return getSessionToken(this.env.base, this.env.email!, this.env.password!, { force });
+      return getSessionToken(this.env.base, credentials.email, credentials.password, { force });
     }
     if (this.env.token) return this.env.token;
     throw new JobixError("No credential is configured for the write API.", "not_configured");
@@ -173,7 +231,7 @@ export class JobixClient {
         if (response.status === 401 || response.status === 403) {
           // A session token expires hourly; mint a fresh one and retry once
           // before concluding the credentials are wrong.
-          if (this.sessionMode && !relogged) {
+          if (!relogged) {
             relogged = true;
             await this.bearer(true);
             continue;

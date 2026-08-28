@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
-import { JobixClient, JobixError, loadJobixEnv } from "./client";
+import { JobixClient, JobixError, resolveJobixEnv } from "./client";
 import { buildJobixExport, type JobixRow } from "@/services/jobix-export";
 import { callColumnValue, loadFlowConfig } from "@/services/flow-config";
 
@@ -149,7 +149,7 @@ export async function pushDiallingList(
   userId: string,
   options: { campaignId?: string; debtorIds?: string[]; batchCode: string },
 ): Promise<PushResult> {
-  const env = loadJobixEnv();
+  const env = await resolveJobixEnv();
   if (!env) throw new JobixError("Jobix is not configured on this server.", "not_configured");
   if (!env.companyKey) {
     throw new JobixError(

@@ -6,7 +6,7 @@ import { buildJobixExport, type JobixExport } from "@/services/jobix-export";
 import { pullCustomers } from "@/services/jobix/api";
 import { assertSingleOrganization } from "@/services/jobix/ingest";
 import { batchCode, checkCallingWindow } from "@/services/jobix/calling";
-import { JobixClient, JobixError, loadJobixEnv } from "@/services/jobix/client";
+import { JobixClient, JobixError, resolveJobixEnv } from "@/services/jobix/client";
 
 // ---------------------------------------------------------------------------
 // Launching a campaign on the voice platform, as one connected flow.
@@ -151,7 +151,7 @@ export async function checkArmed(
   options: { budgetMs?: number } = {},
 ): Promise<ArmedCheck> {
   const campaign = await campaignOrThrow(organizationId, campaignId);
-  const env = loadJobixEnv();
+  const env = await resolveJobixEnv();
   if (!env) throw new JobixError("Jobix is not configured on this server.", "not_configured");
 
   const flag = callColumnValue(await loadFlowConfig(organizationId), campaign.providerCampaignId ?? undefined);
@@ -232,7 +232,7 @@ export async function startCampaignCalls(
     );
   }
 
-  const env = loadJobixEnv();
+  const env = await resolveJobixEnv();
   const flow = await loadFlowConfig(organizationId);
   if (!env || !flow.flowUuid || !flow.triggerNodeUuid) {
     throw new JobixError(

@@ -194,8 +194,8 @@ export async function inspectFlow(flowUuidInput: string): Promise<FlowInspection
     throw new FlowConfigError("That does not contain a flow id. Paste the flow's address from Jobix.");
   }
 
-  const { JobixClient, loadJobixEnv, JobixError } = await import("@/services/jobix/client");
-  const env = loadJobixEnv();
+  const { JobixClient, resolveJobixEnv, JobixError } = await import("@/services/jobix/client");
+  const env = await resolveJobixEnv();
   if (!env || !env.email || !env.password) {
     throw new JobixError(
       "No sign-in on this deployment, so the flow cannot be read. Set JOBIX_EMAIL and JOBIX_PASSWORD.",

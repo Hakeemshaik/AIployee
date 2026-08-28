@@ -6,6 +6,7 @@ import { getSettings } from "@/services/settings";
 import { setupStatus } from "@/services/setup-status";
 import { connectionStatus } from "@/services/connection-status";
 import { loadFlowConfig } from "@/services/flow-config";
+import { signInStatus } from "@/services/jobix/credentials";
 import { SetupChecklist } from "@/components/SetupChecklist";
 import { ConnectionCard } from "./ConnectionCard";
 import { FlowCard } from "./FlowCard";
@@ -39,6 +40,7 @@ export default async function SettingsPage() {
   const { compliance, apiKeys, users, org } = await getSettings(ctx.organizationId);
   const setup = await setupStatus(ctx.organizationId);
   const flow = await loadFlowConfig(ctx.organizationId);
+  const jobixSignIn = await signInStatus();
   const aiLive = process.env.AI_PROVIDER === "claude" && !!process.env.ANTHROPIC_API_KEY;
 
   return (
@@ -51,7 +53,7 @@ export default async function SettingsPage() {
       <div className="mb-4 grid items-start gap-4 xl:grid-cols-2">
         <SetupChecklist status={setup} />
         <div className="grid gap-4">
-          <ConnectionCard status={connectionStatus()} />
+          <ConnectionCard status={connectionStatus()} signIn={jobixSignIn} />
           <FlowCard initial={flow} canEdit={hasRole(ctx, ["admin"])} />
         </div>
       </div>

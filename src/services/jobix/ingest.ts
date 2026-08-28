@@ -12,7 +12,7 @@ import {
 } from "./api";
 import { messagingChannel, nameKey } from "./messaging";
 import { persistCustomers } from "./customers";
-import { JobixClient, JobixError, loadJobixEnv } from "./client";
+import { JobixClient, JobixError, resolveJobixEnv } from "./client";
 
 // ---------------------------------------------------------------------------
 // Ingestion.
@@ -89,8 +89,8 @@ export type IngestProgress = {
   finishedAt: Date | null;
 };
 
-export function jobixClientOrThrow(): JobixClient {
-  const env = loadJobixEnv();
+export async function jobixClientOrThrow(): Promise<JobixClient> {
+  const env = await resolveJobixEnv();
   if (!env) {
     throw new JobixError(
       "Jobix is not configured on the server. Set JOBIX_EMAIL and JOBIX_PASSWORD (the dashboard sign-in) to enable ingestion.",
@@ -295,7 +295,7 @@ export async function assertSingleOrganization(): Promise<void> {
 export async function runIngestion(options: IngestOptions): Promise<IngestProgress> {
   const { organizationId } = options;
   await assertSingleOrganization();
-  const client = jobixClientOrThrow();
+  const client = await jobixClientOrThrow();
   const deadline = Date.now() + (options.budgetMs ?? DEFAULT_BUDGET_MS);
 
   const run = await db.ingestionRun.create({

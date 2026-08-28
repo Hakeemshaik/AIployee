@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { JobixError, loadJobixEnv } from "@/services/jobix/client";
+import { JobixError, resolveJobixEnv } from "@/services/jobix/client";
 import { audit } from "@/lib/audit";
 import { emitEvent } from "@/lib/events";
 
@@ -114,7 +114,7 @@ export async function startCampaign(
   // fell through to a paste stub and answered "contacts queued" while nothing
   // left the platform. Without a connection the honest answer is that there is
   // nothing to start.
-  const signIn = loadJobixEnv();
+  const signIn = await resolveJobixEnv();
   if (!signIn?.email || !signIn?.password) {
     throw new JobixError(
       "No voice platform is connected, so a run cannot be started. Set the sign-in under Settings, then send this campaign's dialling list.",

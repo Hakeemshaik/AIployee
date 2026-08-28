@@ -69,6 +69,17 @@ export function extractAccessToken(body: unknown, setCookie: string[]): string |
   return null;
 }
 
+/**
+ * Log in and return the access token, with no caching and no storage.
+ *
+ * Exported so a credential can be PROVED before it is saved: "saved" then
+ * always means "this signs in", instead of moving the failure to a dialling
+ * run nobody is watching.
+ */
+export async function signInWith(base: string, email: string, password: string): Promise<string> {
+  return login(base, email, password);
+}
+
 async function login(base: string, email: string, password: string): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), LOGIN_TIMEOUT_MS);
@@ -83,8 +94,11 @@ async function login(base: string, email: string, password: string): Promise<str
     });
     const text = await response.text();
     if (response.status === 401 || response.status === 403) {
+      // Deliberately does not name an environment variable: the same login
+      // serves a credential typed into Settings, and telling someone to check
+      // a variable they never set sends them to the wrong place.
       throw new JobixError(
-        "Jobix rejected the sign-in — check JOBIX_EMAIL and JOBIX_PASSWORD.",
+        "Jobix rejected the sign-in — the email or password is wrong.",
         "unauthorized",
         redact(text),
       );

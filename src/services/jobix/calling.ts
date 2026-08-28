@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { blockGuests } from "@/lib/session";
-import { JobixClient, JobixError, loadJobixEnv } from "./client";
+import { JobixClient, JobixError, resolveJobixEnv } from "./client";
 import { callColumnValue, loadFlowConfig } from "@/services/flow-config";
 
 // ---------------------------------------------------------------------------
@@ -200,7 +200,7 @@ export async function dispatchBatch(
   const { assertSingleOrganization } = await import("./ingest");
   await assertSingleOrganization();
 
-  const env = loadJobixEnv();
+  const env = await resolveJobixEnv();
   if (!env?.companyKey) {
     throw new JobixError("JOBIX_COMPANY_KEY is required to stamp a batch code.", "not_configured");
   }

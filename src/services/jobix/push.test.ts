@@ -34,6 +34,13 @@ vi.mock("./client", async (importOriginal) => {
       password: "irrelevant",
       companyKey: "company-key-for-tests",
     }),
+    resolveJobixEnv: async () => ({
+      base: "https://example.test",
+      apiBase: "https://api.example.test",
+      email: "ops@example.test",
+      password: "irrelevant",
+      companyKey: "company-key-for-tests",
+    }),
     JobixClient: class {
       postWrite = postWrite;
     },

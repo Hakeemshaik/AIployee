@@ -1,4 +1,4 @@
-import { loadJobixEnv, JobixClient, JobixError } from "@/services/jobix/client";
+import { resolveJobixEnv, JobixClient, JobixError } from "@/services/jobix/client";
 
 // ---------------------------------------------------------------------------
 // What the running server can actually see, and whether it works.
@@ -65,7 +65,7 @@ export function connectionStatus(): ConnectionStatus {
     ? "A sign-in is configured. Use Test connection to confirm the credentials work."
     : [email, password].some((v) => v.state === "empty")
       ? "The sign-in variables are present but blank on this deployment. A blank value is what a failed paste, or a variable saved for a different environment, looks like from here."
-      : "The sign-in variables are not on this deployment. Add them, then REDEPLOY — a deployment only sees the variables that existed when it was built.";
+      : "The sign-in variables are not on this deployment. Sign in below instead, which needs no redeploy — or add them and redeploy, since a deployment only sees the variables that existed when it was built.";
 
   return {
     environment: process.env.VERCEL_ENV ?? null,
@@ -91,11 +91,12 @@ export type ConnectionTest = {
  * the smallest real request there is and reports exactly what came back.
  */
 export async function testConnection(): Promise<ConnectionTest> {
-  const env = loadJobixEnv();
+  const env = await resolveJobixEnv();
   if (!env || !env.email || !env.password) {
     return {
       ok: false,
-      message: "No sign-in on this deployment. Set JOBIX_EMAIL and JOBIX_PASSWORD, then redeploy.",
+      message:
+        "No sign-in on this deployment. Sign in to Jobix below — or set JOBIX_EMAIL and JOBIX_PASSWORD and redeploy.",
       agents: [],
     };
   }

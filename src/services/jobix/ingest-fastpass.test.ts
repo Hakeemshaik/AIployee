@@ -63,6 +63,14 @@ vi.mock("./client", async (importOriginal) => {
       email: "ops@example.test",
       password: "irrelevant-in-this-test",
     }),
+    // The gates resolve credentials asynchronously now, so the stub has to
+    // answer that question too.
+    resolveJobixEnv: async () => ({
+      base: "https://example.test",
+      apiBase: "https://api.example.test",
+      email: "ops@example.test",
+      password: "irrelevant-in-this-test",
+    }),
   };
 });
 
