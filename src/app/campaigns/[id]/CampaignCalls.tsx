@@ -114,9 +114,9 @@ export function CampaignCalls({
             ))}
             <span className="ml-auto flex items-center gap-2">
               <span className="relative">
-                <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3" />
+                <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
                 <input
-                  className="field w-[210px] pl-7"
+                  className="field w-[230px] pl-8"
                   placeholder="Name, account or number…"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}

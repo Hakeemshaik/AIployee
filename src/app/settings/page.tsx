@@ -4,7 +4,9 @@ import { EVENT_TYPES } from "@/lib/domain";
 import { formatDateTime } from "@/lib/format";
 import { getSettings } from "@/services/settings";
 import { setupStatus } from "@/services/setup-status";
+import { connectionStatus } from "@/services/connection-status";
 import { SetupChecklist } from "@/components/SetupChecklist";
+import { ConnectionCard } from "./ConnectionCard";
 import { Badge, GlassCard, Meta, PageHeader } from "@/components/ui";
 import { ComplianceForm } from "./ComplianceForm";
 import { ResetDataCard } from "./ResetDataCard";
@@ -43,8 +45,9 @@ export default async function SettingsPage() {
         description={`Organization, compliance guardrails and integrations for ${org.name}.`}
       />
 
-      <div className="mb-4">
+      <div className="mb-4 grid items-start gap-4 xl:grid-cols-2">
         <SetupChecklist status={setup} />
+        <ConnectionCard status={connectionStatus()} />
       </div>
 
       <div className="mb-4 grid gap-4 xl:grid-cols-3">

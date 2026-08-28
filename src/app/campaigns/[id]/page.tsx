@@ -6,7 +6,7 @@ import { formatDate, money, percent } from "@/lib/format";
 import { getCampaign } from "@/services/campaigns";
 import { listDebtors } from "@/services/debtors";
 import { BackLink, Badge, GlassCard, Meta, PageHeader, StatCard } from "@/components/ui";
-import { CampaignActivityChart, HBarChart, PaymentsBarChart } from "@/components/charts";
+import { CampaignActivityChart, HBarChart } from "@/components/charts";
 import { StatusControls } from "./StatusControls";
 import { LiveCampaign } from "./LiveCampaign";
 import { LaunchPanel } from "./LaunchPanel";
@@ -24,12 +24,14 @@ import { BookImporter } from "@/components/BookImporter";
  */
 function StepHeading({ number, title, note }: { number: number; title: string; note: string }) {
   return (
-    <div className="mb-3 mt-6 flex items-baseline gap-2.5">
-      <span className="num flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-line bg-white/[0.04] text-[0.6875rem] text-ink-2">
+    <div className="mb-3 mt-7 flex items-center gap-3 border-t border-line-2 pt-5 first:mt-0 first:border-0 first:pt-0">
+      <span className="num flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[rgba(57,135,229,0.45)] bg-accent-soft text-[0.6875rem] font-medium text-accent">
         {number}
       </span>
-      <h2 className="text-[0.8125rem] font-medium text-ink">{title}</h2>
-      <p className="text-[0.71875rem] text-ink-3">{note}</p>
+      <div className="min-w-0">
+        <h2 className="text-[0.875rem] font-semibold tracking-tight text-ink">{title}</h2>
+        <p className="text-[0.71875rem] leading-snug text-ink-3">{note}</p>
+      </div>
     </div>
   );
 }
@@ -53,6 +55,8 @@ export default async function CampaignDetailPage({
     campaignCallLog(ctx.organizationId, id),
   ]);
   const canControl = hasRole(ctx, ["admin", "manager"]);
+  // Empty charts are decoration. Draw them once there is something in them.
+  const hasActivity = series.some((day) => day.attempts > 0 || day.connected > 0 || day.promises > 0);
 
   return (
     <div className="page-in">
@@ -67,7 +71,11 @@ export default async function CampaignDetailPage({
         }
       />
 
-      {live && (
+      {/* The live block is seven counters, an activity feed and four redial
+          buttons. Before a campaign has ever dialled they are all zero, which
+          is a screenful of nothing above the actual work. Show it once there
+          is something live to show. */}
+      {live && (live.status === "running" || live.totals.attempted > 0) && (
         <div className="mb-5">
           <LiveCampaign
             campaignId={campaign.id}
@@ -165,9 +173,31 @@ export default async function CampaignDetailPage({
         />
       )}
 
-      <div className="mb-4 grid gap-4 xl:grid-cols-3">
-        <GlassCard title="Campaign performance" subtitle="Daily activity, last 30 days" className="xl:col-span-2">
-          <CampaignActivityChart data={series} />
+      <div className="mb-4 grid items-start gap-4 xl:grid-cols-3">
+        {hasActivity && (
+          <GlassCard
+            title="Campaign performance"
+            subtitle="Daily activity, last 30 days"
+            className="xl:col-span-2"
+          >
+            <CampaignActivityChart data={series} />
+          </GlassCard>
+        )}
+        <GlassCard
+          title="Collection funnel"
+          subtitle="Debtors at each stage of the campaign workflow"
+          className={hasActivity ? undefined : "xl:col-span-2"}
+        >
+          <HBarChart
+            height={210}
+            data={[
+              { label: "In campaign", value: metrics.totalDebtors },
+              { label: "Contacted", value: metrics.contacted },
+              { label: "Connected", value: metrics.connected },
+              { label: "Promised", value: metrics.promisedDebtors },
+              { label: "Paid", value: metrics.paidDebtors },
+            ]}
+          />
         </GlassCard>
         <GlassCard title="Configuration">
           <dl>
@@ -193,26 +223,6 @@ export default async function CampaignDetailPage({
         </GlassCard>
       </div>
 
-      <div className="mb-4 grid gap-4 xl:grid-cols-2">
-        <GlassCard
-          title="Collection funnel"
-          subtitle="Debtors at each stage of the campaign workflow"
-        >
-          <HBarChart
-            height={210}
-            data={[
-              { label: "In campaign", value: metrics.totalDebtors },
-              { label: "Contacted", value: metrics.contacted },
-              { label: "Connected", value: metrics.connected },
-              { label: "Promised", value: metrics.promisedDebtors },
-              { label: "Paid", value: metrics.paidDebtors },
-            ]}
-          />
-        </GlassCard>
-        <GlassCard title="Recovered per day" subtitle="Rand value received, last 30 days">
-          <PaymentsBarChart data={series.map((s) => ({ date: s.date, received: s.recovered }))} />
-        </GlassCard>
-      </div>
 
     </div>
   );
