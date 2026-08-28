@@ -9,6 +9,7 @@ function customer(overrides: Partial<JobixCustomer> = {}): JobixCustomer {
     uuid: "cust-0001",
     phone: "+27821234567",
     name: "Sipho Nkosi",
+    suid: "ACC-0001",
     unit: "A4",
     building: "Rosebank Place",
     totalDue: 12500,

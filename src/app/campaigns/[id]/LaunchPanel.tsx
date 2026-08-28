@@ -73,6 +73,9 @@ type SendResult = {
   written: number;
   armed: number;
   attempted: number;
+  confirmed: number;
+  scanned: number;
+  scanComplete: boolean;
   callFlag: string | null;
   complete: boolean;
   nextStep: string;

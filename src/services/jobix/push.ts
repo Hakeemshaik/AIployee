@@ -64,6 +64,12 @@ export type PushResult = {
   callFlag: string | null;
   attempted: number;
   failures: PushFailure[];
+  /** Rows found on the platform afterwards, by reading it back. */
+  confirmed: number;
+  /** How much of the customer list was read to confirm them. */
+  scanned: number;
+  /** False when the read ran out of time — confirmed is then a floor. */
+  scanComplete: boolean;
   /** True when every row was written and armed. */
   complete: boolean;
   nextStep: string;
@@ -71,6 +77,20 @@ export type PushResult = {
 
 /** Timezone every customer is written with. The book is South African. */
 const TIMEZONE = "Africa/Johannesburg";
+
+/**
+ * Wall-clock budget for reading the customer list back. Read per call rather
+ * than at module load, so changing it takes effect without a restart.
+ */
+function confirmBudgetMs(): number {
+  const configured = Number(process.env.JOBIX_CONFIRM_BUDGET_MS);
+  return Number.isFinite(configured) && process.env.JOBIX_CONFIRM_BUDGET_MS ? configured : 25_000;
+}
+
+/** Last 9 digits — the stable core of a South African number in any format. */
+function phoneKey(phone: string): string {
+  return phone.replace(/[^\d]/g, "").slice(-9);
+}
 
 /**
  * Fields the AGENT owns, which a push must never overwrite.
@@ -108,18 +128,26 @@ function contactValues(row: JobixRow): Record<string, string | number> {
   return out;
 }
 
+/**
+ * The identity block.
+ *
+ * A customer record carries uuid, phone and name at the TOP level, with
+ * everything else in its fields — which is exactly how they read back. So the
+ * phone and the name belong in `main`, not only in `values`: a customer created
+ * with them buried in fields has no identity for the platform's own list to
+ * show, which is what "the write succeeded and nothing appeared" looked like.
+ */
+type Identity = { suid: string; timezone: string; phone?: string; name?: string; email?: string };
+
 async function save(
   client: JobixClient,
   companyKey: string,
-  suid: string,
+  main: Identity,
   values: Record<string, string | number>,
 ): Promise<Record<string, unknown>> {
   return client.postWrite<Record<string, unknown>>("/v1/customer/save", {
     company_key: companyKey,
-    customer_data: {
-      main: { suid, timezone: TIMEZONE },
-      values,
-    },
+    customer_data: { main, values },
   });
 }
 
@@ -203,7 +231,19 @@ export async function pushDiallingList(
     // fires the flow's insert event, and an armed row would be dialled here.
     delete values.call;
     try {
-      const response = await save(client, env.companyKey, row.suid, values);
+      const email = row.values.email ?? row.values.Email;
+      const response = await save(
+        client,
+        env.companyKey,
+        {
+          suid: row.suid,
+          timezone: TIMEZONE,
+          phone: row.phone,
+          name: row.name,
+          ...(typeof email === "string" && email ? { email } : {}),
+        },
+        values,
+      );
       writtenRows.push(row);
       const uuid = uuidFrom(response);
       if (uuid) {
@@ -222,10 +262,15 @@ export async function pushDiallingList(
   if (callFlag) {
     for (const row of writtenRows) {
       try {
-        await save(client, env.companyKey, row.suid, {
-          batch: options.batchCode,
-          call: callFlag,
-        });
+        // Arming is an update to a record that already exists, so the
+        // identity does not need repeating — and repeating it would risk
+        // rewriting a name or number the workspace has since corrected.
+        await save(
+          client,
+          env.companyKey,
+          { suid: row.suid, timezone: TIMEZONE },
+          { batch: options.batchCode, call: callFlag },
+        );
         armed += 1;
       } catch (err) {
         record(row, err, "Written, but arming failed: ");
@@ -238,12 +283,54 @@ export async function pushDiallingList(
     data: { callBatch: options.batchCode },
   });
 
-  const complete = failures.length === 0 && armed === list.rowCount;
+  // --- read it back -------------------------------------------------------
+  //
+  // A 200 from a write is not the same fact as a customer existing. This push
+  // once reported two customers written and armed while nothing appeared in the
+  // platform's own list, because the identity was in the wrong part of the
+  // payload — and every count it printed was about its own requests. So the
+  // list is read and the rows are looked for, on the suid the write upserts on,
+  // with a phone fallback for a workspace that does not return one.
+  let confirmed = 0;
+  let scanned = 0;
+  let scanComplete = true;
+  if (writtenRows.length > 0) {
+    const deadline = Date.now() + confirmBudgetMs();
+    try {
+      const { pullCustomers } = await import("./api");
+      const { customers } = await pullCustomers(client, {
+        onPage: () => {
+          if (Date.now() > deadline) {
+            scanComplete = false;
+            return false;
+          }
+        },
+      });
+      scanned = customers.length;
+      const suids = new Set(customers.map((c) => c.suid).filter(Boolean));
+      const phones = new Set(customers.map((c) => phoneKey(c.phone)).filter(Boolean));
+      confirmed = writtenRows.filter(
+        (row) => suids.has(row.suid) || phones.has(phoneKey(row.phone)),
+      ).length;
+    } catch {
+      // The confirmation is best effort: a read that fails does not unwrite
+      // anything, so the counts above still stand and this is reported as
+      // unverified rather than as a failure.
+      scanComplete = false;
+    }
+  }
+
+  const complete = failures.length === 0 && armed === list.rowCount && confirmed === list.rowCount;
+  const missing = writtenRows.length - confirmed;
   const nextStep = !callFlag
     ? `${writtenRows.length} customers are in Jobix, but nothing is armed: no call flag is configured, so the flow's filter will match nobody. Set one under Settings.`
     : complete
-      ? `${armed} customers written and armed with ${callFlag}. Start the calls — the flow dials exactly these.`
-      : `${writtenRows.length} of ${list.rowCount} written, ${armed} armed. Fix the failures below before starting, or start and dial only what is armed.`;
+      ? `${armed} customers written, armed with ${callFlag}, and confirmed present on the platform. Start the calls — the flow dials exactly these.`
+      : failures.length > 0
+        ? `${writtenRows.length} of ${list.rowCount} written, ${armed} armed. Fix the failures below before starting, or start and dial only what is armed.`
+        : !scanComplete
+          ? `${armed} written and armed. Reading the platform back found ${confirmed} of them in ${scanned} records before running out of time, so treat that as a floor rather than a total — check the customer list in Jobix.`
+          : `${armed} written and armed, but only ${confirmed} of ${writtenRows.length} could be found in the platform's ${scanned} customer records${missing > 0 ? ` — ${missing} did not land` : ""}. The write was accepted and the customer is not there, so do not start the calls yet.`;
 
   await audit({
     organizationId,
@@ -257,6 +344,8 @@ export async function pushDiallingList(
       attempted: list.rowCount,
       written: writtenRows.length,
       armed,
+      confirmed,
+      scanned,
       callFlag,
       failed: failures.length,
     },
@@ -266,6 +355,9 @@ export async function pushDiallingList(
     batchCode: options.batchCode,
     written: writtenRows.length,
     armed,
+    confirmed,
+    scanned,
+    scanComplete,
     callFlag,
     attempted: list.rowCount,
     failures: failures.slice(0, 50),

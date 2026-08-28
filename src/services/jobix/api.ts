@@ -211,6 +211,9 @@ export type JobixCustomer = {
   doNotCall: boolean;
   /** A person answered, but not the account holder. A contact, never an RPC. */
   wrongPerson: boolean;
+  /** The caller's own identifier for this customer — what the write API
+   *  upserts on, so it is how a push is verified afterwards. */
+  suid: string | null;
   callBatch: string | null;
   /** The raw `call` field — the flag the flow's entry filter reads. Kept apart
    *  from callBatch so "is this record armed to dial" can be answered. */
@@ -246,6 +249,7 @@ function toCustomer(row: Record<string, unknown>): JobixCustomer | null {
     // so attribution cannot depend on it. `call` stays as the fallback for
     // records stamped before the batch column was used.
     wrongPerson: unwrapBoolean(fields.wrong_person),
+    suid: unwrapField(row.suid) ?? unwrapField(fields.suid) ?? unwrapField(fields.SUID),
     callBatch: unwrapField(fields.batch) ?? unwrapField(fields.call),
     callFlag: unwrapField(fields.call),
     modifiedAt: modifiedAt && !Number.isNaN(modifiedAt.getTime()) ? modifiedAt : null,

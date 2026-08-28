@@ -11,14 +11,24 @@ import { db } from "@/lib/db";
 // the test reads the sequence back.
 // ---------------------------------------------------------------------------
 
-type Write = { path: string; suid: string; values: Record<string, unknown> };
+type Write = {
+  path: string;
+  suid: string;
+  main: Record<string, unknown>;
+  values: Record<string, unknown>;
+};
 const writes = vi.hoisted(() => [] as Write[]);
 const postWrite = vi.hoisted(() =>
   vi.fn(async (path: string, body: unknown) => {
     const payload = body as {
       customer_data: { main: { suid: string }; values: Record<string, unknown> };
     };
-    writes.push({ path, suid: payload.customer_data.main.suid, values: payload.customer_data.values });
+    writes.push({
+      path,
+      suid: payload.customer_data.main.suid,
+      main: payload.customer_data.main,
+      values: payload.customer_data.values,
+    });
     return { uuid: `provider-uuid-${payload.customer_data.main.suid}` };
   }),
 );
@@ -47,6 +57,43 @@ vi.mock("./client", async (importOriginal) => {
   };
 });
 
+vi.mock("./api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./api")>();
+  return {
+    ...actual,
+    // Echoes back whatever the writes created, which is what a healthy
+    // workspace does — the failure cases override this per test.
+    pullCustomers: vi.fn(async () => ({
+      customers: writes
+        .filter((w) => w.main.phone)
+        .map((w, i) => ({
+          id: i + 1,
+          uuid: `uuid-${w.suid}`,
+          suid: w.suid,
+          phone: String(w.main.phone),
+          name: String(w.main.name ?? ""),
+          unit: null,
+          building: null,
+          totalDue: null,
+          ptpConfirmed: false,
+          ptpAmount: null,
+          disputed: false,
+          paidClaimed: false,
+          escalated: false,
+          doNotCall: false,
+          wrongPerson: false,
+          callBatch: null,
+          callFlag: null,
+          modifiedAt: new Date(),
+          raw: {},
+        })),
+      rawCount: writes.length,
+      droppedStale: 0,
+      droppedDuplicate: 0,
+    })),
+  };
+});
+
 const { pushDiallingList } = await import("./push");
 
 const url = process.env.DATABASE_URL ?? "";
@@ -64,7 +111,12 @@ describe.skipIf(!scratch)("pushing customers to Jobix (integration)", () => {
       const payload = body as {
         customer_data: { main: { suid: string }; values: Record<string, unknown> };
       };
-      writes.push({ path, suid: payload.customer_data.main.suid, values: payload.customer_data.values });
+      writes.push({
+        path,
+        suid: payload.customer_data.main.suid,
+        main: payload.customer_data.main,
+        values: payload.customer_data.values,
+      });
       return { uuid: `provider-uuid-${payload.customer_data.main.suid}` };
     });
 
@@ -185,7 +237,12 @@ describe.skipIf(!scratch)("pushing customers to Jobix (integration)", () => {
       if (payload.customer_data.main.suid === "PUSH-2" && call <= 2) {
         throw new Error("phone number rejected by the workspace");
       }
-      writes.push({ path, suid: payload.customer_data.main.suid, values: payload.customer_data.values });
+      writes.push({
+        path,
+        suid: payload.customer_data.main.suid,
+        main: payload.customer_data.main,
+        values: payload.customer_data.values,
+      });
       return { uuid: `provider-uuid-${payload.customer_data.main.suid}` };
     });
 
@@ -299,7 +356,12 @@ describe.skipIf(!scratch)("a credential failure is one problem, not one per cont
       const payload = body as {
         customer_data: { main: { suid: string }; values: Record<string, unknown> };
       };
-      writes.push({ path, suid: payload.customer_data.main.suid, values: payload.customer_data.values });
+      writes.push({
+        path,
+        suid: payload.customer_data.main.suid,
+        main: payload.customer_data.main,
+        values: payload.customer_data.values,
+      });
       return { uuid: `provider-uuid-${payload.customer_data.main.suid}` };
     });
 
@@ -308,5 +370,112 @@ describe.skipIf(!scratch)("a credential failure is one problem, not one per cont
     expect(result.failures[0].reason).toContain("phone already in use");
     // The other two still went, because that failure was about one row.
     expect(result.written).toBe(2);
+  });
+});
+
+describe.skipIf(!scratch)("a write is not the same fact as a customer existing", () => {
+  let orgId = "";
+  let userId = "";
+  let campaignId = "";
+
+  beforeEach(async () => {
+    writes.length = 0;
+    postWrite.mockClear();
+    await db.campaignContact.deleteMany();
+    await db.debtAccount.deleteMany();
+    await db.debtor.deleteMany();
+    await db.campaign.deleteMany();
+    await db.auditLog.deleteMany();
+    await db.integrationSettings.deleteMany();
+    await db.user.deleteMany();
+    await db.organization.deleteMany();
+    const org = await db.organization.create({ data: { name: "Confirm Co", slug: "confirm-co" } });
+    orgId = org.id;
+    userId = (
+      await db.user.create({
+        data: { organizationId: orgId, name: "Ops", email: "confirm@example.com", role: "admin" },
+      })
+    ).id;
+    campaignId = (
+      await db.campaign.create({ data: { organizationId: orgId, name: "Run", status: "draft" } })
+    ).id;
+    const debtor = await db.debtor.create({
+      data: {
+        organizationId: orgId,
+        campaignId,
+        firstName: "Hakeem",
+        lastName: "Test",
+        accountNumber: "CONF-1",
+        phone: "+27821234567",
+        email: "hakeem@example.com",
+      },
+    });
+    await db.debtAccount.create({
+      data: {
+        organizationId: orgId,
+        debtorId: debtor.id,
+        reference: "CONF-1",
+        creditorName: "Mafadi",
+        originalBalance: 5000,
+        currentBalance: 5000,
+        dueDate: new Date("2026-07-01"),
+        daysOverdue: 58,
+      },
+    });
+    process.env.JOBIX_CALL_FLAG = "READY";
+  });
+
+  it("puts the phone and name in the identity block, not only in the fields", async () => {
+    await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-CONF" });
+    const create = writes[0];
+    // A customer created with its identity buried in fields has nothing for
+    // the platform's own list to show — which is what an accepted write that
+    // appeared nowhere looked like.
+    expect(create.main.suid).toBe("CONF-1");
+    expect(create.main.phone).toBe("+27821234567");
+    expect(create.main.name).toBe("Hakeem Test");
+    expect(create.main.email).toBe("hakeem@example.com");
+    expect(create.main.timezone).toBe("Africa/Johannesburg");
+    // Arming is an update and must not rewrite the identity.
+    const arm = writes[1];
+    expect(arm.main.phone).toBeUndefined();
+    expect(arm.main.name).toBeUndefined();
+  });
+
+  it("confirms the customer by reading the platform back", async () => {
+    const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-CONF" });
+    expect(result.confirmed).toBe(1);
+    expect(result.complete).toBe(true);
+    expect(result.nextStep).toMatch(/confirmed present/i);
+  });
+
+  it("refuses to look finished when the write was accepted and nothing landed", async () => {
+    const api = await import("./api");
+    vi.mocked(api.pullCustomers).mockResolvedValueOnce({
+      customers: [],
+      rawCount: 0,
+      droppedStale: 0,
+      droppedDuplicate: 0,
+    });
+    const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-CONF" });
+    expect(result.written).toBe(1);
+    expect(result.armed).toBe(1);
+    expect(result.confirmed).toBe(0);
+    expect(result.complete).toBe(false);
+    expect(result.nextStep).toMatch(/do not start the calls yet/i);
+  });
+
+  it("says the count is a floor when the read ran out of time", async () => {
+    const api = await import("./api");
+    // The budget is already spent, so the first page stops the scan.
+    process.env.JOBIX_CONFIRM_BUDGET_MS = "-1";
+    vi.mocked(api.pullCustomers).mockImplementationOnce(async (_client, options) => {
+      options?.onPage?.({} as never);
+      return { customers: [], rawCount: 0, droppedStale: 0, droppedDuplicate: 0 };
+    });
+    const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-CONF" });
+    expect(result.scanComplete).toBe(false);
+    expect(result.nextStep).toMatch(/floor rather than a total/i);
+    delete process.env.JOBIX_CONFIRM_BUDGET_MS;
   });
 });
