@@ -1,6 +1,8 @@
 import { db } from "@/lib/db";
 import { startOfDay } from "@/lib/format";
 import { getLatestInsight } from "@/services/insights";
+import { claimCalls } from "@/services/analytics/live";
+import { isReached } from "@/services/analytics/classify";
 
 // ---------------------------------------------------------------------------
 // Dashboard service — top metrics, 30-day chart series, and the latest
@@ -10,7 +12,18 @@ import { getLatestInsight } from "@/services/insights";
 export async function getDashboardData(organizationId: string) {
   const since = new Date(Date.now() - 30 * 86_400_000);
 
-  const [accounts, payments, calls, promises, activeCampaigns, campaignsWithMetrics, analyses, insight] =
+  const [
+    accounts,
+    payments,
+    calls,
+    voiceCalls,
+    debtorIdentities,
+    promises,
+    activeCampaigns,
+    campaignsWithMetrics,
+    analyses,
+    insight,
+  ] =
     await Promise.all([
       db.debtAccount.findMany({
         where: { organizationId },
@@ -23,6 +36,24 @@ export async function getDashboardData(organizationId: string) {
       db.call.findMany({
         where: { organizationId, startedAt: { gte: since } },
         select: { status: true, startedAt: true, debtorId: true },
+      }),
+      // Calls imported from the voice platform. These are where the real
+      // volume lives: ingestion writes JobixConversation, never Call, so a
+      // dashboard reading only Call reports nobody was contacted however many
+      // thousand calls have been imported.
+      db.jobixConversation.findMany({
+        where: { organizationId, startedAt: { gte: since } },
+        select: {
+          startedAt: true,
+          phone: true,
+          contactUuid: true,
+          durationSeconds: true,
+          transcript: { select: { userTurns: true, userWords: true, userText: true } },
+        },
+      }),
+      db.debtor.findMany({
+        where: { organizationId },
+        select: { id: true, phone: true, providerContactUuid: true },
       }),
       db.promiseToPay.findMany({
         where: { organizationId },
@@ -50,12 +81,27 @@ export async function getDashboardData(organizationId: string) {
   const totalRecovered = payments.reduce((s, p) => s + p.amount, 0);
   const openPromises = promises.filter((p) => p.status === "pending");
 
+  // --- who was contacted, from BOTH sources and on one definition ---------
+  //
+  // Reach is read from the transcript, never from a status flag: the provider's
+  // own "completed" is not evidence a person spoke. Platform-native calls have
+  // no transcript, so their status is all there is for those.
+  const voiceByDebtor = claimCalls(debtorIdentities, voiceCalls);
+  const contactedIds = new Set<string>(calls.map((c) => c.debtorId));
+  const reachedIds = new Set<string>(
+    calls.filter((c) => c.status === "completed").map((c) => c.debtorId),
+  );
+  for (const [debtorId, list] of voiceByDebtor) {
+    contactedIds.add(debtorId);
+    if (list.some((call) => call.transcript && isReached(call.transcript))) reachedIds.add(debtorId);
+  }
+
   const metrics = {
     totalOutstanding,
     totalRecovered,
     recoveryRate: totalOutstanding + totalRecovered > 0 ? totalRecovered / (totalOutstanding + totalRecovered) : 0,
-    debtorsContacted: new Set(calls.map((c) => c.debtorId)).size,
-    successfulContacts: new Set(calls.filter((c) => c.status === "completed").map((c) => c.debtorId)).size,
+    debtorsContacted: contactedIds.size,
+    successfulContacts: reachedIds.size,
     promisesOpen: openPromises.length,
     promiseValue: openPromises.reduce((s, p) => s + p.amount, 0),
     paymentsReceived: payments.filter((p) => p.paidAt >= since).length,
@@ -84,10 +130,13 @@ export async function getDashboardData(organizationId: string) {
   const contactSeries = days.map((day) => {
     const next = new Date(day.getTime() + 86_400_000);
     const dayCalls = calls.filter((c) => c.startedAt >= day && c.startedAt < next);
-    const connected = dayCalls.filter((c) => c.status === "completed").length;
+    const dayVoice = voiceCalls.filter((c) => c.startedAt >= day && c.startedAt < next);
+    const connected =
+      dayCalls.filter((c) => c.status === "completed").length +
+      dayVoice.filter((c) => c.transcript && isReached(c.transcript)).length;
     return {
       date: day.toISOString().slice(0, 10),
-      attempts: dayCalls.length,
+      attempts: dayCalls.length + dayVoice.length,
       connected,
     };
   });

@@ -39,6 +39,48 @@ function normalise(phone: string): string {
   return phone.replace(/[^\d]/g, "").slice(-9);
 }
 
+/**
+ * Assign each call to exactly one account: provider identifier first, phone
+ * number for whatever is left over.
+ *
+ * Exported because the dashboard has to answer "how many were contacted" with
+ * the same rule the analytics screen uses. Two definitions of contact in one
+ * product is how a dashboard ends up reading zero while the analytics read a
+ * thousand.
+ */
+export function claimCalls<
+  D extends { id: string; phone: string; providerContactUuid: string | null },
+  C extends { phone: string; contactUuid: string | null },
+>(debtors: D[], conversations: C[]): Map<string, C[]> {
+  const debtorByUuid = new Map<string, string>();
+  const debtorByPhone = new Map<string, string>();
+  for (const debtor of debtors) {
+    if (debtor.providerContactUuid) debtorByUuid.set(debtor.providerContactUuid, debtor.id);
+    const key = normalise(debtor.phone);
+    // First writer wins, so a duplicated number resolves the same way twice.
+    if (key && !debtorByPhone.has(key)) debtorByPhone.set(key, debtor.id);
+  }
+
+  const claimed = new Map<string, C[]>();
+  const claim = (debtorId: string, call: C) => {
+    const list = claimed.get(debtorId) ?? [];
+    list.push(call);
+    claimed.set(debtorId, list);
+  };
+
+  const unclaimed: C[] = [];
+  for (const conversation of conversations) {
+    const byIdentifier = conversation.contactUuid ? debtorByUuid.get(conversation.contactUuid) : undefined;
+    if (byIdentifier) claim(byIdentifier, conversation);
+    else unclaimed.push(conversation);
+  }
+  for (const conversation of unclaimed) {
+    const debtorId = debtorByPhone.get(normalise(conversation.phone));
+    if (debtorId) claim(debtorId, conversation);
+  }
+  return claimed;
+}
+
 export async function buildLiveAnalytics(
   organizationId: string,
   options: { campaignId?: string } = {},
@@ -81,35 +123,7 @@ export async function buildLiveAnalytics(
     orderBy: { startedAt: "asc" },
   });
 
-  type Call = (typeof conversations)[number];
-
-  // --- claim calls: identifier first, then phone for whatever is left ------
-  const debtorByUuid = new Map<string, string>();
-  const debtorByPhone = new Map<string, string>();
-  for (const debtor of debtors) {
-    if (debtor.providerContactUuid) debtorByUuid.set(debtor.providerContactUuid, debtor.id);
-    const key = normalise(debtor.phone);
-    // First writer wins, so a duplicated number resolves the same way twice.
-    if (key && !debtorByPhone.has(key)) debtorByPhone.set(key, debtor.id);
-  }
-
-  const callsByDebtor = new Map<string, Call[]>();
-  const claim = (debtorId: string, call: Call) => {
-    const list = callsByDebtor.get(debtorId) ?? [];
-    list.push(call);
-    callsByDebtor.set(debtorId, list);
-  };
-
-  const unclaimed: Call[] = [];
-  for (const conversation of conversations) {
-    const byIdentifier = conversation.contactUuid ? debtorByUuid.get(conversation.contactUuid) : undefined;
-    if (byIdentifier) claim(byIdentifier, conversation);
-    else unclaimed.push(conversation);
-  }
-  for (const conversation of unclaimed) {
-    const debtorId = debtorByPhone.get(normalise(conversation.phone));
-    if (debtorId) claim(debtorId, conversation);
-  }
+  const callsByDebtor = claimCalls(debtors, conversations);
 
   const rows: LiveAnalyticsRow[] = [];
   const accounts: ClassifiableAccount[] = [];

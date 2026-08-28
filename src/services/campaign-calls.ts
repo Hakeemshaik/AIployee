@@ -15,11 +15,12 @@ import { reachVerdict } from "@/services/analytics/classify";
 //      uuid. The last nine digits, which is the stable core of a South
 //      African number in any format.
 //
-// The batch code is the campaign's dialling marker: it is written into every
-// row's `call` column when the list is generated, and read back off the
-// customer record at ingestion. Calls that predate the batch being sent
-// belong to an earlier run, so they are excluded and counted rather than
-// folded in to flatter the numbers.
+// The batch code is the campaign's dialling marker. The generated list writes
+// it to the `batch` column, which exists only to say which run a customer came
+// from; the separate `call` column carries the fixed flag the flow's entry
+// filter matches on, so starting a run never means editing the flow. Calls
+// that predate the batch being sent belong to an earlier run, so they are
+// excluded and counted rather than folded in to flatter the numbers.
 // ---------------------------------------------------------------------------
 
 export type CampaignCallMatch = "contact_uuid" | "phone";

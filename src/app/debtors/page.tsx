@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Upload } from "lucide-react";
-import { getContext } from "@/lib/auth";
+import { getContext, hasRole } from "@/lib/auth";
 import { label } from "@/lib/domain";
 import { formatDate, money } from "@/lib/format";
 import { listCampaignOptions, listDebtors, type DebtorFilters as Filters } from "@/services/debtors";
 import { Badge, EmptyState, GlassCard, PageHeader } from "@/components/ui";
 import { DebtorFilters } from "./Filters";
+import { findDuplicates } from "@/services/duplicates";
+import { DuplicatesCard, type DuplicateReport } from "./DuplicatesCard";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Debtors" };
@@ -39,9 +41,12 @@ export default async function DebtorsPage({
     promiseStatus: params.promise as Filters["promiseStatus"],
   };
 
-  const [rows, campaigns] = await Promise.all([
+  const [rows, campaigns, duplicates] = await Promise.all([
     listDebtors(ctx.organizationId, filters),
     listCampaignOptions(ctx.organizationId),
+    // Read on every visit, because a duplicate arrives with an import and the
+    // damage is invisible until somebody looks.
+    hasRole(ctx, ["admin", "manager"]) ? findDuplicates(ctx.organizationId) : null,
   ]);
   const totalOutstanding = rows.reduce((s, r) => s + r.outstanding, 0);
 
@@ -56,6 +61,13 @@ export default async function DebtorsPage({
           </Link>
         }
       />
+      {duplicates && duplicates.groups.length > 0 && (
+        <DuplicatesCard
+          initial={JSON.parse(JSON.stringify(duplicates)) as DuplicateReport}
+          canMerge={hasRole(ctx, ["admin"])}
+        />
+      )}
+
       <DebtorFilters campaigns={campaigns} />
       <GlassCard pad={false}>
         {rows.length === 0 ? (
