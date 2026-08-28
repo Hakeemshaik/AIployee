@@ -391,6 +391,13 @@ model IntegrationSettings {
   endpoints      String?
   // JSON map of provider status/result -> canonical internal outcome
   outcomeMap     String?
+  // The dialling flow. None of these three is a secret — they are ids visible
+  // in the flow builder's own URL — and keeping them in environment variables
+  // meant a redeploy for every change, so they live here and env is only the
+  // fallback for a deployment that has not set them yet.
+  flowUuid        String? // the id in the flow's URL: /automation/<uuid>
+  triggerNodeUuid String? // the entry node the Run button triggers
+  callFlag        String? // the fixed value the flow's entry filter matches on
   pollEnabled    Boolean @default(false)
   pollCursor     String? // newest provider record already ingested
   lastSyncAt     DateTime?

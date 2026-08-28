@@ -1,12 +1,14 @@
 import { KeyRound, Webhook } from "lucide-react";
-import { getContext } from "@/lib/auth";
+import { getContext, hasRole } from "@/lib/auth";
 import { EVENT_TYPES } from "@/lib/domain";
 import { formatDateTime } from "@/lib/format";
 import { getSettings } from "@/services/settings";
 import { setupStatus } from "@/services/setup-status";
 import { connectionStatus } from "@/services/connection-status";
+import { loadFlowConfig } from "@/services/flow-config";
 import { SetupChecklist } from "@/components/SetupChecklist";
 import { ConnectionCard } from "./ConnectionCard";
+import { FlowCard } from "./FlowCard";
 import { Badge, GlassCard, Meta, PageHeader } from "@/components/ui";
 import { ComplianceForm } from "./ComplianceForm";
 import { ResetDataCard } from "./ResetDataCard";
@@ -36,6 +38,7 @@ export default async function SettingsPage() {
   const ctx = await getContext();
   const { compliance, apiKeys, users, org } = await getSettings(ctx.organizationId);
   const setup = await setupStatus(ctx.organizationId);
+  const flow = await loadFlowConfig(ctx.organizationId);
   const aiLive = process.env.AI_PROVIDER === "claude" && !!process.env.ANTHROPIC_API_KEY;
 
   return (
@@ -47,7 +50,10 @@ export default async function SettingsPage() {
 
       <div className="mb-4 grid items-start gap-4 xl:grid-cols-2">
         <SetupChecklist status={setup} />
-        <ConnectionCard status={connectionStatus()} />
+        <div className="grid gap-4">
+          <ConnectionCard status={connectionStatus()} />
+          <FlowCard initial={flow} canEdit={hasRole(ctx, ["admin"])} />
+        </div>
       </div>
 
       <div className="mb-4 grid gap-4 xl:grid-cols-3">

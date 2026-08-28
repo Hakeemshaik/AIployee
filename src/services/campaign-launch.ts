@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { callColumnValue, loadFlowConfig } from "@/services/flow-config";
 import { audit } from "@/lib/audit";
 import { buildJobixExport, type JobixExport } from "@/services/jobix-export";
 import { pullCustomers } from "@/services/jobix/api";
@@ -75,7 +76,7 @@ export async function launchState(
     excluded: preview.excluded,
     window: checkCallingWindow(),
     callingEnabled: process.env.JOBIX_CALLING_ENABLED === "true",
-    triggerConfigured: !!process.env.JOBIX_FLOW_UUID && !!process.env.JOBIX_TRIGGER_NODE_UUID,
+    triggerConfigured: (await loadFlowConfig(organizationId)).triggerReady,
     scheduledFor: campaign.scheduledFor,
     scheduleError: campaign.scheduleError,
   };
@@ -152,7 +153,7 @@ export async function checkArmed(
   const env = loadJobixEnv();
   if (!env) throw new JobixError("Jobix is not configured on this server.", "not_configured");
 
-  const flag = process.env.JOBIX_CALL_FLAG?.trim() || campaign.providerCampaignId;
+  const flag = callColumnValue(await loadFlowConfig(organizationId), campaign.providerCampaignId ?? undefined);
   const deadline = Date.now() + (options.budgetMs ?? 45_000);
   let truncated = false;
 
@@ -231,17 +232,22 @@ export async function startCampaignCalls(
   }
 
   const env = loadJobixEnv();
-  const nodeUuid = process.env.JOBIX_TRIGGER_NODE_UUID;
-  if (!env || !env.flowUuid || !nodeUuid) {
+  const flow = await loadFlowConfig(organizationId);
+  if (!env || !flow.flowUuid || !flow.triggerNodeUuid) {
     throw new JobixError(
-      "The flow trigger is not configured. Set JOBIX_FLOW_UUID and JOBIX_TRIGGER_NODE_UUID.",
+      "The flow trigger is not configured. Set the flow and its trigger node under Settings.",
       "not_configured",
     );
   }
 
-  const client = new JobixClient(env);
+  // The client's own flow id comes from the environment; the saved setting
+  // wins, so changing flows never needs a redeploy.
+  const client = new JobixClient({ ...env, flowUuid: flow.flowUuid });
   const triggerPath = process.env.JOBIX_TRIGGER_PATH || "/api/nodes/now/trigger";
-  await client.postDashboard(triggerPath, { flowUuid: env.flowUuid, nodeUuid });
+  await client.postDashboard(triggerPath, {
+    flowUuid: flow.flowUuid,
+    nodeUuid: flow.triggerNodeUuid,
+  });
 
   await db.campaign.update({
     where: { id: campaign.id },
@@ -254,7 +260,7 @@ export async function startCampaignCalls(
     action: "campaign.calls_started",
     entityType: "campaign",
     entityId: campaign.id,
-    detail: { batchCode: code, flowUuid: env.flowUuid },
+    detail: { batchCode: code, flowUuid: flow.flowUuid },
   });
 
   return {

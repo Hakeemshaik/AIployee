@@ -334,7 +334,18 @@ export type JobixNodeEvent = {
   createdAt: Date;
 };
 
-export type JobixFlowNode = { companyNodeId: number; name: string | null; number: number | null };
+export type JobixFlowNode = {
+  companyNodeId: number;
+  name: string | null;
+  number: number | null;
+  /** The node's own uuid, which is what the trigger request names. Null when
+   *  this flow's node list does not carry one — the value then has to come
+   *  from a capture of the builder's Run button. */
+  uuid: string | null;
+  /** The node's kind where the payload says so ("event", "filter", "call"…),
+   *  which is how the entry node is recognised without opening the builder. */
+  kind: string | null;
+};
 
 export async function fetchFlowNodes(client: JobixClient, flowUuid: string): Promise<JobixFlowNode[]> {
   const payload = await client.get<{ data?: Record<string, unknown>[] }>(`/api/flows/${flowUuid}/nodes`);
@@ -342,7 +353,17 @@ export async function fetchFlowNodes(client: JobixClient, flowUuid: string): Pro
     companyNodeId: Number(row.company_node_id ?? row.id ?? 0),
     name: row.name ? String(row.name) : null,
     number: row.number === undefined || row.number === null ? null : Number(row.number),
+    uuid: firstString(row.uuid, row.node_uuid, row.company_node_uuid),
+    kind: firstString(row.type, row.node_type, row.kind),
   }));
+}
+
+function firstString(...candidates: unknown[]): string | null {
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim() !== "") return candidate.trim();
+    if (typeof candidate === "number") return String(candidate);
+  }
+  return null;
 }
 
 /**

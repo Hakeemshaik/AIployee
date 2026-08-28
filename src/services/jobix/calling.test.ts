@@ -67,12 +67,24 @@ describe("flow trigger contract (captured from the flow builder)", () => {
   it("sends camelCase flowUuid and nodeUuid", async () => {
     const source = (await import("node:fs")).readFileSync("src/services/jobix/calling.ts", "utf8");
     const trigger = source.slice(source.indexOf("postDashboard("));
-    expect(trigger).toContain("flowUuid: env.flowUuid");
-    expect(trigger).toContain("nodeUuid: triggerNodeUuid");
+    expect(trigger).toContain("flowUuid: flow.flowUuid");
+    expect(trigger).toContain("nodeUuid: flow.triggerNodeUuid");
   });
 
   it("stays inert without the Now node uuid", async () => {
     const source = (await import("node:fs")).readFileSync("src/services/jobix/calling.ts", "utf8");
-    expect(source).toContain("env.flowUuid && triggerNodeUuid");
+    expect(source).toContain("flow.flowUuid && flow.triggerNodeUuid");
+  });
+
+  it("arms records with the flow's flag and attributes them with the batch code", async () => {
+    // The bug this pins: writing the batch code into `call` while the flow
+    // filters on a fixed flag arms nothing, and the run dials nobody. The two
+    // columns must be written from the shared resolver, not improvised here.
+    const source = (await import("node:fs")).readFileSync("src/services/jobix/calling.ts", "utf8");
+    const stamp = source.slice(source.indexOf("/v1/customer/save"), source.indexOf("stamped += 1"));
+    expect(stamp).toContain("batch: batch.batchCode");
+    expect(stamp).toContain("call: armWith");
+    expect(stamp).not.toContain("call: batch.batchCode");
+    expect(source).toContain("callColumnValue(flow, batch.batchCode)");
   });
 });

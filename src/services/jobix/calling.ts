@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { blockGuests } from "@/lib/session";
 import { JobixClient, JobixError, loadJobixEnv } from "./client";
+import { callColumnValue, loadFlowConfig } from "@/services/flow-config";
 
 // ---------------------------------------------------------------------------
 // Calling.
@@ -30,12 +31,11 @@ import { JobixClient, JobixError, loadJobixEnv } from "./client";
 // Until JOBIX_TRIGGER_NODE_UUID is set the run stops after the stamp with
 // instructions instead of pretending.
 
-export const TRIGGER_DISCOVERY = `Automatic dialling needs two settings (from the flow builder):
-  1. JOBIX_FLOW_UUID — the id in the flow's URL (/automation/<uuid>).
-  2. JOBIX_TRIGGER_NODE_UUID — the "Now" node's uuid, from a DevTools capture of the Run button.
-Then set JOBIX_CALLING_ENABLED=true — but FIRST confirm the flow's entry filter gates on the
-\`call\` field, because the trigger itself carries no audience: Jobix dials whatever the flow's
-filter matches.`;
+export const TRIGGER_DISCOVERY = `Automatic dialling needs the flow and its trigger node, both set
+under Settings — paste the flow's address and pick the node the Run button fires. Then set
+JOBIX_CALLING_ENABLED=true, but FIRST confirm the flow's entry filter gates on the \`call\` field,
+because the trigger itself carries no audience: Jobix dials whatever the flow's filter matches at
+run time.`;
 
 /** Calling windows in South African time. No Sundays. */
 export const CALLING_WINDOWS: Record<number, { start: number; end: number } | null> = {
@@ -210,7 +210,22 @@ export async function dispatchBatch(
     throw new JobixError("Every selected account was excluded by the calling rules.", "rejected");
   }
 
-  // --- stamp the batch code ---
+  // --- stamp the batch code and arm the record ---
+  //
+  // Two columns, two jobs, and conflating them is a bug that arms nothing:
+  //
+  //   batch — this run's code. Attribution only; the flow never writes to it,
+  //           so results can be tied back to this run afterwards.
+  //   call  — the value the flow's entry filter matches on. When a fixed flag
+  //           is configured this is that word, so the filter is written once
+  //           and never edited again; without one it falls back to the batch
+  //           code, which dials but means editing the filter every run.
+  //
+  // This path used to write the batch code into `call`, which meant a flow
+  // filtering on the fixed flag matched zero records and the run dialled
+  // nobody. Both values now come from the same resolver as the file export.
+  const flow = await loadFlowConfig(organizationId);
+  const armWith = callColumnValue(flow, batch.batchCode);
   let stamped = 0;
   for (const candidate of batch.candidates) {
     if (!candidate.suid) continue;
@@ -218,7 +233,7 @@ export async function dispatchBatch(
       company_key: env.companyKey,
       customer_data: {
         main: { suid: candidate.suid, timezone: "Africa/Johannesburg" },
-        values: { call: batch.batchCode },
+        values: { batch: batch.batchCode, ...(armWith ? { call: armWith } : {}) },
       },
     });
     stamped += 1;
@@ -230,10 +245,9 @@ export async function dispatchBatch(
   try {
     const { pullCustomers } = await import("./api");
     const { customers } = await pullCustomers(client, { maxPages: 20 });
-    const stampedSuids = new Set(batch.candidates.map((c) => c.suid));
-    verified = customers.filter(
-      (c) => c.callBatch === batch.batchCode || (c.callBatch && stampedSuids.has(c.callBatch)),
-    ).length;
+    // Verify on the batch column: `call` carries a fixed flag shared by every
+    // run, so counting it would count last week's leftovers as this run's.
+    verified = customers.filter((c) => c.callBatch === batch.batchCode).length;
   } catch {
     // Verification is best-effort; the audit records what was attempted.
   }
@@ -242,21 +256,20 @@ export async function dispatchBatch(
   // Path and payload come from a DevTools capture, not a guess. The default
   // path can be overridden with JOBIX_TRIGGER_PATH if Jobix ever moves it.
   const triggerPath = process.env.JOBIX_TRIGGER_PATH || "/api/nodes/now/trigger";
-  const triggerNodeUuid = process.env.JOBIX_TRIGGER_NODE_UUID;
   let triggered = false;
   let nextAction = TRIGGER_DISCOVERY;
 
-  if (env.flowUuid && triggerNodeUuid) {
+  if (flow.flowUuid && flow.triggerNodeUuid) {
     await client.postDashboard(triggerPath, {
-      flowUuid: env.flowUuid,
-      nodeUuid: triggerNodeUuid,
+      flowUuid: flow.flowUuid,
+      nodeUuid: flow.triggerNodeUuid,
     });
     triggered = true;
     nextAction =
       `Triggered the flow for batch ${batch.batchCode} (${stamped} account(s) stamped). ` +
-      `Jobix dials what the flow's own filter matches — the stamp on the \`call\` field is what scopes it to this batch.`;
+      `Jobix dials what the flow's own filter matches — the \`call\` field carrying ${armWith} is what arms a record.`;
   } else {
-    nextAction = `Batch ${batch.batchCode} is stamped on ${stamped} account(s). Press Run on the flow in Jobix, or configure the trigger: ${TRIGGER_DISCOVERY}`;
+    nextAction = `Batch ${batch.batchCode} is stamped on ${stamped} account(s), armed with \`call\` = ${armWith}. Press Run on the flow in Jobix, or configure the trigger: ${TRIGGER_DISCOVERY}`;
   }
 
   await audit({

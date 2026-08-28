@@ -13,6 +13,10 @@ import { loadJobixEnv, JobixClient, JobixError } from "@/services/jobix/client";
 //             looks like from here
 //   set     — present with a value (never the value itself)
 //
+// The flow's own ids are NOT listed here. They are saved in the database and
+// shown on the Dialling flow card, and listing them in both places meant one
+// card reading "Not set" while the other showed them saved.
+//
 // A deployment only sees the variables that existed WHEN IT WAS BUILT. Adding
 // one and not redeploying leaves the old deployment blind to it, which reads
 // exactly like the variable having disappeared.
@@ -46,9 +50,6 @@ function stateOf(name: string): VarState {
 const VARIABLES: { name: string; required: boolean; purpose: string }[] = [
   { name: "JOBIX_EMAIL", required: true, purpose: "The dashboard sign-in. Reading calls needs it." },
   { name: "JOBIX_PASSWORD", required: true, purpose: "The dashboard sign-in." },
-  { name: "JOBIX_FLOW_UUID", required: false, purpose: "Which flow to trigger when starting calls." },
-  { name: "JOBIX_TRIGGER_NODE_UUID", required: false, purpose: "The node inside that flow to trigger." },
-  { name: "JOBIX_CALL_FLAG", required: false, purpose: "The fixed value written to the call column, so the flow filter never needs editing." },
   { name: "JOBIX_CALLING_ENABLED", required: false, purpose: "Must be true before the platform may dial." },
   { name: "CRON_SECRET", required: false, purpose: "Enables unattended imports and scheduled starts." },
   { name: "AUTH_SECRET", required: false, purpose: "Signs session cookies. Without it sessions reset when the store is cleared." },

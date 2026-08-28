@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { loadFlowConfig } from "@/services/flow-config";
 import { loadJobixEnv } from "@/services/jobix/client";
 import { count } from "@/lib/format";
 
@@ -53,7 +54,7 @@ export async function setupStatus(organizationId: string): Promise<SetupStatus> 
   ]);
 
   const callingEnabled = process.env.JOBIX_CALLING_ENABLED === "true";
-  const triggerConfigured = !!process.env.JOBIX_FLOW_UUID && !!process.env.JOBIX_TRIGGER_NODE_UUID;
+  const triggerConfigured = (await loadFlowConfig(organizationId)).triggerReady;
   const scheduleConfigured = !!process.env.CRON_SECRET;
 
   const steps: SetupStep[] = [
@@ -120,7 +121,7 @@ export async function setupStatus(organizationId: string): Promise<SetupStatus> 
         callingEnabled && triggerConfigured
           ? "Dialling and the flow trigger are both configured."
           : !triggerConfigured
-            ? "The flow trigger is not configured. Set JOBIX_FLOW_UUID and JOBIX_TRIGGER_NODE_UUID."
+            ? "The flow trigger is not configured. Set the flow and its trigger node under Settings."
             : "The trigger is configured but dialling is off. Set JOBIX_CALLING_ENABLED=true once the flow's entry filter gates on the call field.",
       href: "/campaigns",
       hrefLabel: "Campaigns",

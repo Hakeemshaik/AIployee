@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { callColumnValue, loadFlowConfig } from "@/services/flow-config";
 
 // ---------------------------------------------------------------------------
 // Jobix import export.
@@ -111,8 +112,9 @@ export async function buildJobixExport(
     `${(campaign?.name ?? "All accounts").replace(/[^A-Za-z0-9 -]/g, "").trim()} ${today.toISOString().slice(0, 10)}`;
 
   // The flag the flow's entry filter looks for. A fixed word means the filter
-  // never has to be edited again.
-  const callFlag = process.env.JOBIX_CALL_FLAG?.trim() || options.batchCode;
+  // never has to be edited again. Resolved through the shared config so the
+  // file export and the in-app dialler always write the same thing.
+  const callFlag = callColumnValue(await loadFlowConfig(organizationId), options.batchCode);
 
   const rows: string[] = [];
   for (const debtor of debtors) {
