@@ -64,6 +64,15 @@ export type PushResult = {
   callFlag: string | null;
   attempted: number;
   failures: PushFailure[];
+  /** New customers on the platform. */
+  created: number;
+  /** Existing customers matched by their suid and updated. */
+  updated: number;
+  /** Existing customers that had no suid — matched by number and written
+   *  against the provider's own id so the record was not duplicated. */
+  relinked: number;
+  /** Numbers that went from one record to two: a relink that did not land. */
+  duplicated: number;
   /** Rows found on the platform afterwards, by reading it back. */
   confirmed: number;
   /** How much of the customer list was read to confirm them. */
@@ -140,7 +149,57 @@ function contactValues(row: JobixRow): Record<string, string | number> {
  * with them buried in fields has no identity for the platform's own list to
  * show, which is what "the write succeeded and nothing appeared" looked like.
  */
-type Identity = { suid: string; timezone: string; phone?: string; name?: string; email?: string };
+type Identity = {
+  suid: string;
+  timezone: string;
+  /** The provider's own customer id, sent when this record already exists
+   *  under a different key so the write lands on it instead of making a
+   *  second one. */
+  uuid?: string;
+  phone?: string;
+  name?: string;
+  email?: string;
+};
+
+type ExistingCustomer = { uuid: string; suid: string | null; phone: string };
+
+/**
+ * The workspace's customers, within a wall-clock budget.
+ *
+ * Bounded because this cannot always finish inside a request on a large book,
+ * and an unfinished read has to be reported as unfinished rather than as an
+ * empty platform — treating a truncated scan as "nobody is there" would create
+ * a duplicate for every account it did not reach.
+ */
+async function readCustomers(
+  client: JobixClient,
+): Promise<{ customers: ExistingCustomer[]; complete: boolean }> {
+  const deadline = Date.now() + confirmBudgetMs();
+  let complete = true;
+  try {
+    const { pullCustomers } = await import("./api");
+    const { customers } = await pullCustomers(client, {
+      onPage: () => {
+        if (Date.now() > deadline) {
+          complete = false;
+          return false;
+        }
+      },
+    });
+    return {
+      customers: customers.map((customer) => ({
+        uuid: customer.uuid,
+        suid: customer.suid,
+        phone: customer.phone,
+      })),
+      complete,
+    };
+  } catch {
+    // A read that fails does not unwrite anything and must not be mistaken for
+    // an empty workspace.
+    return { customers: [], complete: false };
+  }
+}
 
 async function save(
   client: JobixClient,
@@ -214,6 +273,42 @@ export async function pushDiallingList(
   const failures: PushFailure[] = [];
   const writtenRows: JobixRow[] = [];
 
+  // --- who is already there ------------------------------------------------
+  //
+  // The write upserts on the suid, and customers put on the platform by a
+  // pasted file have NO suid — that column is empty in the import template. So
+  // a push keyed only on suid does not update those people, it creates a second
+  // record for each of them: the account looks untouched while a duplicate
+  // appears elsewhere in the list.
+  //
+  // Reading first makes the difference visible. A record found by suid is an
+  // ordinary update. One found only by phone already exists under a different
+  // key, and the write carries the provider's own customer id so it lands on
+  // that record and stamps the suid onto it — after which it matches by suid
+  // like everything else.
+  const before = await readCustomers(client);
+  if (!before.complete) {
+    // Refusing is the conservative direction. A partial list means an account
+    // that IS on the platform may not have been seen, and writing it then
+    // creates a second record for a real person — damage in their live
+    // dialling data, to save a wait.
+    throw new JobixError(
+      `The platform's customer list could not be read in full (${before.customers.length} records read), so this push cannot tell which of these accounts are already there. Writing them now risks creating a duplicate for anyone it missed. Raise JOBIX_CONFIRM_BUDGET_MS and try again.`,
+      "rejected",
+    );
+  }
+  const bySuid = new Map<string, ExistingCustomer>();
+  const byPhone = new Map<string, ExistingCustomer>();
+  for (const customer of before.customers) {
+    if (customer.suid) bySuid.set(customer.suid, customer);
+    const key = phoneKey(customer.phone);
+    if (key && !byPhone.has(key)) byPhone.set(key, customer);
+  }
+
+  let created = 0;
+  let updated = 0;
+  let relinked = 0;
+
   /**
    * A per-row failure, unless it is the kind that will repeat for every row.
    *
@@ -241,18 +336,26 @@ export async function pushDiallingList(
     delete values.call;
     try {
       const email = row.values.email ?? row.values.Email;
+      const known = bySuid.get(row.suid);
+      const samePhone = known ? null : byPhone.get(phoneKey(row.phone)) ?? null;
       const response = await save(
         client,
         env.companyKey,
         {
           suid: row.suid,
           timezone: TIMEZONE,
+          // Only when this record exists under another key. Sending it
+          // otherwise would name a customer that does not exist yet.
+          ...(samePhone ? { uuid: samePhone.uuid } : {}),
           phone: row.phone,
           name: row.name,
           ...(typeof email === "string" && email ? { email } : {}),
         },
         values,
       );
+      if (known) updated += 1;
+      else if (samePhone) relinked += 1;
+      else created += 1;
       writtenRows.push(row);
       const uuid = uuidFrom(response);
       if (uuid) {
@@ -301,43 +404,59 @@ export async function pushDiallingList(
   // list is read and the rows are looked for, on the suid the write upserts on,
   // with a phone fallback for a workspace that does not return one.
   let confirmed = 0;
-  let scanned = 0;
-  let scanComplete = true;
+  let scanned = before.customers.length;
+  let scanComplete: boolean = before.complete;
+  let duplicated = 0;
   if (writtenRows.length > 0) {
-    const deadline = Date.now() + confirmBudgetMs();
-    try {
-      const { pullCustomers } = await import("./api");
-      const { customers } = await pullCustomers(client, {
-        onPage: () => {
-          if (Date.now() > deadline) {
-            scanComplete = false;
-            return false;
-          }
-        },
-      });
-      scanned = customers.length;
-      const suids = new Set(customers.map((c) => c.suid).filter(Boolean));
-      const phones = new Set(customers.map((c) => phoneKey(c.phone)).filter(Boolean));
-      confirmed = writtenRows.filter(
-        (row) => suids.has(row.suid) || phones.has(phoneKey(row.phone)),
-      ).length;
-    } catch {
-      // The confirmation is best effort: a read that fails does not unwrite
-      // anything, so the counts above still stand and this is reported as
-      // unverified rather than as a failure.
-      scanComplete = false;
+    const after = await readCustomers(client);
+    scanned = after.customers.length;
+    scanComplete = after.complete;
+    const suids = new Set(after.customers.map((c) => c.suid).filter(Boolean));
+    const phones = new Map<string, number>();
+    for (const customer of after.customers) {
+      const key = phoneKey(customer.phone);
+      if (key) phones.set(key, (phones.get(key) ?? 0) + 1);
+    }
+    confirmed = writtenRows.filter(
+      (row) => suids.has(row.suid) || (phones.get(phoneKey(row.phone)) ?? 0) > 0,
+    ).length;
+    // Did relinking work? If a number that had one record now has two, the
+    // write made a second customer instead of landing on the first — the exact
+    // damage this reading was added to prevent, so it is reported rather than
+    // left for someone to find.
+    if (after.complete) {
+      for (const row of writtenRows) {
+        const key = phoneKey(row.phone);
+        if (!key) continue;
+        const wasThere = byPhone.has(key) ? 1 : 0;
+        const nowThere = phones.get(key) ?? 0;
+        if (wasThere === 1 && nowThere > 1) duplicated += 1;
+      }
     }
   }
 
   const complete =
-    failures.length === 0 && armed === list.rowCount && confirmed === list.rowCount && flagIsFixed;
+    failures.length === 0 &&
+    armed === list.rowCount &&
+    confirmed === list.rowCount &&
+    flagIsFixed &&
+    duplicated === 0;
   const missing = writtenRows.length - confirmed;
-  const nextStep = !flagIsFixed && callFlag
+  const made = [
+    created > 0 ? `${created} created` : null,
+    updated > 0 ? `${updated} updated` : null,
+    relinked > 0 ? `${relinked} matched to an existing record by number` : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
+  const nextStep = duplicated > 0
+    ? `${duplicated} account(s) now have two records on the platform: they were already there without a reference, and the write made a second one instead of landing on the first. Merge or delete the duplicates in Jobix before dialling, or the same person is called twice.${made ? ` (${made}.)` : ""}`
+    : !flagIsFixed && callFlag
     ? `${armed} customers written and stamped with ${callFlag} — this run's code, because no fixed call flag is configured. A flow's entry filter matches ONE value, so unless the filter names ${callFlag} exactly, nothing will dial. Set the call flag under Settings to the word your filter looks for, then send again.`
     : !callFlag
     ? `${writtenRows.length} customers are in Jobix, but nothing is armed: no call flag is configured, so the flow's filter will match nobody. Set one under Settings.`
     : complete
-      ? `${armed} customers written, armed with ${callFlag}, and confirmed present on the platform. Start the calls — the flow dials exactly these.`
+      ? `${armed} customers written, armed with ${callFlag}, and confirmed present on the platform${made ? ` — ${made}` : ""}. Start the calls — the flow dials exactly these.`
       : failures.length > 0
         ? `${writtenRows.length} of ${list.rowCount} written, ${armed} armed. Fix the failures below before starting, or start and dial only what is armed.`
         : !scanComplete
@@ -358,6 +477,10 @@ export async function pushDiallingList(
       armed,
       confirmed,
       scanned,
+      created,
+      updated,
+      relinked,
+      duplicated,
       callFlag,
       flagIsFixed,
       failed: failures.length,
@@ -368,6 +491,10 @@ export async function pushDiallingList(
     batchCode: options.batchCode,
     written: writtenRows.length,
     armed,
+    created,
+    updated,
+    relinked,
+    duplicated,
     confirmed,
     scanned,
     scanComplete,

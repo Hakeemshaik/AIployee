@@ -74,6 +74,10 @@ type SendResult = {
   armed: number;
   attempted: number;
   confirmed: number;
+  created: number;
+  updated: number;
+  relinked: number;
+  duplicated: number;
   scanned: number;
   scanComplete: boolean;
   flagIsFixed: boolean;

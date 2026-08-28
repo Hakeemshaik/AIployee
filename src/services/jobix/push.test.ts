@@ -95,6 +95,43 @@ vi.mock("./api", async (importOriginal) => {
 });
 
 const { pushDiallingList } = await import("./push");
+const api = await import("./api");
+
+/**
+ * The default: the workspace echoes back whatever the writes created.
+ * Re-applied before every test, because a mockResolvedValue in one test
+ * otherwise silently answers the reads in the next.
+ */
+function customersEchoWrites() {
+  vi.mocked(api.pullCustomers).mockImplementation(async () => ({
+    customers: writes
+      .filter((w) => w.main.phone)
+      .map((w, i) => ({
+        id: i + 1,
+        uuid: `uuid-${w.suid}`,
+        suid: w.suid,
+        phone: String(w.main.phone),
+        name: String(w.main.name ?? ""),
+        unit: null,
+        building: null,
+        totalDue: null,
+        ptpConfirmed: false,
+        ptpAmount: null,
+        disputed: false,
+        paidClaimed: false,
+        escalated: false,
+        doNotCall: false,
+        wrongPerson: false,
+        callBatch: null,
+        callFlag: null,
+        modifiedAt: new Date(),
+        raw: {},
+      })),
+    rawCount: writes.length,
+    droppedStale: 0,
+    droppedDuplicate: 0,
+  }));
+}
 
 const url = process.env.DATABASE_URL ?? "";
 const scratch = process.env.TEST_DATABASE_RESET === "1" && /test|scratch|tmp/i.test(url);
@@ -107,6 +144,7 @@ describe.skipIf(!scratch)("pushing customers to Jobix (integration)", () => {
   beforeEach(async () => {
     writes.length = 0;
     postWrite.mockClear();
+    customersEchoWrites();
     postWrite.mockImplementation(async (path: string, body: unknown) => {
       const payload = body as {
         customer_data: { main: { suid: string }; values: Record<string, unknown> };
@@ -283,6 +321,7 @@ describe.skipIf(!scratch)("a credential failure is one problem, not one per cont
   beforeEach(async () => {
     writes.length = 0;
     postWrite.mockClear();
+    customersEchoWrites();
     await db.campaignContact.deleteMany();
     await db.debtAccount.deleteMany();
     await db.debtor.deleteMany();
@@ -381,6 +420,7 @@ describe.skipIf(!scratch)("a write is not the same fact as a customer existing",
   beforeEach(async () => {
     writes.length = 0;
     postWrite.mockClear();
+    customersEchoWrites();
     await db.campaignContact.deleteMany();
     await db.debtAccount.deleteMany();
     await db.debtor.deleteMany();
@@ -450,8 +490,8 @@ describe.skipIf(!scratch)("a write is not the same fact as a customer existing",
   });
 
   it("refuses to look finished when the write was accepted and nothing landed", async () => {
-    const api = await import("./api");
-    vi.mocked(api.pullCustomers).mockResolvedValueOnce({
+    // Empty both before and after: nothing was there, and nothing arrived.
+    vi.mocked(api.pullCustomers).mockResolvedValue({
       customers: [],
       rawCount: 0,
       droppedStale: 0,
@@ -465,18 +505,108 @@ describe.skipIf(!scratch)("a write is not the same fact as a customer existing",
     expect(result.nextStep).toMatch(/do not start the calls yet/i);
   });
 
-  it("says the count is a floor when the read ran out of time", async () => {
-    const api = await import("./api");
-    // The budget is already spent, so the first page stops the scan.
+  it("refuses to write at all when the customer list cannot be read in full", async () => {
+    // A partial list means an account that IS there may not have been seen, and
+    // writing it then makes a second record for a real person. Waiting is
+    // cheaper than duplicating someone in a live dialling list.
     process.env.JOBIX_CONFIRM_BUDGET_MS = "-1";
-    vi.mocked(api.pullCustomers).mockImplementationOnce(async (_client, options) => {
+    vi.mocked(api.pullCustomers).mockImplementation(async (_client, options) => {
       options?.onPage?.({} as never);
       return { customers: [], rawCount: 0, droppedStale: 0, droppedDuplicate: 0 };
     });
+    try {
+      await expect(
+        pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-CONF" }),
+      ).rejects.toThrow(/could not be read in full/i);
+      // Nothing was written, which is the point of refusing.
+      expect(writes).toHaveLength(0);
+    } finally {
+      delete process.env.JOBIX_CONFIRM_BUDGET_MS;
+    }
+  });
+
+  it("updates an existing record found only by number, instead of duplicating them", async () => {
+    // Already on the platform from a pasted file: a real customer with no suid,
+    // because that column is empty in the import template.
+    const pasted = {
+      id: 99,
+      uuid: "existing-uuid-1",
+      suid: null,
+      phone: "+27821234567",
+      name: "Hakeem Test",
+      unit: null,
+      building: null,
+      totalDue: null,
+      ptpConfirmed: false,
+      ptpAmount: null,
+      disputed: false,
+      paidClaimed: false,
+      escalated: false,
+      doNotCall: false,
+      wrongPerson: false,
+      callBatch: null,
+      callFlag: null,
+      modifiedAt: new Date(),
+      raw: {},
+    };
+    vi.mocked(api.pullCustomers).mockResolvedValue({
+      customers: [pasted],
+      rawCount: 1,
+      droppedStale: 0,
+      droppedDuplicate: 0,
+    });
+
     const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-CONF" });
-    expect(result.scanComplete).toBe(false);
-    expect(result.nextStep).toMatch(/floor rather than a total/i);
-    delete process.env.JOBIX_CONFIRM_BUDGET_MS;
+    expect(result.relinked).toBe(1);
+    expect(result.created).toBe(0);
+    expect(result.duplicated).toBe(0);
+    // The write names the record that exists, so it lands on it.
+    expect(writes[0].main.uuid).toBe("existing-uuid-1");
+    expect(writes[0].main.suid).toBe("CONF-1");
+  });
+
+  it("says so when a relink made a second record anyway", async () => {
+    const row = (uuid: string, suid: string | null) => ({
+      id: 1,
+      uuid,
+      suid,
+      phone: "+27821234567",
+      name: "Hakeem Test",
+      unit: null,
+      building: null,
+      totalDue: null,
+      ptpConfirmed: false,
+      ptpAmount: null,
+      disputed: false,
+      paidClaimed: false,
+      escalated: false,
+      doNotCall: false,
+      wrongPerson: false,
+      callBatch: null,
+      callFlag: null,
+      modifiedAt: new Date(),
+      raw: {},
+    });
+    // One record before, two after: the write did not land on the existing one.
+    vi.mocked(api.pullCustomers)
+      .mockResolvedValueOnce({
+        customers: [row("existing-uuid-1", null)],
+        rawCount: 1,
+        droppedStale: 0,
+        droppedDuplicate: 0,
+      })
+      .mockResolvedValueOnce({
+        customers: [row("existing-uuid-1", null), row("new-uuid-2", "CONF-1")],
+        rawCount: 2,
+        droppedStale: 0,
+        droppedDuplicate: 0,
+      });
+
+    const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-CONF" });
+    expect(result.duplicated).toBe(1);
+    expect(result.complete).toBe(false);
+    expect(result.nextStep).toMatch(/two records/i);
+    expect(result.nextStep).toMatch(/called twice/i);
   });
 });
 
@@ -488,6 +618,7 @@ describe.skipIf(!scratch)("a per-run code is not a usable flag", () => {
   beforeEach(async () => {
     writes.length = 0;
     postWrite.mockClear();
+    customersEchoWrites();
     await db.campaignContact.deleteMany();
     await db.debtAccount.deleteMany();
     await db.debtor.deleteMany();
