@@ -131,6 +131,9 @@ export async function persistCustomers(
           // recognised from the record instead of inferred from a number.
           providerContactUuid: customer.uuid,
           ...(customer.callBatch ? { callBatch: customer.callBatch } : {}),
+          // Set, never unset: the agent observed it on a call, and a later
+          // call reaching the right person is recorded as a reach anyway.
+          ...(customer.wrongPerson ? { wrongPerson: true } : {}),
         },
       });
       debtorId = match.id;
@@ -151,6 +154,7 @@ export async function persistCustomers(
           lastContactAt: customer.modifiedAt ?? undefined,
           providerContactUuid: customer.uuid,
           callBatch: customer.callBatch,
+          wrongPerson: customer.wrongPerson,
         },
       });
       if (customer.totalDue !== null && customer.totalDue > 0) {

@@ -194,23 +194,54 @@ describe("metrics are per account with the RPC denominator", () => {
     { accountId: "c", phone: "+27823333333", balance: 3000, calls: [] },
   ];
 
-  it("computes penetration, RPC, dials per RPC and data-quality fail per account", () => {
+  it("separates coverage of the book from the quality of the dialling", () => {
     const m = computeCampaignAnalytics(accounts);
     expect(m.accounts).toBe(3);
     expect(m.calls).toBe(8);
     expect(m.attempted).toBe(2);
+    // Coverage: two of three accounts were dialled at all.
     expect(m.penetration).toBeCloseTo(2 / 3);
-    expect(m.rpcRate).toBeCloseTo(1 / 3);
-    expect(m.dialsPerRpc).toBeCloseTo(8);      // 8 calls / 1 conversation
+    // Efficiency: of the two dialled, one produced a right-party contact. The
+    // denominator is what was dialled — a book nobody has called yet must not
+    // make the dialling look bad.
+    expect(m.rpcRate).toBeCloseTo(1 / 2);
+    expect(m.contactRate).toBeCloseTo(1 / 2);
+    // The blended figure is still available, and is the product of the two.
+    expect(m.bookRpcRate).toBeCloseTo(1 / 3);
+    expect(m.bookRpcRate).toBeCloseTo(m.penetration * m.rpcRate);
+    expect(m.dialsPerRpc).toBeCloseTo(8);      // 8 calls / 1 right-party contact
     expect(m.dataQualityFailRate).toBeCloseTo(1 / 2); // 1 dead / 2 dialled
   });
 
-  it("uses accounts-with-a-conversation as the PTP denominator, not calls or total accounts", () => {
+  it("does not count a wrong-party contact as a right-party contact", () => {
+    // Same calls, but the person who answered was not the account holder.
+    const wrongParty = accounts.map((account) =>
+      account.accountId === "a"
+        ? { ...account, outcome: { ...account.outcome, wrongPerson: true } }
+        : account,
+    );
+    const m = computeCampaignAnalytics(wrongParty);
+
+    // Somebody spoke, so it is still a contact.
+    expect(m.contactAccounts).toBe(1);
+    expect(m.contactRate).toBeCloseTo(1 / 2);
+    // But not the right party, so RPC is zero and nothing divides by it.
+    expect(m.wrongPartyAccounts).toBe(1);
+    expect(m.rpcAccounts).toBe(0);
+    expect(m.rpcRate).toBe(0);
+    expect(m.bookRpcRate).toBe(0);
+    expect(m.dialsPerRpc).toBe(0);
+    expect(m.ptpRate).toBe(0);
+  });
+
+  it("uses right-party contacts as the PTP denominator, not calls or total accounts", () => {
     const m = computeCampaignAnalytics(accounts);
     expect(m.conversationAccounts).toBe(1);
-    expect(m.ptpRate).toBeCloseTo(1);        // 1 promise / 1 RPC
+    expect(m.rpcAccounts).toBe(1);
+    expect(m.ptpRate).toBeCloseTo(1);        // 1 promise / 1 right-party contact
     expect(m.ptpRate).not.toBeCloseTo(1 / 8); // not per call
     expect(m.ptpRate).not.toBeCloseTo(1 / 3); // not per account in book
+    expect(m.ptpRate).not.toBeCloseTo(1 / 2); // not per account dialled
   });
 });
 

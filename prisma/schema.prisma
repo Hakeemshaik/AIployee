@@ -118,6 +118,9 @@ model Debtor {
   /** Batch code the voice platform last held in this record's `call` field —
    *  how a campaign's dialling batch is recognised on the record itself. */
   callBatch      String?
+  /** The agent reached a person, but not this account holder. A contact, but
+   *  never a right-party contact — the distinction RPC rate turns on. */
+  wrongPerson    Boolean  @default(false)
   lastContactAt  DateTime?
   lastOutcome    String?
   createdAt      DateTime  @default(now())

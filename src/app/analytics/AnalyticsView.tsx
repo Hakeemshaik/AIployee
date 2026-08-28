@@ -30,8 +30,13 @@ export type AnalyticsPayload = {
     reachedAccounts: number;
     conversationAccounts: number;
     deadNumberAccounts: number;
+    contactAccounts: number;
+    rpcAccounts: number;
+    wrongPartyAccounts: number;
     penetration: number;
+    contactRate: number;
     rpcRate: number;
+    bookRpcRate: number;
     dialsPerRpc: number;
     ptpRate: number;
     dataQualityFailRate: number;
@@ -175,7 +180,14 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
         <Metric label="Accounts" value={count(a.accounts)} formula="accounts in book" />
         <Metric label="Calls" value={count(a.calls)} formula="total call records (not accounts)" />
-        <Metric label="Reached" value={count(a.reachedAccounts)} formula={payload.formulas.reached} />
+        <Metric
+          label="Right-party"
+          value={count(a.rpcAccounts)}
+          formula={`accounts where the account holder spoke${
+            a.wrongPartyAccounts > 0 ? ` — ${a.wrongPartyAccounts} wrong-party contacts excluded` : ""
+          }`}
+          sub={a.wrongPartyAccounts > 0 ? `${count(a.wrongPartyAccounts)} wrong party` : undefined}
+        />
         <Metric label="RPC rate" value={percent(a.rpcRate)} formula={payload.formulas.rpcRate} tone="good" />
         <Metric label="Promises" value={count(a.commitments.count)} formula="accounts with a confirmed commitment" />
         <Metric label="PTP rate" value={percent(a.ptpRate)} formula={payload.formulas.ptpRate} />
@@ -255,8 +267,16 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
         <GlassCard title="Efficiency">
           <dl className="space-y-2.5">
             <div className="flex items-baseline justify-between gap-3" title={payload.formulas.penetration}>
-              <dt className="text-[0.75rem] text-ink-3">Penetration</dt>
+              <dt className="text-[0.75rem] text-ink-3">Book worked</dt>
               <dd className="num text-[0.875rem] font-medium text-ink">{percent(a.penetration)}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-3" title={payload.formulas.contactRate}>
+              <dt className="text-[0.75rem] text-ink-3">Contact rate</dt>
+              <dd className="num text-[0.875rem] font-medium text-ink">{percent(a.contactRate)}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-3" title={payload.formulas.bookRpcRate}>
+              <dt className="text-[0.75rem] text-ink-3">RPC across the book</dt>
+              <dd className="num text-[0.875rem] font-medium text-ink">{percent(a.bookRpcRate)}</dd>
             </div>
             <div className="flex items-baseline justify-between gap-3" title={payload.formulas.dialsPerRpc}>
               <dt className="text-[0.75rem] text-ink-3">Dials per RPC</dt>

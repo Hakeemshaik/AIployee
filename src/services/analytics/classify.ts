@@ -155,6 +155,8 @@ export type ClassifiableAccount = {
     paidClaimed?: boolean;
     escalated?: boolean;
     doNotCall?: boolean;
+    /** A person answered, but not the account holder. */
+    wrongPerson?: boolean;
   } | null;
 };
 
@@ -238,13 +240,23 @@ export type CampaignAnalytics = {
   reachedAccounts: number;
   conversationAccounts: number;
   deadNumberAccounts: number;
-  /** accounts with ≥1 attempt / accounts in book */
+  /** Contacts: a human spoke. Includes the wrong human. */
+  contactAccounts: number;
+  /** Right-party contacts: a human spoke AND it was the account holder. */
+  rpcAccounts: number;
+  /** Contacts that turned out to be somebody else. */
+  wrongPartyAccounts: number;
+  /** accounts with ≥1 attempt / accounts in book — coverage, not efficiency */
   penetration: number;
-  /** accounts with a conversation / accounts in book */
+  /** contacts / accounts attempted */
+  contactRate: number;
+  /** right-party contacts / accounts attempted */
   rpcRate: number;
-  /** total calls / accounts with a conversation */
+  /** right-party contacts / accounts in book — penetration × rpcRate */
+  bookRpcRate: number;
+  /** total calls / right-party contacts */
   dialsPerRpc: number;
-  /** promises / accounts with a conversation */
+  /** promises / right-party contacts */
   ptpRate: number;
   /** dead-number accounts / accounts dialled */
   dataQualityFailRate: number;
@@ -273,6 +285,21 @@ export function computeCampaignAnalytics(accounts: ClassifiableAccount[]): Campa
   const reachedAccounts = classified.filter((c) => c.reached).length;
   const conversationAccounts = buckets.conversation;
   const deadNumberAccounts = buckets.never_connected;
+
+  // --- contact vs RIGHT-PARTY contact -------------------------------------
+  //
+  // These are different things and collapsing them flatters the numbers. A
+  // call where somebody answered and spoke is a CONTACT. It is only a
+  // right-party contact when that somebody was the account holder, and the
+  // agent reports when it was not. RPC rate is the one operational figure
+  // worth acting on, so it counts right-party contacts only.
+  const byId = new Map(accounts.map((a) => [a.accountId, a]));
+  const contacts = classified.filter((c) => c.bucket === "conversation");
+  const wrongPartyAccounts = contacts.filter(
+    (c) => byId.get(c.accountId)?.outcome?.wrongPerson === true,
+  ).length;
+  const contactAccounts = contacts.length;
+  const rpcAccounts = contactAccounts - wrongPartyAccounts;
 
   // --- commitments: floor and ceiling, never a single number ---
   let floor = 0;
@@ -340,10 +367,20 @@ export function computeCampaignAnalytics(accounts: ClassifiableAccount[]): Campa
     reachedAccounts,
     conversationAccounts,
     deadNumberAccounts,
+    contactAccounts,
+    rpcAccounts,
+    wrongPartyAccounts,
+    // Coverage and efficiency are reported separately, because one number
+    // cannot answer both "did we work the book" and "is the data any good".
+    // A campaign that dialled a tenth of the book at a 60% RPC rate and one
+    // that dialled all of it at 6% look identical on a single blended figure,
+    // and they call for opposite responses.
     penetration: accounts.length > 0 ? attempted / accounts.length : 0,
-    rpcRate: accounts.length > 0 ? conversationAccounts / accounts.length : 0,
-    dialsPerRpc: conversationAccounts > 0 ? totalCalls / conversationAccounts : 0,
-    ptpRate: conversationAccounts > 0 ? promises / conversationAccounts : 0,
+    contactRate: attempted > 0 ? contactAccounts / attempted : 0,
+    rpcRate: attempted > 0 ? rpcAccounts / attempted : 0,
+    bookRpcRate: accounts.length > 0 ? rpcAccounts / accounts.length : 0,
+    dialsPerRpc: rpcAccounts > 0 ? totalCalls / rpcAccounts : 0,
+    ptpRate: rpcAccounts > 0 ? promises / rpcAccounts : 0,
     dataQualityFailRate: attempted > 0 ? deadNumberAccounts / attempted : 0,
     commitments: { floor, ceiling, arrearsUnderCommitment, count: commitmentCount, withoutStatedAmount },
     reachByAttempt,
@@ -353,10 +390,13 @@ export function computeCampaignAnalytics(accounts: ClassifiableAccount[]): Campa
 
 /** Exposed so every metric tooltip states its exact formula. */
 export const METRIC_FORMULAS = {
-  penetration: "accounts with ≥1 attempt ÷ accounts in book",
-  rpcRate: "accounts with a conversation ÷ accounts in book",
-  dialsPerRpc: "total calls ÷ accounts with a conversation",
-  ptpRate: "promises ÷ accounts with a conversation (RPC denominator, not calls)",
+  penetration: "accounts with ≥1 attempt ÷ accounts in book — coverage of the book, not quality of the dialling",
+  contactRate: "accounts where a human spoke ÷ accounts attempted — includes calls answered by the wrong person",
+  rpcRate:
+    "accounts where the ACCOUNT HOLDER spoke ÷ accounts attempted — wrong-party contacts are excluded, and the denominator is what was dialled, not the whole book",
+  bookRpcRate: "right-party contacts ÷ accounts in book — this is penetration × RPC rate, and it hides which of the two is the problem",
+  dialsPerRpc: "total calls ÷ right-party contacts — how many dials one useful conversation costs",
+  ptpRate: "promises ÷ right-party contacts (never per call, and never over the whole book)",
   dataQualityFailRate: "dead-number accounts ÷ accounts dialled",
   cashCommittedFloor: "sum of stated commitment amounts only",
   cashCommittedCeiling: "stated amounts + full balance where no amount was stated",

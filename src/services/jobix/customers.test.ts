@@ -20,6 +20,7 @@ function customer(overrides: Partial<JobixCustomer> = {}): JobixCustomer {
     doNotCall: false,
     callBatch: null,
     callFlag: null,
+    wrongPerson: false,
     modifiedAt: new Date("2026-08-20T08:00:00Z"),
     raw: {},
     ...overrides,

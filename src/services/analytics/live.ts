@@ -59,6 +59,7 @@ export async function buildLiveAnalytics(
       accountNumber: true,
       status: true,
       doNotContact: true,
+      wrongPerson: true,
       providerContactUuid: true,
       accounts: { select: { currentBalance: true, creditorName: true } },
       promises: { select: { amount: true, status: true }, orderBy: { createdAt: "desc" } },
@@ -128,6 +129,7 @@ export async function buildLiveAnalytics(
       paidClaimed: debtor.status === "paid",
       escalated: debtor.status === "escalated",
       doNotCall: debtor.doNotContact,
+      wrongPerson: debtor.wrongPerson,
     };
 
     const matched = callsByDebtor.get(debtor.id) ?? [];
