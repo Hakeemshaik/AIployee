@@ -40,6 +40,27 @@ won't need; see `llm-lab/docs/02-model-selection.md`.
 
 ### Naming used throughout
 
+> **Your lab is on `192.168.1.x`** (your Proxmox host is `192.168.1.21`), but
+> every example below uses `10.0.0.x` placeholders. Do not copy them verbatim.
+> Once you've filled in the table, re-template the whole tutorial in one go:
+>
+> ```bash
+> # Adjust the mapping to your real node addresses first, then run from the repo root
+> sed -i \
+>   -e 's/10\.0\.0\.201/192.168.1.201/g' \
+>   -e 's/10\.0\.0\.202/192.168.1.202/g' \
+>   -e 's/10\.0\.0\.203/192.168.1.203/g' \
+>   -e 's/10\.0\.0\.204/192.168.1.204/g' \
+>   -e 's/10\.0\.0\.205/192.168.1.205/g' \
+>   -e 's/10\.0\.0\.206/192.168.1.206/g' \
+>   -e 's/10\.0\.0\.1\b/192.168.1.1/g' \
+>   TUTORIAL.md llm-lab/gateway/litellm-config.yaml llm-lab/gateway/prometheus.yml
+> git diff --stat   # check it hit what you expected
+> ```
+>
+> Containers need their **own free IPs** on that subnet — separate from the
+> Proxmox hosts' addresses. Check what's already taken before you pick.
+
 Substitute your real values. Write them down here before you start:
 
 ```
