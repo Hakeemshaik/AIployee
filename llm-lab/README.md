@@ -69,8 +69,12 @@ make voice-check      # tells you whether your measured numbers can hold a call
 ## Layout
 
 ```
+preflight.sh   Read-only host inventory. Start here -- changes nothing.
+bootstrap.sh   One command: detect hardware, create the container, build,
+               download weights, install the service, verify a completion.
 docs/       Architecture, model selection, the voice latency math, GPU upgrade
-            path, giving Claude access, and Coolify / self-hosted git
+            path, giving Claude access, Coolify / self-hosted git, and the
+            ways this can be set up for you
 proxmox/    Container/VM provisioning scripts to run on a PVE host
 inference/  llama.cpp build, tuning, systemd units, model downloads
 gateway/    LiteLLM proxy + load balancing across workers, observability

@@ -5,13 +5,15 @@ GATEWAY ?= http://10.0.0.201:4000
 API_KEY  ?=
 MODEL    ?= workhorse
 
-.PHONY: help bench bench-quick voice-check tune lint gateway-up gateway-down gateway-logs
+.PHONY: help bench bench-quick voice-check tune lint test preflight gateway-up gateway-down gateway-logs
 
 help:
 	@echo "Targets:"
 	@echo "  make bench        GATEWAY=http://ip:4000 API_KEY=sk-...   full sweep"
 	@echo "  make bench-quick  GATEWAY=...                            one fast scenario"
 	@echo "  make voice-check  GATEWAY=...                            voice latency verdict"
+	@echo "  make preflight                                           read-only host inventory"
+	@echo "  make test                                                unit-test bootstrap helpers"
 	@echo "  make tune                                                CPU sweep (run ON a worker)"
 	@echo "  make gateway-up   / gateway-down / gateway-logs          docker compose on pve-1"
 	@echo "  make lint                                                shell + python checks"
@@ -29,6 +31,12 @@ voice-check:
 		--model $(MODEL) --prompt-tokens 2000 --max-tokens 64 --concurrency 1 \
 		--json /tmp/voice-bench.json
 	python3 bench/voice-budget.py /tmp/voice-bench.json
+
+preflight:
+	./preflight.sh
+
+test:
+	./tests/test-bootstrap-helpers.sh
 
 tune:
 	inference/tune.sh

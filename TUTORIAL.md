@@ -82,6 +82,28 @@ parallel means finding the same bug four times.
 
 ---
 
+## The fast path (if you'd rather not do it by hand)
+
+Everything below can be done by one script. It auto-detects your hardware,
+sizes the container, builds, downloads, installs and verifies:
+
+```bash
+git clone https://github.com/Hakeemshaik/AIployee /opt/AIployee
+cd /opt/AIployee/llm-lab
+git checkout claude/llm-proxmox-i7-lab-b03rc3
+
+./preflight.sh                            # read-only inventory, changes nothing
+./bootstrap.sh --role workhorse --dry-run # show the plan
+./bootstrap.sh --role workhorse           # build it
+```
+
+Then skip to **Phase 2** to tune and benchmark. The manual phases below are
+still worth reading — they explain *why* each setting is what it is, and
+they're what you'll fall back to when the script stops and asks you something.
+Other ways to get this set up are in `llm-lab/docs/08-ways-i-can-set-this-up.md`.
+
+---
+
 ## Phase 0 — Inventory your cluster (15 min)
 
 You said nodes are already running, so start by writing down what you actually
