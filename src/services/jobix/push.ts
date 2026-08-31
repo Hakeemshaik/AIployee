@@ -87,6 +87,9 @@ export type PushResult = {
   relinked: number;
   /** Numbers that went from one record to two: a relink that did not land. */
   duplicated: number;
+  /** Rows the budget did not reach. Nothing was sent for them, so nobody on
+   *  this list has been called. */
+  unsent: number;
   /** Rows found on the platform afterwards, by reading it back. */
   confirmed: number;
   /** How much of the customer list was read to confirm them. */
@@ -106,6 +109,31 @@ export type PushResult = {
 
 /** Timezone every customer is written with. The book is South African. */
 const TIMEZONE = "Africa/Johannesburg";
+
+/**
+ * How many customers are written at once.
+ *
+ * One at a time is roughly a quarter-second each: fine for a test call, about
+ * eleven minutes for a book of two and a half thousand — past any request
+ * ceiling. Bounded rather than unbounded, because the workspace on the other
+ * end is a live dialler and not a load target.
+ */
+function writeConcurrency(): number {
+  const configured = Number(process.env.JOBIX_WRITE_CONCURRENCY);
+  return Number.isFinite(configured) && configured > 0 ? configured : 8;
+}
+
+/**
+ * Wall-clock budget for the writing itself, kept under the request ceiling.
+ *
+ * Stopping on purpose reports how far it got and can be continued. Being killed
+ * mid-loop leaves an unknown number of people called and nothing to resume
+ * from, which on an insert-started flow means not knowing who has been dialled.
+ */
+function writeBudgetMs(): number {
+  const configured = Number(process.env.JOBIX_WRITE_BUDGET_MS);
+  return Number.isFinite(configured) && process.env.JOBIX_WRITE_BUDGET_MS ? configured : 240_000;
+}
 
 /**
  * Wall-clock budget for reading the customer list back. Read per call rather
@@ -254,7 +282,17 @@ function uuidFrom(response: Record<string, unknown>): string | null {
 export async function pushDiallingList(
   organizationId: string,
   userId: string,
-  options: { campaignId?: string; debtorIds?: string[]; batchCode: string },
+  options: {
+    campaignId?: string;
+    debtorIds?: string[];
+    batchCode: string;
+    /**
+     * Continue a batch a previous run did not finish: rows already carrying
+     * this batch code are skipped. Without it a resumed send would write every
+     * row again, which on an insert-started flow calls everyone a second time.
+     */
+    skipAlreadySent?: boolean;
+  },
 ): Promise<PushResult> {
   const env = await resolveJobixEnv();
   if (!env) throw new JobixError("Jobix is not configured on this server.", "not_configured");
@@ -264,6 +302,10 @@ export async function pushDiallingList(
       "not_configured",
     );
   }
+
+  // Captured once: narrowing from the guard above does not survive into the
+  // closures below.
+  const companyKey = env.companyKey;
 
   const flow = await loadFlowConfig(organizationId);
   const callFlag = callColumnValue(flow, options.batchCode) ?? null;
@@ -292,9 +334,26 @@ export async function pushDiallingList(
     debtorIds: options.debtorIds,
     batchCode: options.batchCode,
   });
+  // Drop what a previous, unfinished run already sent under this code.
+  let alreadySent = 0;
+  if (options.skipAlreadySent) {
+    const sent = new Set(
+      (
+        await db.debtor.findMany({
+          where: { organizationId, callBatch: options.batchCode },
+          select: { id: true },
+        })
+      ).map((debtor) => debtor.id),
+    );
+    alreadySent = list.rows.filter((row) => sent.has(row.debtorId)).length;
+    list.rows = list.rows.filter((row) => !sent.has(row.debtorId));
+    list.rowCount = list.rows.length;
+  }
   if (list.rowCount === 0) {
     throw new JobixError(
-      "There is nothing to send — every account was excluded from the dialling list.",
+      alreadySent > 0
+        ? `Every account in this batch has already been sent (${alreadySent}). Nothing was sent again, so nobody was called twice.`
+        : "There is nothing to send — every account was excluded from the dialling list.",
       "rejected",
     );
   }
@@ -364,8 +423,17 @@ export async function pushDiallingList(
     });
   };
 
-  // --- pass 1: the customers themselves, unarmed ---------------------------
-  for (const row of list.rows) {
+  // --- pass 1: the customers themselves ------------------------------------
+  //
+  // Concurrent and budgeted. Sequential writing cannot finish a book inside a
+  // request, and being killed part-way through is the worst outcome available
+  // on an insert-started flow: some unknown number of people have been called
+  // and nothing records which. So it stops itself before that, having marked
+  // every row it completed.
+  const writeDeadline = Date.now() + writeBudgetMs();
+  const queue = [...list.rows];
+
+  const writeOne = async (row: JobixRow): Promise<void> => {
     const values = contactValues(row);
     if (armOnWrite && callFlag) {
       // This write is the trigger. The flag goes in now or the flow never runs.
@@ -375,41 +443,74 @@ export async function pushDiallingList(
       // dialled until a person fires the node.
       delete values.call;
     }
-    try {
-      const email = row.values.email ?? row.values.Email;
-      const known = bySuid.get(row.suid);
-      const samePhone = known ? null : byPhone.get(phoneKey(row.phone)) ?? null;
-      const response = await save(
-        client,
-        env.companyKey,
-        {
-          suid: suidFor(row),
-          timezone: TIMEZONE,
-          // Only when this record exists under another key. Sending it
-          // otherwise would name a customer that does not exist yet.
-          ...(samePhone ? { uuid: samePhone.uuid } : {}),
-          phone: row.phone,
-          name: row.name,
-          ...(typeof email === "string" && email ? { email } : {}),
-        },
-        values,
-      );
-      if (armOnWrite) created += 1;
-      else if (known) updated += 1;
-      else if (samePhone) relinked += 1;
-      else created += 1;
-      writtenRows.push(row);
-      const uuid = uuidFrom(response);
-      if (uuid) {
-        await db.debtor.updateMany({
-          where: { id: row.debtorId, organizationId },
-          data: { providerContactUuid: uuid },
-        });
+    const email = row.values.email ?? row.values.Email;
+    const known = bySuid.get(row.suid);
+    const samePhone = known ? null : byPhone.get(phoneKey(row.phone)) ?? null;
+    const response = await save(
+      client,
+      companyKey,
+      {
+        suid: suidFor(row),
+        timezone: TIMEZONE,
+        // Only when this record exists under another key. Sending it
+        // otherwise would name a customer that does not exist yet.
+        ...(samePhone ? { uuid: samePhone.uuid } : {}),
+        phone: row.phone,
+        name: row.name,
+        ...(typeof email === "string" && email ? { email } : {}),
+      },
+      values,
+    );
+    if (armOnWrite) created += 1;
+    else if (known) updated += 1;
+    else if (samePhone) relinked += 1;
+    else created += 1;
+    writtenRows.push(row);
+    // Recorded as each row lands, not at the end: this is what says who has
+    // already been sent for this batch if the budget runs out.
+    await db.debtor.updateMany({
+      where: { id: row.debtorId, organizationId },
+      data: {
+        callBatch: options.batchCode,
+        ...(uuidFrom(response) ? { providerContactUuid: uuidFrom(response)! } : {}),
+      },
+    });
+  };
+
+  // A fatal failure has to stop the OTHER workers too. Without this they carry
+  // on writing after the push has already thrown — and on an insert-started
+  // flow that means calls still going out after the operator was told the push
+  // failed.
+  let fatal: unknown = null;
+
+  const worker = async () => {
+    for (;;) {
+      if (fatal) return;
+      // Whatever is left in the queue when the workers stop is what was not
+      // sent, which is the number reported.
+      if (Date.now() > writeDeadline) return;
+      const row = queue.shift();
+      if (!row) return;
+      try {
+        await writeOne(row);
+      } catch (err) {
+        try {
+          record(row, err);
+        } catch (stop) {
+          // record() rethrows the failures that will repeat for every row.
+          fatal = stop;
+          return;
+        }
       }
-    } catch (err) {
-      record(row, err);
     }
-  }
+  };
+  // allSettled, so every worker has actually finished before the throw below:
+  // Promise.all would reject while the others were still mid-write.
+  await Promise.allSettled(
+    Array.from({ length: Math.max(1, Math.min(writeConcurrency(), list.rows.length)) }, worker),
+  );
+  if (fatal) throw fatal;
+  const unsent = queue.length;
 
   // --- pass 2: arm what landed --------------------------------------------
   //
@@ -424,7 +525,7 @@ export async function pushDiallingList(
         // rewriting a name or number the workspace has since corrected.
         await save(
           client,
-          env.companyKey,
+          companyKey,
           { suid: suidFor(row), timezone: TIMEZONE },
           { batch: options.batchCode, call: callFlag },
         );
@@ -434,11 +535,6 @@ export async function pushDiallingList(
       }
     }
   }
-
-  await db.debtor.updateMany({
-    where: { id: { in: writtenRows.map((row) => row.debtorId) }, organizationId },
-    data: { callBatch: options.batchCode },
-  });
 
   // --- read it back -------------------------------------------------------
   //
@@ -498,6 +594,7 @@ export async function pushDiallingList(
   }
 
   const complete =
+    unsent === 0 &&
     failures.length === 0 &&
     armed === list.rowCount &&
     confirmed === list.rowCount &&
@@ -511,7 +608,9 @@ export async function pushDiallingList(
   ]
     .filter(Boolean)
     .join(", ");
-  const nextStep = duplicated > 0
+  const nextStep = unsent > 0
+    ? `${writtenRows.length} of ${list.rowCount} sent before this run hit its time limit — ${unsent} were not sent, and nobody on that part of the list has been called. Send again for the same campaign to continue with the rest; the accounts already sent are recorded and will not be sent twice.`
+    : duplicated > 0
     ? `${duplicated} account(s) now have two records on the platform: they were already there without a reference, and the write made a second one instead of landing on the first. Merge or delete the duplicates in Jobix before dialling, or the same person is called twice.${made ? ` (${made}.)` : ""}`
     : !flagIsFixed && callFlag
     ? `${armed} customers written and stamped with ${callFlag} — this run's code, because no fixed call flag is configured. A flow's entry filter matches ONE value, so unless the filter names ${callFlag} exactly, nothing will dial. Set the call flag under Settings to the word your filter looks for, then send again.`
@@ -545,6 +644,7 @@ export async function pushDiallingList(
       updated,
       relinked,
       duplicated,
+      unsent,
       callFlag,
       flagIsFixed,
       failed: failures.length,
@@ -559,6 +659,7 @@ export async function pushDiallingList(
     updated,
     relinked,
     duplicated,
+    unsent,
     confirmed,
     scanned,
     scanComplete,

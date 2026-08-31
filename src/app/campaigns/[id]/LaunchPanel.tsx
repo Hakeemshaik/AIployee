@@ -80,6 +80,7 @@ type SendResult = {
   updated: number;
   relinked: number;
   duplicated: number;
+  unsent: number;
   scanned: number;
   scanComplete: boolean;
   flagIsFixed: boolean;
@@ -97,6 +98,7 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
   const [list, setList] = useState<PreparedList | null>(null);
   const [pasted, setPasted] = useState(false);
   const [sent, setSent] = useState<SendResult | null>(null);
+  const [resumable, setResumable] = useState(false);
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState<"list" | "send" | "start" | "schedule" | "cancel" | "armed" | null>(null);
   const [armed, setArmed] = useState<ArmedCheck | null>(null);
@@ -175,6 +177,10 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
       // The send is the paste, so the manual confirmation is satisfied by it —
       // but only when everything actually landed and is armed.
       setPasted(result.complete);
+      // A partial send has more to do, so the list stays and the button says
+      // Continue rather than looking finished.
+      if (result.unsent > 0) setResumable(true);
+      else setResumable(false);
       setRefresh((n) => n + 1);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "The list could not be sent.");
@@ -418,9 +424,11 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                     ) : (
                       <Send size={13} />
                     )}
-                    {state.flowStart === "insert"
-                      ? `Send and call (${count(list.rowCount)})`
-                      : `Send to Jobix (${count(list.rowCount)})`}
+                    {resumable
+                      ? `Continue sending (${count(sent?.unsent ?? 0)} left)`
+                      : state.flowStart === "insert"
+                        ? `Send and call (${count(list.rowCount)})`
+                        : `Send to Jobix (${count(list.rowCount)})`}
                   </button>
                   <span className="text-[0.71875rem] text-ink-3">
                     {state.flowStart === "insert"

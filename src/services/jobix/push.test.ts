@@ -388,6 +388,9 @@ describe.skipIf(!scratch)("a credential failure is one problem, not one per cont
   });
 
   it("stops at the first rejected credential instead of listing it per row", async () => {
+    // One at a time, so the count is exact rather than "up to the concurrency
+    // width" — the invariant being pinned is that it stops, not how wide it is.
+    process.env.JOBIX_WRITE_CONCURRENCY = "1";
     const { JobixError } = await import("./client");
     postWrite.mockImplementation(async () => {
       throw new JobixError(
@@ -402,6 +405,24 @@ describe.skipIf(!scratch)("a credential failure is one problem, not one per cont
     ).rejects.toThrow(/rejected the sign-in/i);
     // One attempt, not one per contact.
     expect(postWrite).toHaveBeenCalledTimes(1);
+    delete process.env.JOBIX_WRITE_CONCURRENCY;
+  });
+
+  it("stops the other writers too, so no call goes out after the failure", async () => {
+    const { JobixError } = await import("./client");
+    process.env.JOBIX_WRITE_CONCURRENCY = "3";
+    let attempts = 0;
+    postWrite.mockImplementation(async () => {
+      attempts += 1;
+      // Everything after the in-flight batch must never be attempted.
+      throw new JobixError("Jobix is unreachable right now.", "unavailable");
+    });
+    await expect(
+      pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-AUTH" }),
+    ).rejects.toThrow(/unreachable/i);
+    // Three contacts, three workers: one round, and no second round.
+    expect(attempts).toBeLessThanOrEqual(3);
+    delete process.env.JOBIX_WRITE_CONCURRENCY;
   });
 
   it("carries what Jobix said, which is what separates the causes", async () => {
@@ -820,5 +841,132 @@ describe.skipIf(!scratch)("how the flow starts decides how a customer is written
     const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-START" });
     expect(result.dialledOnWrite).toBe(true);
     expect(writes[0].values.call).toBe("READY");
+  });
+});
+
+describe.skipIf(!scratch)("a book-sized push stops itself rather than being killed", () => {
+  let orgId = "";
+  let userId = "";
+  let campaignId = "";
+
+  beforeEach(async () => {
+    writes.length = 0;
+    postWrite.mockClear();
+    customersEchoWrites();
+    await db.campaignContact.deleteMany();
+    await db.debtAccount.deleteMany();
+    await db.debtor.deleteMany();
+    await db.campaign.deleteMany();
+    await db.auditLog.deleteMany();
+    await db.integrationSettings.deleteMany();
+    await db.user.deleteMany();
+    await db.organization.deleteMany();
+    const org = await db.organization.create({ data: { name: "Book Co", slug: "book-co" } });
+    orgId = org.id;
+    userId = (
+      await db.user.create({
+        data: { organizationId: orgId, name: "Ops", email: "book@example.com", role: "admin" },
+      })
+    ).id;
+    campaignId = (
+      await db.campaign.create({ data: { organizationId: orgId, name: "Book", status: "draft" } })
+    ).id;
+    for (const n of [1, 2, 3, 4]) {
+      const debtor = await db.debtor.create({
+        data: {
+          organizationId: orgId,
+          campaignId,
+          firstName: "Person",
+          lastName: `N${n}`,
+          accountNumber: `BOOK-${n}`,
+          phone: `+2782300000${n}`,
+        },
+      });
+      await db.debtAccount.create({
+        data: {
+          organizationId: orgId,
+          debtorId: debtor.id,
+          reference: `BOOK-${n}`,
+          creditorName: "Mafadi",
+          originalBalance: 900,
+          currentBalance: 900,
+          dueDate: new Date("2026-07-01"),
+          daysOverdue: 30,
+        },
+      });
+    }
+    process.env.JOBIX_CALL_FLAG = "READY";
+  });
+
+  it("reports what it did not send, and says nobody there was called", async () => {
+    // Budget already spent: the first check stops every worker before any write.
+    process.env.JOBIX_WRITE_BUDGET_MS = "-1";
+    try {
+      const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-BOOK" });
+      expect(result.written).toBe(0);
+      expect(result.unsent).toBe(4);
+      expect(result.complete).toBe(false);
+      expect(result.nextStep).toMatch(/nobody on that part of the list has been called/i);
+      expect(result.nextStep).toMatch(/will not be sent twice/i);
+    } finally {
+      delete process.env.JOBIX_WRITE_BUDGET_MS;
+    }
+  });
+
+  it("marks each account as it lands, so a continue knows who not to call again", async () => {
+    process.env.JOBIX_WRITE_CONCURRENCY = "1";
+    try {
+      await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-BOOK" });
+      const sent = await db.debtor.count({
+        where: { organizationId: orgId, callBatch: "28AUG-BOOK" },
+      });
+      expect(sent).toBe(4);
+    } finally {
+      delete process.env.JOBIX_WRITE_CONCURRENCY;
+    }
+  });
+
+  it("skips the accounts already sent when continuing the same batch", async () => {
+    await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-BOOK" });
+    writes.length = 0;
+    // Continuing: everything already carries the code, so there is nothing
+    // left and nobody is called a second time.
+    await expect(
+      pushDiallingList(orgId, userId, {
+        campaignId,
+        batchCode: "28AUG-BOOK",
+        skipAlreadySent: true,
+      }),
+    ).rejects.toThrow(/already been sent/i);
+    expect(writes).toHaveLength(0);
+  });
+
+  it("writes concurrently, so a book is not one request at a time", async () => {
+    let inFlight = 0;
+    let peak = 0;
+    postWrite.mockImplementation(async (path: string, body: unknown) => {
+      inFlight += 1;
+      peak = Math.max(peak, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      inFlight -= 1;
+      const payload = body as {
+        customer_data: { main: { suid: string }; values: Record<string, unknown> };
+      };
+      writes.push({
+        path,
+        suid: payload.customer_data.main.suid,
+        main: payload.customer_data.main,
+        values: payload.customer_data.values,
+      });
+      return { uuid: `provider-uuid-${payload.customer_data.main.suid}` };
+    });
+    process.env.JOBIX_WRITE_CONCURRENCY = "4";
+    try {
+      await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-BOOK" });
+      expect(peak).toBeGreaterThan(1);
+      expect(peak).toBeLessThanOrEqual(4);
+    } finally {
+      delete process.env.JOBIX_WRITE_CONCURRENCY;
+    }
   });
 });

@@ -333,10 +333,22 @@ export async function pushCampaignList(organizationId: string, userId: string, c
   }
 
   // A fresh code per send, so two sends are two runs and never one blurred
-  // together — the same rule the paste path follows.
-  const code = batchCode();
+  // together — EXCEPT when the last send did not finish. Then the same code
+  // continues, and the accounts already sent under it are skipped: minting a
+  // new code would send the whole list again and call everyone already called.
+  const unfinished = await db.debtor.count({
+    where: { organizationId, campaignId, callBatch: campaign.providerCampaignId ?? "\u0000" },
+  });
+  const eligible = await buildJobixExport(organizationId, { campaignId });
+  const resuming = !!campaign.providerCampaignId && unfinished > 0 && unfinished < eligible.rowCount;
+  const code = resuming ? campaign.providerCampaignId! : batchCode();
+
   const { pushDiallingList } = await import("@/services/jobix/push");
-  const result = await pushDiallingList(organizationId, userId, { campaignId, batchCode: code });
+  const result = await pushDiallingList(organizationId, userId, {
+    campaignId,
+    batchCode: code,
+    skipAlreadySent: resuming,
+  });
 
   await db.campaign.update({
     where: { id: campaign.id },

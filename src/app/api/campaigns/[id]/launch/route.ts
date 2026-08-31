@@ -40,6 +40,10 @@ const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("check_armed") }),
 ]);
 
+// Writing a book is thousands of requests to the voice platform, so this needs
+// the ceiling the platform allows rather than the default few seconds.
+export const maxDuration = 300;
+
 // POST /api/campaigns/:id/launch — generate the paste list, or start the calls.
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
