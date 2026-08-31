@@ -544,6 +544,11 @@ describe.skipIf(!scratch)("a write is not the same fact as a customer existing",
     expect(arm.main.name).toBeUndefined();
   });
 
+  it("says which build and which payload revision sent the batch", async () => {
+    const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-CONF" });
+    expect(result.build).toMatch(/^payload r\d+, build /);
+  });
+
   it("confirms the customer by reading the platform back", async () => {
     const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-CONF" });
     expect(result.confirmed).toBe(1);
@@ -1313,6 +1318,15 @@ describe.skipIf(!scratch)("finding the field a send is rejected for", () => {
     const result = await probeRow(orgId, userId, { campaignId });
     expect(result.variants.length).toBeGreaterThan(2);
     for (const write of writes) expect(write.values.call).toBeUndefined();
+  });
+
+  it("names the build that answered, so a stale deployment is visible", async () => {
+    // Two rounds of this diagnosis were read off a deployment that did not
+    // contain the payload it was describing, and nothing on the screen said
+    // so. The revision moves whenever what a send writes changes.
+    const { probeRow } = await import("./push");
+    const result = await probeRow(orgId, userId, { campaignId });
+    expect(result.build).toMatch(/^payload r\d+, build /);
   });
 
   it("tries one write per variant and reads the platform once", async () => {

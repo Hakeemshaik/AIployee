@@ -73,6 +73,7 @@ async function fetchState(campaignId: string): Promise<LaunchState> {
 
 type RowProbe = {
   account: string;
+  build: string;
   variants: { variant: string; suid: string; sent: unknown; received: unknown; landed: boolean }[];
   scanned: number;
   scanComplete: boolean;
@@ -98,6 +99,7 @@ type SendResult = {
   callFlag: string | null;
   complete: boolean;
   nextStep: string;
+  build: string;
   failures: { suid: string; name: string; reason: string }[];
 };
 
@@ -492,7 +494,7 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                     <p className="text-[0.78125rem] leading-relaxed text-ink">{rowProbe.verdict}</p>
                     <p className="mt-1 text-[0.6875rem] text-ink-3">
                       Tested with {rowProbe.account}, against {count(rowProbe.scanned)} customer
-                      records.
+                      records. Answered by {rowProbe.build}.
                     </p>
                     <ul className="mt-2 space-y-1">
                       {rowProbe.variants.map((variant) => (
@@ -528,6 +530,9 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                         <AlertTriangle size={13} className="mt-0.5 shrink-0 text-[#f2c14e]" />
                       )}
                       {sent.nextStep}
+                    </p>
+                    <p className="mt-1 pl-[1.4rem] text-[0.6875rem] text-ink-3">
+                      Sent by {sent.build}.
                     </p>
                     {sent.failures.length > 0 && (
                       <ul className="mt-2 space-y-1 pl-[1.4rem] text-[0.71875rem] text-ink-2">

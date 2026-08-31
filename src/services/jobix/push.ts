@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { db } from "@/lib/db";
+import { buildStamp } from "@/lib/build-info";
 import { audit } from "@/lib/audit";
 import { JobixClient, JobixError, resolveJobixEnv } from "./client";
 import { buildJobixExport, plainWireName, type JobixRow } from "@/services/jobix-export";
@@ -109,6 +110,8 @@ export type PushResult = {
   /** True when every row was written, armed with a usable flag, and found. */
   complete: boolean;
   nextStep: string;
+  /** Which build wrote this batch, and which revision of the payload. */
+  build: string;
 };
 
 /** Timezone every customer is written with. The book is South African. */
@@ -806,6 +809,7 @@ export async function pushDiallingList(
     failures: failures.slice(0, 50),
     complete,
     nextStep,
+    build: buildStamp(),
   };
 }
 
@@ -912,6 +916,9 @@ export type ProbeAttempt = {
 
 export type WriteProbe = {
   attempts: ProbeAttempt[];
+  /** Which build answered, so a stale deployment is visible on the screen
+   *  rather than inferred from the wording afterwards. */
+  build: string;
   /** The arrangement that produced a record, if any. */
   worked: string | null;
   scanned: number;
@@ -1052,6 +1059,7 @@ export async function probeWrite(
   return {
     attempts,
     worked,
+    build: buildStamp(),
     scanned: list.customers.length,
     scanComplete: list.complete,
     verdict,
@@ -1071,6 +1079,9 @@ export type RowProbeVariant = {
 
 export type RowProbe = {
   account: string;
+  /** Which build answered. Two rounds were spent on output from a deployment
+   *  that did not carry the payload it was describing. */
+  build: string;
   variants: RowProbeVariant[];
   scanned: number;
   scanComplete: boolean;
@@ -1412,6 +1423,7 @@ export async function probeRow(
 
   return {
     account: `${row.name} (${row.suid})`,
+    build: buildStamp(),
     variants,
     scanned: after.customers.length,
     scanComplete: after.complete,

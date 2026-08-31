@@ -403,6 +403,7 @@ export function ConnectionCard({
                 )}
                 {probe.verdict}
               </p>
+              <p className="mt-1 text-[0.6875rem] text-ink-3">Answered by {probe.build}.</p>
               <ul className="mt-2 space-y-1.5">
                 {probe.attempts.map((attempt) => (
                   <li key={attempt.suid} className="text-[0.71875rem]">
