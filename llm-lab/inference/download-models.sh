@@ -21,6 +21,17 @@ ROLE="${1:-workhorse}"; shift || true
 FORCE=0
 [[ "${1:-}" == "--force" ]] && FORCE=1
 
+# Match install-service.sh: a 16 GB node gets the smaller workhorse.
+WORKHORSE_TIER="${WORKHORSE_TIER:-auto}"
+if [[ "$WORKHORSE_TIER" == "auto" ]]; then
+  _total_gb=$(free -g | awk '/^Mem:/{print $2}')
+  [[ "${_total_gb:-99}" -lt 24 ]] && WORKHORSE_TIER="16gb" || WORKHORSE_TIER="full"
+fi
+if [[ "$ROLE" == "workhorse" && "$WORKHORSE_TIER" == "16gb" ]]; then
+  WORKHORSE_REPO="$WORKHORSE16_REPO"; WORKHORSE_FILE="$WORKHORSE16_FILE"
+  echo "==> 16 GB node: fetching ${WORKHORSE_FILE} rather than the 18 GB MoE"
+fi
+
 case "$ROLE" in
   workhorse) REPO="$WORKHORSE_REPO"; FILE="$WORKHORSE_FILE" ;;
   fast)      REPO="$FAST_REPO";      FILE="$FAST_FILE" ;;

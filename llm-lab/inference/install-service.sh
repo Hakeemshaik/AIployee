@@ -25,6 +25,19 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# On a 16 GB node the 18 GB MoE cannot fit; WORKHORSE_TIER=16gb selects the
+# smaller registry entry instead. Auto-detected below if not set explicitly.
+WORKHORSE_TIER="${WORKHORSE_TIER:-auto}"
+if [[ "$WORKHORSE_TIER" == "auto" ]]; then
+  _total_gb=$(free -g | awk '/^Mem:/{print $2}')
+  [[ "${_total_gb:-99}" -lt 24 ]] && WORKHORSE_TIER="16gb" || WORKHORSE_TIER="full"
+fi
+if [[ "$ROLE" == "workhorse" && "$WORKHORSE_TIER" == "16gb" ]]; then
+  WORKHORSE_FILE="$WORKHORSE16_FILE"; WORKHORSE_REPO="$WORKHORSE16_REPO"
+  WORKHORSE_CTX="$WORKHORSE16_CTX"; WORKHORSE_SLOTS="$WORKHORSE16_SLOTS"
+  echo "==> 16 GB node detected: using ${WORKHORSE_FILE} instead of the 30B MoE"
+fi
+
 case "$ROLE" in
   workhorse) FILE="$WORKHORSE_FILE"; CTX="$WORKHORSE_CTX"; SLOTS="$WORKHORSE_SLOTS"; PORT="$WORKHORSE_PORT" ;;
   fast)      FILE="$FAST_FILE";      CTX="$FAST_CTX";      SLOTS="$FAST_SLOTS";      PORT="$FAST_PORT" ;;

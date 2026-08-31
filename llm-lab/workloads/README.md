@@ -69,6 +69,30 @@ Replace the built-in starter prompts with your real work. A model that wins on
 generic questions may lose badly on your transcripts, and the whole point is to
 find that out before committing 18 GB of RAM to it.
 
+## import_audit.py
+
+Audits a voice-agent import **before** the campaign dials. Every bad row is a
+call that costs money and returns nothing.
+
+```bash
+./import_audit.py --input import.xlsx --report audit.md --clean cleaned.csv
+./import_audit.py --input import.csv --no-llm     # rules only, no cluster needed
+```
+
+Exit codes: `0` clean, `1` warnings, `2` blocking errors — so it drops straight
+into a pipeline that refuses to dial a bad file.
+
+Catches: malformed/truncated/impossible phone numbers, landlines on a mobile
+campaign (warned, not blocked — they're dialable), duplicate numbers, placeholder
+names, negative or implausible arrears, arrears exceeding total balance, and
+out-of-range ageing.
+
+The division of labour matters: **deterministic code does the deterministic
+work** — phone formatting, arithmetic, exact-key deduplication must be right
+every time, and a model would only make them occasionally wrong. The LLM is
+asked exactly one thing: are two similar names at the same unit the same person?
+That's genuinely fuzzy, and rules do it badly. `--no-llm` skips even that.
+
 ## Pattern: local filter, hosted confirm
 
 The pattern from docs/05 that saves the most money without lying to you:
