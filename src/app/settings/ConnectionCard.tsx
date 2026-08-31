@@ -17,6 +17,7 @@ import { GlassCard } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
 import type { ConnectionStatus, VarState } from "@/services/connection-status";
 import type { CompanyKeyStatus, SignInStatus } from "@/services/jobix/credentials";
+import type { WriteProbe } from "@/services/jobix/push";
 
 // ---------------------------------------------------------------------------
 // Voice platform connection.
@@ -57,6 +58,28 @@ export function ConnectionCard({
   const [keyInput, setKeyInput] = useState("");
   const [keyBusy, setKeyBusy] = useState(false);
   const [keyError, setKeyError] = useState<string | null>(null);
+  const [probe, setProbe] = useState<WriteProbe | null>(null);
+  const [probing, setProbing] = useState(false);
+
+  async function runProbe() {
+    setProbing(true);
+    setProbe(null);
+    setKeyError(null);
+    try {
+      const response = await fetch("/api/settings/connection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "probe_write" }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.message ?? "The test write could not be sent.");
+      setProbe(payload as WriteProbe);
+    } catch (err) {
+      setKeyError(err instanceof Error ? err.message : "The test write could not be sent.");
+    } finally {
+      setProbing(false);
+    }
+  }
 
   async function sendKey(body: unknown) {
     setKeyBusy(true);
@@ -342,6 +365,49 @@ export function ConnectionCard({
             {keyError}
           </p>
         )}
+
+        {/* One record, no call flag, full disclosure. Every failure in this
+            integration looks identical from outside — accepted, queued, gone —
+            and a campaign send is a slow and frightening way to test it. */}
+        <div className="mt-3 border-t border-line-2 pt-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <button className="btn" disabled={probing || key.using === "none"} onClick={runProbe}>
+              {probing ? <Loader2 size={13} className="animate-spin" /> : <Plug size={13} />}
+              Test write
+            </button>
+            <span className="text-[0.6875rem] leading-relaxed text-ink-3">
+              Writes one record named &ldquo;AIployee connection test&rdquo; with no dialling flag,
+              then looks for it. Nobody is called.
+            </span>
+          </div>
+
+          {probe && (
+            <div
+              className={`mt-2.5 rounded-lg border px-3 py-2.5 text-[0.78125rem] ${
+                probe.found
+                  ? "border-[rgba(25,158,112,0.35)] bg-[rgba(25,158,112,0.08)]"
+                  : "border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)]"
+              }`}
+            >
+              <p className="flex items-start gap-2 text-ink">
+                {probe.found ? (
+                  <CheckCircle2 size={13} className="mt-0.5 shrink-0 text-[#3ecf9a]" />
+                ) : (
+                  <AlertTriangle size={13} className="mt-0.5 shrink-0 text-[#e2714a]" />
+                )}
+                {probe.verdict}
+              </p>
+              <details className="mt-2 text-[0.6875rem] text-ink-2">
+                <summary className="cursor-pointer text-ink-3">
+                  What was sent, and what came back
+                </summary>
+                <pre className="scroll-x mt-1.5 rounded-lg border border-line bg-black/30 p-2.5 text-[0.625rem] leading-relaxed">
+{JSON.stringify({ sent: probe.sent, received: probe.received }, null, 2)}
+                </pre>
+              </details>
+            </div>
+          )}
+        </div>
       </div>
 
       <p className="mt-3 border-t border-line-2 pt-2.5 text-[0.6875rem] leading-relaxed text-ink-3">

@@ -269,8 +269,8 @@ describe.skipIf(!scratch)("pushing customers to Jobix (integration)", () => {
     // Read off the customer list afterwards, because a save answers
     // {queued:true} and carries no identifier of its own.
     expect(debtors.map((d) => d.providerContactUuid).sort()).toEqual([
-      "uuid-PUSH-1:28AUG-TEST",
-      "uuid-PUSH-2:28AUG-TEST",
+      "uuid-PUSH-1-28AUG-TEST",
+      "uuid-PUSH-2-28AUG-TEST",
     ]);
     expect(debtors.every((d) => d.callBatch === "28AUG-TEST")).toBe(true);
   });
@@ -797,12 +797,12 @@ describe.skipIf(!scratch)("how the flow starts decides how a customer is written
     });
     const first = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-AAAA" });
     const firstSuid = writes[0].suid;
-    expect(firstSuid).toBe("START-1:28AUG-AAAA");
+    expect(firstSuid).toBe("START-1-28AUG-AAAA");
     expect(first.created).toBe(1);
 
     writes.length = 0;
     const second = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-BBBB" });
-    expect(writes[0].suid).toBe("START-1:28AUG-BBBB");
+    expect(writes[0].suid).toBe("START-1-28AUG-BBBB");
     expect(writes[0].suid).not.toBe(firstSuid);
     // A second dial to the same person is a second record, not a fault.
     expect(second.created).toBe(1);
@@ -1075,8 +1075,8 @@ describe.skipIf(!scratch)("a write is only confirmed by the reference it wrote",
   it("re-reads once, because a queued write may not be in the list yet", async () => {
     const landed = {
       id: 2,
-      uuid: "u-002M:28AUG-STRICT",
-      suid: "002M:28AUG-STRICT",
+      uuid: "u-002M-28AUG-STRICT",
+      suid: "002M-28AUG-STRICT",
       phone: "+27825104242",
       name: "tester 808",
       unit: null,
@@ -1142,5 +1142,71 @@ describe.skipIf(!scratch)("a write is only confirmed by the reference it wrote",
     expect(result.referenceless).toBe(true);
     expect(result.complete).toBe(false);
     expect(result.nextStep).toMatch(/cannot be confirmed either way/i);
+  });
+});
+
+describe.skipIf(!scratch)("the write probe", () => {
+  let orgId = "";
+  let userId = "";
+
+  beforeEach(async () => {
+    writes.length = 0;
+    postWrite.mockClear();
+    customersEchoWrites();
+    await db.auditLog.deleteMany();
+    await db.serverSecret.deleteMany();
+    await db.user.deleteMany();
+    await db.organization.deleteMany();
+    const org = await db.organization.create({ data: { name: "Probe Co", slug: "probe-co" } });
+    orgId = org.id;
+    userId = (
+      await db.user.create({
+        data: { organizationId: orgId, name: "Ops", email: "probe@example.com", role: "admin" },
+      })
+    ).id;
+    process.env.JOBIX_QUEUE_SETTLE_MS = "1";
+  });
+
+  afterEach(() => {
+    delete process.env.JOBIX_QUEUE_SETTLE_MS;
+  });
+
+  it("never sends a call flag, so a probe cannot dial anybody", async () => {
+    const { probeWrite } = await import("./push");
+    await probeWrite(orgId, userId);
+    expect(writes).toHaveLength(1);
+    expect(writes[0].values.call).toBeUndefined();
+    expect(writes[0].main.phone).toBe("+27000000000");
+  });
+
+  it("shows the payload and the reply, with the key redacted", async () => {
+    const { probeWrite } = await import("./push");
+    const result = await probeWrite(orgId, userId);
+    expect(JSON.stringify(result.sent)).toContain("[redacted]");
+    expect(JSON.stringify(result.sent)).not.toContain("company-key-for-tests");
+    expect(result.received).toBeTruthy();
+  });
+
+  it("says the write landed when the record comes back", async () => {
+    const { probeWrite } = await import("./push");
+    const result = await probeWrite(orgId, userId);
+    expect(result.found).toBe(true);
+    expect(result.verdict).toMatch(/landed/i);
+  });
+
+  it("names the company key when the write is accepted and discarded", async () => {
+    vi.mocked(api.pullCustomers).mockResolvedValue({
+      customers: [],
+      rawCount: 0,
+      droppedStale: 0,
+      droppedDuplicate: 0,
+    });
+    const { probeWrite } = await import("./push");
+    const result = await probeWrite(orgId, userId);
+    expect(result.found).toBe(false);
+    expect(result.verdict).toMatch(/accepted this write and discarded it/i);
+    expect(result.verdict).toContain(result.companyKeyHint);
+    // The hint, never the key.
+    expect(result.companyKeyHint).not.toContain("company-key-for-tests");
   });
 });

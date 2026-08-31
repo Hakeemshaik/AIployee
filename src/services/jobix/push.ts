@@ -144,7 +144,10 @@ function writeBudgetMs(): number {
  */
 function confirmBudgetMs(): number {
   const configured = Number(process.env.JOBIX_CONFIRM_BUDGET_MS);
-  return Number.isFinite(configured) && process.env.JOBIX_CONFIRM_BUDGET_MS ? configured : 25_000;
+  // 25 seconds did not get through 1500 customers, so every confirmation on a
+  // real workspace came back "ran out of time" — a check that cannot finish is
+  // not a check. The route allows 300s; this takes a third of it.
+  return Number.isFinite(configured) && process.env.JOBIX_CONFIRM_BUDGET_MS ? configured : 90_000;
 }
 
 /**
@@ -157,6 +160,23 @@ function confirmBudgetMs(): number {
 const QUEUE_SETTLE_MS = Number(process.env.JOBIX_QUEUE_SETTLE_MS ?? 4000);
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * A reference the write API will accept.
+ *
+ * The known-good payloads carry a bare uuid — letters, digits and dashes and
+ * nothing else. A key built by joining an account number to a batch code with a
+ * colon is a shape no working write has ever used, and a write whose only
+ * failure mode is being accepted and discarded is not the place to find out
+ * whether punctuation matters. Letters, digits and dashes only.
+ */
+function safeSuid(raw: string): string {
+  const cleaned = raw
+    .replace(/[^A-Za-z0-9-]+/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-|-$/g, "");
+  return cleaned.slice(0, 120) || "unnamed";
+}
 
 /** Last 9 digits — the stable core of a South African number in any format. */
 function phoneKey(phone: string): string {
@@ -187,13 +207,39 @@ const AGENT_OWNED = new Set([
 /** Columns that identify rather than describe — sent in `main`, not `values`. */
 const IDENTITY = new Set(["SUID", "suid", "UUID", "uuid", "Timezone", "timezone"]);
 
+/**
+ * The fields a working write actually carries.
+ *
+ * Taken from submissions the platform accepted AND kept. They are few: a name,
+ * a number, an email, what is owed, where they live, and the dialling columns.
+ *
+ * This used to send everything the paste template has a column for — around
+ * fifty keys per customer, most of them the agent's own output fields left
+ * blank. A queue that validates its input has fifty chances to reject that and
+ * only one way to tell you: accepting the write and discarding the row. So the
+ * payload is now the known-good set and nothing else.
+ */
+const SENT_FIELDS = new Set([
+  "full_name", "name", "Name",
+  "phone", "Phone",
+  "email", "Email",
+  "total_due", "arrears_amount",
+  "unit_number", "main_unit_no",
+  "building_name", "location",
+  "tenant_code",
+  "language", "month-of",
+  // The dialling columns: attribution, and the flag the flow filters on.
+  "batch", "call", "all",
+]);
+
 function contactValues(row: JobixRow): Record<string, string | number> {
   const out: Record<string, string | number> = {};
   for (const [key, value] of Object.entries(row.values)) {
+    if (!SENT_FIELDS.has(key)) continue;
     if (AGENT_OWNED.has(key) || IDENTITY.has(key)) continue;
     // An empty string would blank a field Jobix already holds. Only send what
     // this push actually knows.
-    if (value === "" ) continue;
+    if (value === "") continue;
     out[key] = value;
   }
   return out;
@@ -349,7 +395,7 @@ export async function pushDiallingList(
    * record is still findable by eye and by the batch it belongs to.
    */
   const suidFor = (row: JobixRow) =>
-    armOnWrite ? `${row.suid}:${options.batchCode}` : row.suid;
+    armOnWrite ? safeSuid(`${row.suid}-${options.batchCode}`) : safeSuid(row.suid);
 
   const list = await buildJobixExport(organizationId, {
     campaignId: options.campaignId,
@@ -810,5 +856,108 @@ export async function stopBatch(
     scanned: list.customers.length,
     scanComplete: list.complete,
     message,
+  };
+}
+
+// --- proving the write, one record at a time -------------------------------
+
+export type WriteProbe = {
+  /** Exactly what was sent, so it can be compared against a working payload. */
+  sent: unknown;
+  /** Exactly what came back. */
+  received: unknown;
+  /** The reference written, and whether it turned up afterwards. */
+  suid: string;
+  found: boolean;
+  scanned: number;
+  scanComplete: boolean;
+  companyKeyHint: string;
+  verdict: string;
+};
+
+/**
+ * Write one record and say what happened, in full.
+ *
+ * This exists because every failure in this integration looks the same from the
+ * outside: the write is accepted, answers {queued: true}, and the customer is
+ * nowhere. A campaign send is a slow and frightening way to test that — it can
+ * dial people — so this writes ONE obviously-marked record, with NO call flag so
+ * no flow can act on it, and reports the request, the response, and whether the
+ * platform kept it.
+ *
+ * The payload is built the same way a real send builds one, so a difference
+ * found here is a difference that matters.
+ */
+export async function probeWrite(
+  organizationId: string,
+  userId: string,
+  options: { phone?: string } = {},
+): Promise<WriteProbe> {
+  const env = await resolveJobixEnv();
+  if (!env) throw new JobixError("Jobix is not configured on this server.", "not_configured");
+  if (!env.companyKey) {
+    throw new JobixError(
+      "The company key is required to write. Set it under Settings.",
+      "not_configured",
+    );
+  }
+  const client = new JobixClient(env);
+  const suid = safeSuid(`aiployee-probe-${Date.now()}`);
+  // Never a real person's number by default, and never a call flag: nothing
+  // here may be dialled.
+  const phone = options.phone?.trim() || "+27000000000";
+  const main = {
+    suid,
+    timezone: TIMEZONE,
+    phone,
+    name: "AIployee connection test",
+  };
+  const values = {
+    full_name: "AIployee connection test",
+    phone,
+    total_due: 1,
+    unit_number: "TEST",
+    building_name: "AIployee connection test",
+  };
+  const sent = { company_key: "[redacted]", customer_data: { main, values } };
+
+  let received: unknown;
+  try {
+    received = await save(client, env.companyKey, main, values);
+  } catch (err) {
+    received = { error: describe(err) };
+  }
+
+  // Give the queue a moment, exactly as a real send does.
+  await sleep(QUEUE_SETTLE_MS);
+  const list = await readCustomers(client);
+  const found = list.customers.some((customer) => customer.suid === suid);
+
+  const hint = env.companyKey.length <= 4 ? "…" : `…${env.companyKey.slice(-4)}`;
+  const verdict = found
+    ? `The write landed: a record with reference ${suid} is on the platform. Writing works, so a send that reports queued and nothing arriving is about the payload, not the connection.`
+    : list.complete
+      ? `The write did NOT land. ${list.customers.length} customer records were read and none carries ${suid}, so the platform accepted this write and discarded it. The company key in use ends ${hint} — if that is not the workspace whose customer list you are looking at, that is the reason.`
+      : `Inconclusive: ${list.customers.length} records were read before the budget ran out, and ${suid} was not among them. Raise JOBIX_CONFIRM_BUDGET_MS and try again, or search the customer list in Jobix for ${suid}.`;
+
+  await audit({
+    organizationId,
+    actorType: "user",
+    actorId: userId,
+    action: "jobix.write_probed",
+    entityType: "integration_settings",
+    entityId: organizationId,
+    detail: { suid, found, scanned: list.customers.length, companyKeyHint: hint },
+  });
+
+  return {
+    sent,
+    received,
+    suid,
+    found,
+    scanned: list.customers.length,
+    scanComplete: list.complete,
+    companyKeyHint: hint,
+    verdict,
   };
 }

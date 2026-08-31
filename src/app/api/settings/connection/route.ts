@@ -20,6 +20,10 @@ const keySchema = z.object({
   companyKey: z.string().min(1).max(400),
 });
 const clearKeySchema = z.object({ action: z.literal("clear_company_key") });
+const probeSchema = z.object({
+  action: z.literal("probe_write"),
+  phone: z.string().max(30).optional(),
+});
 
 export async function POST(request: Request) {
   try {
@@ -51,6 +55,13 @@ export async function POST(request: Request) {
         }
         throw err;
       }
+    }
+    const probe = probeSchema.safeParse(body);
+    if (probe.success) {
+      const { probeWrite } = await import("@/services/jobix/push");
+      return NextResponse.json(
+        await probeWrite(ctx.organizationId, ctx.userId, { phone: probe.data.phone }),
+      );
     }
     const key = keySchema.safeParse(body);
     if (key.success) {
