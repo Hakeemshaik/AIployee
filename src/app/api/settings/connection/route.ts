@@ -15,6 +15,11 @@ const signInSchema = z.object({
   password: z.string().min(1).max(400),
 });
 const clearSchema = z.object({ action: z.literal("clear_sign_in") });
+const keySchema = z.object({
+  action: z.literal("company_key"),
+  companyKey: z.string().min(1).max(400),
+});
+const clearKeySchema = z.object({ action: z.literal("clear_company_key") });
 
 export async function POST(request: Request) {
   try {
@@ -46,6 +51,17 @@ export async function POST(request: Request) {
         }
         throw err;
       }
+    }
+    const key = keySchema.safeParse(body);
+    if (key.success) {
+      const { saveCompanyKey } = await import("@/services/jobix/credentials");
+      return NextResponse.json(
+        await saveCompanyKey(ctx.organizationId, ctx.userId, key.data.companyKey),
+      );
+    }
+    if (clearKeySchema.safeParse(body).success) {
+      const { clearCompanyKey } = await import("@/services/jobix/credentials");
+      return NextResponse.json(await clearCompanyKey(ctx.organizationId, ctx.userId));
     }
     if (clearSchema.safeParse(body).success) {
       const { clearSignIn } = await import("@/services/jobix/credentials");

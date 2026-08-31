@@ -16,7 +16,7 @@ import {
 import { GlassCard } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
 import type { ConnectionStatus, VarState } from "@/services/connection-status";
-import type { SignInStatus } from "@/services/jobix/credentials";
+import type { CompanyKeyStatus, SignInStatus } from "@/services/jobix/credentials";
 
 // ---------------------------------------------------------------------------
 // Voice platform connection.
@@ -39,9 +39,11 @@ const STATE_STYLE: Record<VarState, { label: string; className: string; Icon: ty
 export function ConnectionCard({
   status,
   signIn: initialSignIn,
+  companyKey: initialKey,
 }: {
   status: ConnectionStatus;
   signIn: SignInStatus;
+  companyKey: CompanyKeyStatus;
 }) {
   const router = useRouter();
   const [result, setResult] = useState<TestResult | null>(null);
@@ -51,6 +53,31 @@ export function ConnectionCard({
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState<"save" | "clear" | null>(null);
   const [signInError, setSignInError] = useState<string | null>(null);
+  const [key, setKey] = useState(initialKey);
+  const [keyInput, setKeyInput] = useState("");
+  const [keyBusy, setKeyBusy] = useState(false);
+  const [keyError, setKeyError] = useState<string | null>(null);
+
+  async function sendKey(body: unknown) {
+    setKeyBusy(true);
+    setKeyError(null);
+    try {
+      const response = await fetch("/api/settings/connection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.message ?? "That did not work.");
+      setKey(payload as CompanyKeyStatus);
+      setKeyInput("");
+      router.refresh();
+    } catch (err) {
+      setKeyError(err instanceof Error ? err.message : "That did not work.");
+    } finally {
+      setKeyBusy(false);
+    }
+  }
 
   async function send(body: unknown, kind: "save" | "clear") {
     setSaving(kind);
@@ -258,6 +285,61 @@ export function ConnectionCard({
           <p className="mt-2 flex items-start gap-2 rounded-lg border border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)] px-3 py-2 text-[0.78125rem] text-[#e2714a]">
             <AlertTriangle size={13} className="mt-0.5 shrink-0" />
             {signInError}
+          </p>
+        )}
+      </div>
+
+      {/* The write API's company key. Its failure mode is the reason it belongs
+          here: a wrong key is ACCEPTED, answers {queued:true}, and the customer
+          appears nowhere — so trying a different one must not need a redeploy. */}
+      <div className="mt-3 border-t border-line-2 pt-3">
+        <p className="mb-1 flex items-center gap-2 text-[0.78125rem] font-medium text-ink">
+          <KeyRound size={13} className="text-accent" /> Company key
+        </p>
+        <p className="mb-2.5 text-[0.75rem] leading-relaxed text-ink-2">
+          {key.using === "none"
+            ? "Not set. Writing a customer needs it — it names the workspace the write goes into."
+            : `In use${key.hint ? ` (${key.hint})` : ""}, ${
+                key.using === "stored" ? "saved here" : "from an environment variable"
+              }. A wrong key is accepted and the customer appears nowhere, so if a send reports queued and nothing arrives, this is the first thing to change.`}
+        </p>
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="block">
+            <span className="mb-1 block text-[0.6875rem] text-ink-3">
+              {key.stored ? "Replace it" : "Company key"}
+            </span>
+            <input
+              className="field w-[280px]"
+              type="password"
+              autoComplete="off"
+              placeholder={key.hint ?? "The workspace key from Jobix"}
+              value={keyInput}
+              onChange={(event) => setKeyInput(event.target.value)}
+            />
+          </label>
+          <button
+            className="btn btn-primary"
+            disabled={keyBusy || !keyInput.trim()}
+            onClick={() => sendKey({ action: "company_key", companyKey: keyInput })}
+          >
+            {keyBusy ? <Loader2 size={13} className="animate-spin" /> : <KeyRound size={13} />}
+            Save key
+          </button>
+          {key.stored && (
+            <button
+              className="btn"
+              disabled={keyBusy}
+              onClick={() => sendKey({ action: "clear_company_key" })}
+            >
+              <Trash2 size={13} />
+              Remove
+            </button>
+          )}
+        </div>
+        {keyError && (
+          <p className="mt-2 flex items-start gap-2 rounded-lg border border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)] px-3 py-2 text-[0.78125rem] text-[#e2714a]">
+            <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+            {keyError}
           </p>
         )}
       </div>

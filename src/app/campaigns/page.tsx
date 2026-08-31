@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { getContext } from "@/lib/auth";
+import { getContext, hasRole } from "@/lib/auth";
 import { label } from "@/lib/domain";
-import { money, percent } from "@/lib/format";
+import { count, money } from "@/lib/format";
 import { listCampaigns } from "@/services/campaigns";
-import { Badge, EmptyState, GlassCard, PageHeader } from "@/components/ui";
+import { Badge, EmptyState, PageHeader } from "@/components/ui";
+import { DeleteCampaignButton } from "./DeleteCampaignButton";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Campaigns" };
@@ -12,6 +13,7 @@ export const metadata = { title: "Campaigns" };
 export default async function CampaignsPage() {
   const ctx = await getContext();
   const campaigns = await listCampaigns(ctx.organizationId);
+  const canDelete = hasRole(ctx, ["admin", "manager"]);
 
   return (
     <div className="page-in">
@@ -31,42 +33,73 @@ export default async function CampaignsPage() {
           action={<Link href="/campaigns/new" className="btn btn-primary">Create campaign</Link>}
         />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        // Cards that identify a campaign and nothing more. Every one of these
+        // used to carry eight metrics, which put the analytics on the list —
+        // eight numbers times six campaigns is a wall to read and none of it
+        // answers "which campaign am I looking for". Enough to recognise it and
+        // to see whether it has run; the measuring happens inside.
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {campaigns.map((c) => (
-            <GlassCard key={c.id} className="transition-transform duration-150 hover:-translate-y-0.5">
-              <div className="mb-3 flex items-start justify-between gap-3">
+            <Link
+              key={c.id}
+              href={`/campaigns/${c.id}`}
+              className="group relative block rounded-xl border border-line bg-white/[0.02] p-4 transition-colors hover:border-[rgba(57,135,229,0.45)] hover:bg-white/[0.04]"
+            >
+              <div className="mb-2.5 flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <Link href={`/campaigns/${c.id}`} className="text-[0.9375rem] font-semibold text-ink hover:text-accent">
+                  <p className="truncate text-[0.9375rem] font-semibold text-ink group-hover:text-accent">
                     {c.name}
-                  </Link>
-                  <p className="mt-0.5 truncate text-[0.75rem] text-ink-3">
+                  </p>
+                  <p className="mt-0.5 truncate text-[0.71875rem] text-ink-3">
                     {label(c.strategy)}
-                    {c.agentName ? ` · Agent ${c.agentName}` : " · No agent assigned"}
+                    {c.agentName ? ` · ${c.agentName}` : ""}
                   </p>
                 </div>
-                <Badge value={c.status} label={label(c.status)} />
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <Badge value={c.status} label={label(c.status)} />
+                  {canDelete && (
+                    <DeleteCampaignButton
+                      campaignId={c.id}
+                      name={c.name}
+                      accounts={c.metrics.totalDebtors}
+                    />
+                  )}
+                </span>
               </div>
-              {c.description && (
-                <p className="mb-4 line-clamp-2 text-[0.8125rem] leading-relaxed text-ink-2">{c.description}</p>
-              )}
-              <div className="grid grid-cols-3 gap-x-4 gap-y-3 border-t border-line-2 pt-3 sm:grid-cols-4">
-                {[
-                  ["Total debt", money(c.metrics.totalDebt)],
-                  ["Debtors", String(c.metrics.totalDebtors)],
-                  ["Contacted", String(c.metrics.contacted)],
-                  ["Connected", String(c.metrics.connected)],
-                  ["Promises", `${c.metrics.promises} · ${money(c.metrics.promiseValue)}`],
-                  ["Recovered", money(c.metrics.recovered)],
-                  ["Recovery rate", percent(c.metrics.recoveryRate)],
-                  ["Payments", String(c.metrics.payments)],
-                ].map(([k, v]) => (
-                  <div key={k}>
-                    <p className="text-[0.625rem] font-medium uppercase tracking-[0.07em] text-ink-3">{k}</p>
-                    <p className="num mt-0.5 text-[0.8125rem] font-medium text-ink">{v}</p>
-                  </div>
-                ))}
+
+              <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-line-2 pt-2.5">
+                <span>
+                  <span className="block text-[0.625rem] font-medium uppercase tracking-[0.07em] text-ink-3">
+                    Accounts
+                  </span>
+                  <span className="num text-[0.8125rem] font-medium text-ink">
+                    {count(c.metrics.totalDebtors)}
+                  </span>
+                </span>
+                <span>
+                  <span className="block text-[0.625rem] font-medium uppercase tracking-[0.07em] text-ink-3">
+                    Book value
+                  </span>
+                  <span className="num text-[0.8125rem] font-medium text-ink">
+                    {money(c.metrics.totalDebt)}
+                  </span>
+                </span>
+                <span>
+                  <span className="block text-[0.625rem] font-medium uppercase tracking-[0.07em] text-ink-3">
+                    Calls
+                  </span>
+                  <span className="num text-[0.8125rem] font-medium text-ink">
+                    {c.metrics.contacted > 0 ? count(c.metrics.contacted) : "—"}
+                  </span>
+                </span>
               </div>
-            </GlassCard>
+
+              <p className="mt-2.5 text-[0.6875rem] text-ink-3">
+                {c.metrics.contacted > 0
+                  ? "Open for calls, transcripts and analytics"
+                  : "Not dialled yet — open to send the list"}
+              </p>
+            </Link>
           ))}
         </div>
       )}

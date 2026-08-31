@@ -220,7 +220,13 @@ type Identity = {
   email?: string;
 };
 
-type ExistingCustomer = { uuid: string; suid: string | null; phone: string };
+type ExistingCustomer = {
+  uuid: string;
+  suid: string | null;
+  phone: string;
+  /** The batch a record belongs to, needed to disarm exactly one run. */
+  batch?: string | null;
+};
 
 /**
  * The workspace's customers, within a wall-clock budget.
@@ -232,6 +238,7 @@ type ExistingCustomer = { uuid: string; suid: string | null; phone: string };
  */
 async function readCustomers(
   client: JobixClient,
+  options: { withBatch?: boolean } = {},
 ): Promise<{ customers: ExistingCustomer[]; complete: boolean }> {
   const deadline = Date.now() + confirmBudgetMs();
   let complete = true;
@@ -250,6 +257,7 @@ async function readCustomers(
         uuid: customer.uuid,
         suid: customer.suid,
         phone: customer.phone,
+        ...(options.withBatch ? { batch: customer.callBatch } : {}),
       })),
       complete,
     };
@@ -717,5 +725,90 @@ export async function pushDiallingList(
     failures: failures.slice(0, 50),
     complete,
     nextStep,
+  };
+}
+
+// --- stopping a run --------------------------------------------------------
+
+export type StopResult = {
+  batchCode: string;
+  /** Records found carrying this batch. */
+  found: number;
+  /** Records whose call column was cleared, so the flow no longer takes them. */
+  cleared: number;
+  failures: PushFailure[];
+  scanned: number;
+  scanComplete: boolean;
+  message: string;
+};
+
+/**
+ * Actually stop a run, by disarming it on the platform.
+ *
+ * There is no API to stop a flow, and "stopped" written into this platform's own
+ * status column stops nothing — the voice platform has never heard of it. What
+ * DOES stop a run is the thing that started it: the `call` column. A record with
+ * an empty call column is not matched by the flow's entry filter, so it is not
+ * dialled, and one still queued behind it is dropped when it gets there.
+ *
+ * Scoped to the batch, so stopping one campaign cannot disarm another's run.
+ */
+export async function stopBatch(
+  organizationId: string,
+  userId: string,
+  batchCode: string,
+): Promise<StopResult> {
+  const env = await resolveJobixEnv();
+  if (!env) throw new JobixError("Jobix is not configured on this server.", "not_configured");
+  if (!env.companyKey) {
+    throw new JobixError(
+      "The company key is required to clear a batch. Set it under Settings.",
+      "not_configured",
+    );
+  }
+  const companyKey = env.companyKey;
+  const client = new JobixClient(env);
+
+  const list = await readCustomers(client, { withBatch: true });
+  const mine = list.customers.filter((customer) => customer.batch === batchCode);
+  const failures: PushFailure[] = [];
+  let cleared = 0;
+
+  for (const customer of mine) {
+    if (!customer.suid) continue;
+    try {
+      await save(client, companyKey, { suid: customer.suid, timezone: TIMEZONE }, { call: "" });
+      cleared += 1;
+    } catch (err) {
+      failures.push({ suid: customer.suid, name: customer.phone, reason: describe(err) });
+    }
+  }
+
+  await audit({
+    organizationId,
+    actorType: "user",
+    actorId: userId,
+    action: "jobix.batch_stopped",
+    entityType: "call_batch",
+    entityId: batchCode,
+    detail: { found: mine.length, cleared, failed: failures.length, scanned: list.customers.length },
+  });
+
+  const message = !list.complete
+    ? `Cleared ${cleared} of the ${mine.length} records found carrying ${batchCode}, but the customer list could not be read in full — there may be more still armed. Run this again, or clear the call column in Jobix.`
+    : mine.length === 0
+      ? `Nothing on the platform carries ${batchCode}, so there is nothing armed to stop. A call already connected runs to its end either way.`
+      : cleared === mine.length
+        ? `Disarmed ${cleared} record(s) carrying ${batchCode}: their call column is empty, so the flow will not take them. A call already connected runs to its end — this stops the ones not yet dialled.`
+        : `Disarmed ${cleared} of ${mine.length} records carrying ${batchCode}. The rest are listed below and are still armed.`;
+
+  return {
+    batchCode,
+    found: mine.length,
+    cleared,
+    failures: failures.slice(0, 50),
+    scanned: list.customers.length,
+    scanComplete: list.complete,
+    message,
   };
 }

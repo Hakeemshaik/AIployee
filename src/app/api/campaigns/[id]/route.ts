@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { authFailure } from "@/lib/api-errors";
+import { authFailure, jobixFailure } from "@/lib/api-errors";
 import { z } from "zod";
-import { apiContext } from "@/lib/auth";
+import { apiContext, requireRole } from "@/lib/auth";
 import { CAMPAIGN_STATUSES } from "@/lib/domain";
 import { updateCampaignStatus } from "@/services/campaigns";
 
@@ -32,5 +32,26 @@ export async function PATCH(
     const status = message.includes("not found") ? 404 : 500;
     if (status === 500) console.error("[campaigns] update failed:", err);
     return NextResponse.json({ error: message }, { status });
+  }
+}
+
+// DELETE /api/campaigns/:id — remove a campaign, releasing its accounts.
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const ctx = await apiContext();
+    requireRole(ctx, ["admin", "manager"], "delete campaigns");
+    const { id } = await params;
+    const { deleteCampaign } = await import("@/services/campaign-control");
+    return NextResponse.json(await deleteCampaign(ctx.organizationId, ctx.userId, id));
+  } catch (err) {
+    const denied = authFailure(err);
+    if (denied) return denied;
+    // "Stop the live run first" is an answer, not a fault.
+    const jobix = jobixFailure(err);
+    if (jobix) return jobix;
+    const message = err instanceof Error ? err.message : "internal_error";
+    const status = message.includes("not found") ? 404 : 500;
+    if (status === 500) console.error("[campaigns] delete failed:", err);
+    return NextResponse.json({ error: message, message }, { status });
   }
 }

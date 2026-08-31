@@ -102,3 +102,83 @@ describe.skipIf(!scratch)("campaign start (integration)", () => {
     expect(failure).not.toMatch(/queued/i);
   });
 });
+
+describe.skipIf(!scratch)("deleting a campaign (integration)", () => {
+  let orgId = "";
+  let userId = "";
+  let campaignId = "";
+  let debtorId = "";
+
+  beforeEach(async () => {
+    await db.campaignContact.deleteMany();
+    await db.redialBatch.deleteMany();
+    await db.debtAccount.deleteMany();
+    await db.debtor.deleteMany();
+    await db.campaign.deleteMany();
+    await db.auditLog.deleteMany();
+    await db.platformEvent.deleteMany();
+    await db.user.deleteMany();
+    await db.organization.deleteMany();
+    const org = await db.organization.create({ data: { name: "Del Co", slug: "del-co" } });
+    orgId = org.id;
+    userId = (
+      await db.user.create({
+        data: { organizationId: orgId, name: "Ops", email: "del@example.com", role: "admin" },
+      })
+    ).id;
+    campaignId = (
+      await db.campaign.create({ data: { organizationId: orgId, name: "Old run", status: "draft" } })
+    ).id;
+    debtorId = (
+      await db.debtor.create({
+        data: {
+          organizationId: orgId,
+          campaignId,
+          firstName: "Person",
+          lastName: "One",
+          accountNumber: "DEL-1",
+          phone: "+27821110001",
+        },
+      })
+    ).id;
+    await db.campaignContact.create({
+      data: { organizationId: orgId, campaignId, debtorId, attempts: 1, active: true },
+    });
+  });
+
+  it("keeps the accounts and releases them, because the book is not the campaign", async () => {
+    const { deleteCampaign } = await import("./campaign-control");
+    const result = await deleteCampaign(orgId, userId, campaignId);
+    expect(result.releasedAccounts).toBe(1);
+
+    const debtor = await db.debtor.findUniqueOrThrow({ where: { id: debtorId } });
+    expect(debtor.campaignId).toBeNull();
+    expect(await db.campaign.count()).toBe(0);
+    expect(await db.campaignContact.count()).toBe(0);
+  });
+
+  it("refuses while a run is live, so accounts cannot be left armed and unreachable", async () => {
+    await db.campaign.update({
+      where: { id: campaignId },
+      data: { status: "running", providerCampaignId: "31AUG-LIVE" },
+    });
+    const { deleteCampaign } = await import("./campaign-control");
+    await expect(deleteCampaign(orgId, userId, campaignId)).rejects.toThrow(/Stop it first/i);
+    expect(await db.campaign.count()).toBe(1);
+  });
+
+  it("records the deletion, since a campaign holds the record of who was called", async () => {
+    const { deleteCampaign } = await import("./campaign-control");
+    await deleteCampaign(orgId, userId, campaignId);
+    const entry = await db.auditLog.findFirst({ where: { action: "campaign.deleted" } });
+    expect(entry).not.toBeNull();
+    expect(entry!.detail).toContain("Old run");
+  });
+
+  it("will not delete another organization's campaign", async () => {
+    const other = await db.organization.create({ data: { name: "Other", slug: "other-del" } });
+    const { deleteCampaign } = await import("./campaign-control");
+    await expect(deleteCampaign(other.id, userId, campaignId)).rejects.toThrow(/not found/i);
+    expect(await db.campaign.count()).toBe(1);
+  });
+});

@@ -33,6 +33,30 @@ export type StoredSignIn = { email: string; password: string };
 
 type Envelope = { email: string; password: string; savedAt: string; savedBy: string };
 
+/**
+ * The write API's company key, stored the same way as the sign-in.
+ *
+ * It authorises the workspace a customer is written into, and getting it wrong
+ * is silent: the write is accepted, answers {queued: true}, and the customer
+ * appears nowhere. Keeping it in an environment variable meant a redeploy to
+ * try a different one, which is a slow way to chase a value whose only symptom
+ * is nothing happening.
+ */
+const KEY_STORE = "jobix_company_key";
+
+type KeyEnvelope = { companyKey: string; savedAt: string; savedBy: string };
+
+export type CompanyKeyStatus = {
+  stored: boolean;
+  savedAt: string | null;
+  /** Present in the environment as well. */
+  environment: boolean;
+  /** Which one a write will use. */
+  using: "stored" | "environment" | "none";
+  /** Enough to recognise which key it is, never enough to use it. */
+  hint: string | null;
+};
+
 export type SignInStatus = {
   /** A credential is stored here and readable. */
   stored: boolean;
@@ -145,4 +169,95 @@ export async function clearSignIn(organizationId: string, userId: string): Promi
     );
   }
   return status;
+}
+
+// --- the write API's company key -------------------------------------------
+
+/** Last four characters only: enough to tell two keys apart, useless alone. */
+function hintOf(key: string): string {
+  return key.length <= 4 ? "…" : `…${key.slice(-4)}`;
+}
+
+async function readKeyEnvelope(sealed: string): Promise<KeyEnvelope | null> {
+  const plain = await open(sealed);
+  if (!plain) return null;
+  try {
+    const parsed = JSON.parse(plain) as KeyEnvelope;
+    return parsed.companyKey ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function companyKeyStatus(): Promise<CompanyKeyStatus> {
+  const environment = !!process.env.JOBIX_COMPANY_KEY?.trim();
+  const row = await db.serverSecret.findUnique({ where: { name: KEY_STORE } });
+  const envelope = row ? await readKeyEnvelope(row.value) : null;
+  const effective = envelope?.companyKey ?? process.env.JOBIX_COMPANY_KEY?.trim() ?? null;
+
+  return {
+    stored: !!envelope,
+    savedAt: envelope?.savedAt ?? null,
+    environment,
+    using: envelope ? "stored" : environment ? "environment" : "none",
+    hint: effective ? hintOf(effective) : null,
+  };
+}
+
+/** The key a write should use: saved here first, else the environment. */
+export async function storedCompanyKey(): Promise<string | null> {
+  const row = await db.serverSecret.findUnique({ where: { name: KEY_STORE } });
+  if (!row) return null;
+  const envelope = await readKeyEnvelope(row.value);
+  return envelope?.companyKey ?? null;
+}
+
+export async function saveCompanyKey(
+  organizationId: string,
+  userId: string,
+  companyKey: string,
+): Promise<CompanyKeyStatus> {
+  const trimmed = companyKey.trim();
+  if (!trimmed) throw new JobixError("The company key is empty.", "not_configured");
+
+  const envelope: KeyEnvelope = {
+    companyKey: trimmed,
+    savedAt: new Date().toISOString(),
+    savedBy: userId,
+  };
+  await db.serverSecret.upsert({
+    where: { name: KEY_STORE },
+    create: { name: KEY_STORE, value: await seal(JSON.stringify(envelope)) },
+    update: { value: await seal(JSON.stringify(envelope)) },
+  });
+
+  await audit({
+    organizationId,
+    actorType: "user",
+    actorId: userId,
+    action: "jobix.company_key_saved",
+    entityType: "integration_settings",
+    entityId: organizationId,
+    // The hint only. Enough to see in the log which key was in use when a run
+    // went wrong, never enough to use it.
+    detail: { hint: hintOf(trimmed) },
+  });
+
+  return companyKeyStatus();
+}
+
+export async function clearCompanyKey(
+  organizationId: string,
+  userId: string,
+): Promise<CompanyKeyStatus> {
+  await db.serverSecret.deleteMany({ where: { name: KEY_STORE } });
+  await audit({
+    organizationId,
+    actorType: "user",
+    actorId: userId,
+    action: "jobix.company_key_cleared",
+    entityType: "integration_settings",
+    entityId: organizationId,
+  });
+  return companyKeyStatus();
 }

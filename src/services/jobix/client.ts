@@ -95,7 +95,14 @@ export async function resolveJobixEnv(): Promise<JobixEnv | null> {
   } catch {
     // No store available; the environment alone decides.
   }
-  if (!stored) return env;
+  let storedKey: string | null = null;
+  try {
+    const { storedCompanyKey } = await import("./credentials");
+    storedKey = await storedCompanyKey();
+  } catch {
+    // No store available; the environment alone decides.
+  }
+  if (!stored && !storedKey) return env;
   const base = env ?? {
     base: (process.env.JOBIX_BASE ?? "https://dashboard.jobix.ai").replace(/\/$/, ""),
     apiBase: (process.env.JOBIX_API_BASE ?? "https://dashboard-api.jobix.ai").replace(/\/$/, ""),
@@ -103,7 +110,11 @@ export async function resolveJobixEnv(): Promise<JobixEnv | null> {
     companyKey: process.env.JOBIX_COMPANY_KEY,
     flowUuid: process.env.JOBIX_FLOW_UUID,
   };
-  return { ...base, email: stored.email, password: stored.password };
+  return {
+    ...base,
+    ...(stored ? { email: stored.email, password: stored.password } : {}),
+    ...(storedKey ? { companyKey: storedKey } : {}),
+  };
 }
 
 /** Strip anything credential-shaped from text before it can be logged. */

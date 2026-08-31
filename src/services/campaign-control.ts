@@ -166,16 +166,87 @@ async function transition(
     entityId: campaignId,
   });
 
-  // Said plainly, and NOT written to providerError, which the page paints red:
-  // the voice platform has no API to pause or stop a run, and a known
-  // limitation is not something going wrong. Only offered once a run has
-  // actually been sent — before that there is nothing running anywhere.
-  const note = campaign.providerCampaignId
-    ? `Marked ${nextStatus} here. The voice platform has no API to ${action} a run, so ${action} it in the Jobix dashboard as well — calls already dialling will otherwise carry on.`
-    : undefined;
+  // Stopping means disarming the run on the platform.
+  //
+  // "stopped" in this platform's own status column stops nothing — the voice
+  // platform has never heard of it. What does stop a run is the `call` column
+  // that started it: a record with an empty one is not matched by the flow's
+  // entry filter, so it is not dialled. So a stop clears the flag on this
+  // batch's records, and says what that does and does not cover.
+  let note: string | undefined;
+  if (campaign.providerCampaignId) {
+    if (action === "stop") {
+      try {
+        const { stopBatch } = await import("@/services/jobix/push");
+        const stopped = await stopBatch(organizationId, userId, campaign.providerCampaignId);
+        note = stopped.message;
+      } catch (err) {
+        // The local status still moves — an operator who pressed Stop should
+        // not find the campaign still running here — but the reason the
+        // platform could not be disarmed is theirs to see.
+        note = `Marked stopped here, but the run could not be disarmed on the voice platform: ${
+          err instanceof Error ? err.message : "unknown error"
+        } Clear the call column in Jobix, or nothing stops.`;
+      }
+    } else {
+      note =
+        "Marked paused here. Pausing does not exist on the voice platform — to hold a run, stop it, which clears the dialling flag from its accounts.";
+    }
+  }
 
   return { status: nextStatus, note };
 }
 
 export const pauseCampaign = (org: string, user: string, id: string) => transition(org, user, id, "pause");
 export const stopCampaign = (org: string, user: string, id: string) => transition(org, user, id, "stop");
+
+/**
+ * Delete a campaign.
+ *
+ * The accounts survive: they are the book, and they belong to the organization
+ * rather than to a run. What goes is the campaign, its contact rows and its
+ * redial batches, and every account it held is released back to no campaign.
+ *
+ * Refused while a run is live, because deleting the record that holds the batch
+ * code would leave accounts armed on the platform with nothing here able to
+ * name them — unstoppable from this side. Stop it first.
+ */
+export async function deleteCampaign(
+  organizationId: string,
+  userId: string,
+  campaignId: string,
+): Promise<{ deleted: true; releasedAccounts: number; name: string }> {
+  const campaign = await db.campaign.findFirst({
+    where: { id: campaignId, organizationId },
+    select: { id: true, name: true, status: true, providerCampaignId: true },
+  });
+  if (!campaign) throw new Error("Campaign not found");
+
+  if (["running", "active", "queued"].includes(campaign.status) && campaign.providerCampaignId) {
+    throw new JobixError(
+      `This campaign has a live run (batch ${campaign.providerCampaignId}). Stop it first — deleting it now would leave its accounts armed on the voice platform with nothing here able to disarm them.`,
+      "rejected",
+    );
+  }
+
+  const released = await db.debtor.count({ where: { organizationId, campaignId } });
+  await db.debtor.updateMany({
+    where: { organizationId, campaignId },
+    data: { campaignId: null },
+  });
+  await db.campaignContact.deleteMany({ where: { organizationId, campaignId } });
+  await db.redialBatch.deleteMany({ where: { organizationId, campaignId } });
+  await db.campaign.delete({ where: { id: campaign.id } });
+
+  await audit({
+    organizationId,
+    actorType: "user",
+    actorId: userId,
+    action: "campaign.deleted",
+    entityType: "campaign",
+    entityId: campaign.id,
+    detail: { name: campaign.name, releasedAccounts: released, batchCode: campaign.providerCampaignId },
+  });
+
+  return { deleted: true, releasedAccounts: released, name: campaign.name };
+}
