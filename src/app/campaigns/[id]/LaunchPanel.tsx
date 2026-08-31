@@ -7,6 +7,7 @@ import {
   ClipboardCopy,
   Loader2,
   PhoneOutgoing,
+  Search,
   CalendarClock,
   RefreshCw,
   Send,
@@ -70,6 +71,14 @@ async function fetchState(campaignId: string): Promise<LaunchState> {
   return body;
 }
 
+type RowProbe = {
+  account: string;
+  variants: { variant: string; suid: string; sent: unknown; received: unknown; landed: boolean }[];
+  scanned: number;
+  scanComplete: boolean;
+  verdict: string;
+};
+
 type SendResult = {
   batchCode: string;
   written: number;
@@ -100,8 +109,31 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
   const [pasted, setPasted] = useState(false);
   const [sent, setSent] = useState<SendResult | null>(null);
   const [resumable, setResumable] = useState(false);
+  const [rowProbe, setRowProbe] = useState<RowProbe | null>(null);
+
+  async function diagnose() {
+    setBusy("diagnose");
+    setActionError(null);
+    setRowProbe(null);
+    try {
+      const response = await fetch(`/api/campaigns/${campaignId}/launch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "probe_row" }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.message ?? "The check could not be run.");
+      setRowProbe(body as RowProbe);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "The check could not be run.");
+    } finally {
+      setBusy(null);
+    }
+  }
   const [copied, setCopied] = useState(false);
-  const [busy, setBusy] = useState<"list" | "send" | "start" | "schedule" | "cancel" | "armed" | null>(null);
+  const [busy, setBusy] = useState<
+    "list" | "send" | "diagnose" | "start" | "schedule" | "cancel" | "armed" | null
+  >(null);
   const [armed, setArmed] = useState<ArmedCheck | null>(null);
   const [when, setWhen] = useState("");
   const [now, setNow] = useState(() => Date.now());
@@ -437,6 +469,49 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                       : "Creates or updates each customer with every field, then arms them to dial."}
                   </span>
                 </div>
+
+                {sent && !sent.complete && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button className="btn" disabled={busy !== null} onClick={diagnose}>
+                      {busy === "diagnose" ? (
+                        <Loader2 size={13} className="animate-spin" />
+                      ) : (
+                        <Search size={13} />
+                      )}
+                      Find what Jobix rejected
+                    </button>
+                    <span className="text-[0.6875rem] leading-relaxed text-ink-3">
+                      Writes one account several ways, without the dialling flag, to find which
+                      field is being refused. Nobody is called.
+                    </span>
+                  </div>
+                )}
+
+                {rowProbe && (
+                  <div className="rounded-lg border border-line bg-white/[0.02] px-3 py-2.5">
+                    <p className="text-[0.78125rem] leading-relaxed text-ink">{rowProbe.verdict}</p>
+                    <p className="mt-1 text-[0.6875rem] text-ink-3">
+                      Tested with {rowProbe.account}, against {count(rowProbe.scanned)} customer
+                      records.
+                    </p>
+                    <ul className="mt-2 space-y-1">
+                      {rowProbe.variants.map((variant) => (
+                        <li key={variant.suid} className="text-[0.71875rem]">
+                          <span className={variant.landed ? "text-[#3ecf9a]" : "text-[#e2714a]"}>
+                            {variant.landed ? "landed" : "rejected"}
+                          </span>{" "}
+                          <span className="text-ink-2">{variant.variant}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <details className="mt-2 text-[0.6875rem] text-ink-3">
+                      <summary className="cursor-pointer">What was sent, and what came back</summary>
+                      <pre className="scroll-x mt-1.5 rounded-lg border border-line bg-black/30 p-2.5 text-[0.625rem] leading-relaxed text-ink-2">
+{JSON.stringify(rowProbe.variants, null, 2)}
+                      </pre>
+                    </details>
+                  </div>
+                )}
 
                 {sent && (
                   <div

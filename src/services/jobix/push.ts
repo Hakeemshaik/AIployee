@@ -1025,3 +1025,177 @@ export async function probeWrite(
     verdict,
   };
 }
+
+// --- finding the field that breaks a real send -----------------------------
+
+export type RowProbeVariant = {
+  /** What this variant adds beyond the set already proven to work. */
+  variant: string;
+  suid: string;
+  sent: unknown;
+  received: unknown;
+  landed: boolean;
+};
+
+export type RowProbe = {
+  account: string;
+  variants: RowProbeVariant[];
+  scanned: number;
+  scanComplete: boolean;
+  verdict: string;
+};
+
+/**
+ * Write one real account several ways at once, then read once.
+ *
+ * The connection probe lands and a campaign send does not, which means the
+ * credential and the shape are fine and something the SEND adds is being
+ * rejected — accepted, queued, discarded, with no error to read.
+ *
+ * Bisecting that one write at a time would need a full customer-list read
+ * between each attempt, which on a real workspace is most of a minute. So every
+ * variant is written first, each under its own reference, and a single read says
+ * which ones the platform kept. One pass, one read, and the culprit is the
+ * boundary between what landed and what did not.
+ *
+ * No variant carries the call flag, so none of them can dial.
+ */
+export async function probeRow(
+  organizationId: string,
+  userId: string,
+  options: { campaignId?: string } = {},
+): Promise<RowProbe> {
+  const env = await resolveJobixEnv();
+  if (!env) throw new JobixError("Jobix is not configured on this server.", "not_configured");
+  if (!env.companyKey) {
+    throw new JobixError("The write API key is required. Set it under Settings.", "not_configured");
+  }
+  const companyKey = env.companyKey;
+  const client = new JobixClient(env);
+
+  const list = await buildJobixExport(organizationId, {
+    campaignId: options.campaignId,
+    batchCode: "PROBE",
+  });
+  const row = list.rows[0];
+  if (!row) {
+    throw new JobixError(
+      "There is no eligible account to test with. Add one to the campaign first.",
+      "rejected",
+    );
+  }
+
+  const full = contactValues(row);
+  delete full.call;
+  const email = row.values.email ?? row.values.Email;
+
+  // The set the connection probe proved. Everything else is a candidate.
+  const proven: Record<string, string | number> = {
+    full_name: row.name,
+    phone: row.phone,
+    ...(full.total_due !== undefined ? { total_due: full.total_due } : {}),
+    ...(full.unit_number !== undefined ? { unit_number: full.unit_number } : {}),
+    ...(full.building_name !== undefined ? { building_name: full.building_name } : {}),
+  };
+  const extras = Object.fromEntries(
+    Object.entries(full).filter(([key]) => !(key in proven)),
+  );
+
+  const stamp = Date.now();
+  const plans: { variant: string; main: Identity; values: Record<string, string | number> }[] = [];
+  const base = (n: number): Identity => ({
+    suid: safeSuid(`aiployee-row-${stamp}-${n}`),
+    timezone: TIMEZONE,
+    phone: row.phone,
+    name: row.name,
+  });
+
+  plans.push({
+    variant: "The fields the connection test proved, with this account's real data",
+    main: base(1),
+    values: proven,
+  });
+  plans.push({
+    variant: "Everything a send writes",
+    main: base(2),
+    values: full,
+  });
+  if (typeof email === "string" && email) {
+    plans.push({
+      variant: "Proven fields, plus the email address in the identity block",
+      main: { ...base(3), email },
+      values: proven,
+    });
+  }
+  // The extras, one key at a time — this is the interesting part, and it costs
+  // one write each rather than one read each.
+  let n = 10;
+  for (const [key, value] of Object.entries(extras)) {
+    plans.push({
+      variant: `Proven fields, plus ${key}`,
+      main: base(n),
+      values: { ...proven, [key]: value },
+    });
+    n += 1;
+  }
+
+  const variants: RowProbeVariant[] = [];
+  for (const plan of plans) {
+    let received: unknown;
+    try {
+      received = await save(client, companyKey, plan.main, plan.values);
+    } catch (err) {
+      received = { error: describe(err) };
+    }
+    variants.push({
+      variant: plan.variant,
+      suid: plan.main.suid,
+      sent: { main: plan.main, values: plan.values },
+      received,
+      landed: false,
+    });
+  }
+
+  await sleep(QUEUE_SETTLE_MS);
+  const after = await readCustomers(client);
+  const present = new Set(after.customers.map((customer) => customer.suid).filter(Boolean));
+  for (const variant of variants) variant.landed = present.has(variant.suid);
+
+  const provenLanded = variants[0]?.landed ?? false;
+  const fullLanded = variants[1]?.landed ?? false;
+  const culprits = variants
+    .slice(2)
+    .filter((variant) => !variant.landed)
+    .map((variant) => variant.variant.replace("Proven fields, plus ", ""));
+
+  const verdict = !provenLanded
+    ? `Even the proven fields did not land for this account, so the problem is the account's own data rather than the extra fields — most likely its phone number or name. ${row.name} on ${row.phone}.`
+    : fullLanded
+      ? "Everything a send writes landed here. The send's payload is not the problem, so the difference is elsewhere — the call flag, or how many rows go at once."
+      : culprits.length > 0
+        ? `The send's full payload was discarded, and these are the fields that were rejected on their own: ${culprits.join(", ")}. Removing them from what a send writes should fix it.`
+        : "The send's full payload was discarded, but every field landed on its own — so it is the combination or the size of the payload, not one field.";
+
+  await audit({
+    organizationId,
+    actorType: "user",
+    actorId: userId,
+    action: "jobix.row_probed",
+    entityType: "debtor",
+    entityId: row.debtorId,
+    detail: {
+      account: row.suid,
+      landed: variants.filter((variant) => variant.landed).length,
+      of: variants.length,
+      culprits,
+    },
+  });
+
+  return {
+    account: `${row.name} (${row.suid})`,
+    variants,
+    scanned: after.customers.length,
+    scanComplete: after.complete,
+    verdict,
+  };
+}

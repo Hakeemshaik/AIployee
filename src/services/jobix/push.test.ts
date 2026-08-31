@@ -123,6 +123,8 @@ async function startsOnTrigger(organizationId: string) {
  * otherwise silently answers the reads in the next.
  */
 function customersEchoWrites() {
+  // Cleared as well as re-implemented, so a test can count the reads it caused.
+  vi.mocked(api.pullCustomers).mockClear();
   vi.mocked(api.pullCustomers).mockImplementation(async () => ({
     customers: writes
       .filter((w) => w.main.phone)
@@ -1226,5 +1228,118 @@ describe.skipIf(!scratch)("the write probe", () => {
     expect(result.attempts.every((attempt) => !attempt.landed)).toBe(true);
     expect(result.verdict).toMatch(/accepted and discarded/i);
     expect(result.verdict).toMatch(/different workspace/i);
+  });
+});
+
+describe.skipIf(!scratch)("finding the field a send is rejected for", () => {
+  let orgId = "";
+  let userId = "";
+  let campaignId = "";
+
+  beforeEach(async () => {
+    writes.length = 0;
+    postWrite.mockClear();
+    customersEchoWrites();
+    await db.campaignContact.deleteMany();
+    await db.debtAccount.deleteMany();
+    await db.debtor.deleteMany();
+    await db.campaign.deleteMany();
+    await db.auditLog.deleteMany();
+    await db.integrationSettings.deleteMany();
+    await db.user.deleteMany();
+    await db.organization.deleteMany();
+    const org = await db.organization.create({ data: { name: "Row Co", slug: "row-co" } });
+    orgId = org.id;
+    userId = (
+      await db.user.create({
+        data: { organizationId: orgId, name: "Ops", email: "row@example.com", role: "admin" },
+      })
+    ).id;
+    campaignId = (
+      await db.campaign.create({ data: { organizationId: orgId, name: "Row", status: "draft" } })
+    ).id;
+    const debtor = await db.debtor.create({
+      data: {
+        organizationId: orgId,
+        campaignId,
+        firstName: "tester",
+        lastName: "808",
+        accountNumber: "002M",
+        phone: "+27825104242",
+        email: "tester@example.com",
+        city: "Johannesburg",
+      },
+    });
+    await db.debtAccount.create({
+      data: {
+        organizationId: orgId,
+        debtorId: debtor.id,
+        reference: "002M",
+        creditorName: "PHILBERTA COURT 80",
+        originalBalance: 1086,
+        currentBalance: 1086,
+        dueDate: new Date("2026-07-01"),
+        daysOverdue: 40,
+      },
+    });
+    process.env.JOBIX_QUEUE_SETTLE_MS = "1";
+    process.env.JOBIX_CALL_FLAG = "mpm";
+  });
+
+  afterEach(() => {
+    delete process.env.JOBIX_QUEUE_SETTLE_MS;
+  });
+
+  it("writes every variant unarmed, so a diagnosis cannot dial anybody", async () => {
+    const { probeRow } = await import("./push");
+    const result = await probeRow(orgId, userId, { campaignId });
+    expect(result.variants.length).toBeGreaterThan(2);
+    for (const write of writes) expect(write.values.call).toBeUndefined();
+  });
+
+  it("tries one write per variant and reads the platform once", async () => {
+    const { probeRow } = await import("./push");
+    await probeRow(orgId, userId, { campaignId });
+    // Bisecting a write at a time would need a full customer-list read between
+    // each, which on a real workspace is most of a minute.
+    expect(vi.mocked(api.pullCustomers)).toHaveBeenCalledTimes(1);
+  });
+
+  it("names the fields rejected on their own", async () => {
+    // Everything lands except the variant carrying month-of.
+    postWrite.mockImplementation(async (path: string, body: unknown) => {
+      const payload = body as {
+        customer_data: { main: { suid: string }; values: Record<string, unknown> };
+      };
+      if (payload.customer_data.values["month-of"] !== undefined) {
+        // Accepted and silently dropped, which is how the real API answers.
+        return { uuid: "" };
+      }
+      writes.push({
+        path,
+        suid: payload.customer_data.main.suid,
+        main: payload.customer_data.main,
+        values: payload.customer_data.values,
+      });
+      return { uuid: `provider-uuid-${payload.customer_data.main.suid}` };
+    });
+
+    const { probeRow } = await import("./push");
+    const result = await probeRow(orgId, userId, { campaignId });
+    expect(result.verdict).toMatch(/month-of/);
+    expect(result.verdict).toMatch(/rejected on their own/i);
+  });
+
+  it("blames the account's own data when even the proven fields are refused", async () => {
+    vi.mocked(api.pullCustomers).mockResolvedValue({
+      customers: [],
+      rawCount: 0,
+      droppedStale: 0,
+      droppedDuplicate: 0,
+    });
+    const { probeRow } = await import("./push");
+    const result = await probeRow(orgId, userId, { campaignId });
+    expect(result.verdict).toMatch(/the account's own data/i);
+    expect(result.verdict).toContain("+27825104242");
   });
 });

@@ -37,6 +37,9 @@ const schema = z.discriminatedUnion("action", [
   // Writing the book into Jobix over the API, so the paste step disappears.
   // Confirmed explicitly: it creates and updates customers on a live dialler.
   z.object({ action: z.literal("send_list"), confirmed: z.literal(true) }),
+  // Writes one real account several ways, unarmed, to find what a send adds
+  // that the platform rejects. Nothing dials.
+  z.object({ action: z.literal("probe_row") }),
   z.object({ action: z.literal("check_armed") }),
 ]);
 
@@ -74,6 +77,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (parsed.data.action === "send_list") {
       const { pushCampaignList } = await import("@/services/campaign-launch");
       return NextResponse.json(await pushCampaignList(ctx.organizationId, ctx.userId, id));
+    }
+    if (parsed.data.action === "probe_row") {
+      const { probeRow } = await import("@/services/jobix/push");
+      return NextResponse.json(await probeRow(ctx.organizationId, ctx.userId, { campaignId: id }));
     }
     if (parsed.data.action === "check_armed") {
       return NextResponse.json(await checkArmed(ctx.organizationId, id));
