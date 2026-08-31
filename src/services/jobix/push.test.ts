@@ -266,9 +266,11 @@ describe.skipIf(!scratch)("pushing customers to Jobix (integration)", () => {
   it("stores the provider's customer id, so calls join on an identifier", async () => {
     await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-TEST" });
     const debtors = await db.debtor.findMany({ where: { organizationId: orgId } });
+    // Read off the customer list afterwards, because a save answers
+    // {queued:true} and carries no identifier of its own.
     expect(debtors.map((d) => d.providerContactUuid).sort()).toEqual([
-      "provider-uuid-PUSH-1",
-      "provider-uuid-PUSH-2",
+      "uuid-PUSH-1:28AUG-TEST",
+      "uuid-PUSH-2:28AUG-TEST",
     ]);
     expect(debtors.every((d) => d.callBatch === "28AUG-TEST")).toBe(true);
   });
@@ -283,6 +285,7 @@ describe.skipIf(!scratch)("pushing customers to Jobix (integration)", () => {
   });
 
   it("reports what Jobix said per row instead of a total success", async () => {
+    await startsOnTrigger(orgId);
     let call = 0;
     postWrite.mockImplementation(async (path: string, body: unknown) => {
       const payload = body as {
@@ -524,6 +527,9 @@ describe.skipIf(!scratch)("a write is not the same fact as a customer existing",
   });
 
   it("refuses to write at all when the customer list cannot be read in full", async () => {
+    // Only matching needs the list, so this is a trigger-flow rule: an insert
+    // flow writes a new record every time and has nothing to match.
+    await startsOnTrigger(orgId);
     // A partial list means an account that IS there may not have been seen, and
     // writing it then makes a second record for a real person. Waiting is
     // cheaper than duplicating someone in a live dialling list.
@@ -544,6 +550,7 @@ describe.skipIf(!scratch)("a write is not the same fact as a customer existing",
   });
 
   it("updates an existing record found only by number, instead of duplicating them", async () => {
+    await startsOnTrigger(orgId);
     // Already on the platform from a pasted file: a real customer with no suid,
     // because that column is empty in the import template.
     const pasted = {
@@ -584,6 +591,7 @@ describe.skipIf(!scratch)("a write is not the same fact as a customer existing",
   });
 
   it("says so when a relink made a second record anyway", async () => {
+    await startsOnTrigger(orgId);
     const row = (uuid: string, suid: string | null) => ({
       id: 1,
       uuid,
@@ -754,6 +762,29 @@ describe.skipIf(!scratch)("how the flow starts decides how a customer is written
       },
     });
     process.env.JOBIX_CALL_FLAG = "READY";
+  });
+
+  it("writes a key that has never been used, because only an insert dials", async () => {
+    // Taken from the live submissions of a form that does dial: every one
+    // carries a fresh suid. Reuse a stable key and the second run is an update,
+    // the insert event never fires, and nothing rings while every count reads
+    // like success.
+    await db.integrationSettings.create({
+      data: { organizationId: orgId, provider: "jobix", callFlag: "READY", flowStart: "insert" },
+    });
+    const first = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-AAAA" });
+    const firstSuid = writes[0].suid;
+    expect(firstSuid).toBe("START-1:28AUG-AAAA");
+    expect(first.created).toBe(1);
+
+    writes.length = 0;
+    const second = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-BBBB" });
+    expect(writes[0].suid).toBe("START-1:28AUG-BBBB");
+    expect(writes[0].suid).not.toBe(firstSuid);
+    // A second dial to the same person is a second record, not a fault.
+    expect(second.created).toBe(1);
+    expect(second.duplicated).toBe(0);
+    expect(second.nextStep).not.toMatch(/two records/i);
   });
 
   it("arms the very first write when the flow starts on a customer being written", async () => {

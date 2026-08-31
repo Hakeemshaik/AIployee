@@ -13,6 +13,22 @@ import { callColumnValue, loadFlowConfig } from "@/services/flow-config";
 // makes this possible at all, and it removes the paste step: the platform can
 // put the book into the voice platform itself, with every field populated.
 //
+// WHAT A DIAL IS, on an insert-started flow: a NEW customer record.
+//
+// Taken from the live submissions of a form that does dial, not from
+// inference. Every one of them writes a FRESH suid — a value that has never
+// been seen before — with the flag already in `values`, and gets back
+// {queued: true}. Repeat calls to the same person are repeat records: same
+// name, same number, a new suid each time.
+//
+// That is not incidental, it is the mechanism. The flow's entry is an Insert
+// Customer event, so only an INSERT starts it. Reuse a stable key like the
+// account number and the second run is an update, which fires nothing — the
+// platform writes, reports success, and no phone rings. So on this kind of
+// flow the suid is unique per run (account number plus the batch code, so it
+// stays readable and traceable), and two records for one number are the
+// expected shape rather than damage to prevent.
+//
 // SEQUENCING, which depends entirely on how the flow begins.
 //
 // A flow whose entry is an Insert Customer event fires when a customer is
@@ -217,10 +233,10 @@ async function save(
 /**
  * Pull the provider's own customer uuid out of a save response.
  *
- * Storing it is what turns call attribution from a phone-number guess into an
- * identifier join. The response shape is not documented, so this looks in the
- * obvious places and shrugs rather than throwing if it is not there — the push
- * itself succeeded either way.
+ * Usually there is none: a successful save answers {queued: true, saveInitTime}
+ * and no identifier at all. The uuid is learned from reading the customer list
+ * afterwards instead. This stays because a response that does carry one is
+ * worth using, and it returns null rather than throwing when it does not.
  */
 function uuidFrom(response: Record<string, unknown>): string | null {
   const candidates: unknown[] = [
@@ -261,6 +277,16 @@ export async function pushDiallingList(
   // that write is what starts the flow. Anywhere else and it never dials.
   const armOnWrite = flow.flowStart === "insert";
 
+  /**
+   * The key this run writes under.
+   *
+   * Unique per run on an insert-started flow, because only an insert starts it
+   * and a reused key is an update. Prefixed with the account number so the
+   * record is still findable by eye and by the batch it belongs to.
+   */
+  const suidFor = (row: JobixRow) =>
+    armOnWrite ? `${row.suid}:${options.batchCode}` : row.suid;
+
   const list = await buildJobixExport(organizationId, {
     campaignId: options.campaignId,
     debtorIds: options.debtorIds,
@@ -290,7 +316,13 @@ export async function pushDiallingList(
   // key, and the write carries the provider's own customer id so it lands on
   // that record and stamps the suid onto it — after which it matches by suid
   // like everything else.
-  const before = await readCustomers(client);
+  // Matching only matters when the write is an update. On an insert-started
+  // flow every row is deliberately a new record, so there is nothing to match
+  // and nothing to read first — which also removes a refusal that would
+  // otherwise block a big book for a scan it does not need.
+  const before = armOnWrite
+    ? { customers: [] as ExistingCustomer[], complete: true }
+    : await readCustomers(client);
   if (!before.complete) {
     // Refusing is the conservative direction. A partial list means an account
     // that IS on the platform may not have been seen, and writing it then
@@ -351,7 +383,7 @@ export async function pushDiallingList(
         client,
         env.companyKey,
         {
-          suid: row.suid,
+          suid: suidFor(row),
           timezone: TIMEZONE,
           // Only when this record exists under another key. Sending it
           // otherwise would name a customer that does not exist yet.
@@ -362,7 +394,8 @@ export async function pushDiallingList(
         },
         values,
       );
-      if (known) updated += 1;
+      if (armOnWrite) created += 1;
+      else if (known) updated += 1;
       else if (samePhone) relinked += 1;
       else created += 1;
       writtenRows.push(row);
@@ -392,7 +425,7 @@ export async function pushDiallingList(
         await save(
           client,
           env.companyKey,
-          { suid: row.suid, timezone: TIMEZONE },
+          { suid: suidFor(row), timezone: TIMEZONE },
           { batch: options.batchCode, call: callFlag },
         );
         armed += 1;
@@ -423,20 +456,37 @@ export async function pushDiallingList(
     const after = await readCustomers(client);
     scanned = after.customers.length;
     scanComplete = after.complete;
-    const suids = new Set(after.customers.map((c) => c.suid).filter(Boolean));
+    const uuidBySuid = new Map<string, string>();
+    for (const customer of after.customers) {
+      if (customer.suid) uuidBySuid.set(customer.suid, customer.uuid);
+    }
     const phones = new Map<string, number>();
     for (const customer of after.customers) {
       const key = phoneKey(customer.phone);
       if (key) phones.set(key, (phones.get(key) ?? 0) + 1);
     }
     confirmed = writtenRows.filter(
-      (row) => suids.has(row.suid) || (phones.get(phoneKey(row.phone)) ?? 0) > 0,
+      (row) => uuidBySuid.has(suidFor(row)) || (phones.get(phoneKey(row.phone)) ?? 0) > 0,
     ).length;
-    // Did relinking work? If a number that had one record now has two, the
-    // write made a second customer instead of landing on the first — the exact
-    // damage this reading was added to prevent, so it is reported rather than
-    // left for someone to find.
-    if (after.complete) {
+
+    // Learn the provider's customer id from the list, since a save does not
+    // return one. It turns call attribution from a phone match into an
+    // identifier join.
+    for (const row of writtenRows) {
+      const uuid = uuidBySuid.get(suidFor(row));
+      if (uuid) {
+        await db.debtor.updateMany({
+          where: { id: row.debtorId, organizationId },
+          data: { providerContactUuid: uuid },
+        });
+      }
+    }
+
+    // Only meaningful when the write was supposed to be an update. On an
+    // insert-started flow a second record for a number is the mechanism — that
+    // is how a person is called twice — so counting it as damage would report
+    // every repeat dial as a fault.
+    if (after.complete && !armOnWrite) {
       for (const row of writtenRows) {
         const key = phoneKey(row.phone);
         if (!key) continue;
