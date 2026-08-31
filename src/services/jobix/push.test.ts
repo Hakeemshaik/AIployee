@@ -551,6 +551,7 @@ describe.skipIf(!scratch)("a write is not the same fact as a customer existing",
     expect(result.complete).toBe(false);
     // A queued write that never appears is the case: accepted, then gone.
     expect(result.nextStep).toMatch(/queued/i);
+    expect(result.nextStep).toMatch(/CANNOT be found/);
     expect(result.nextStep).toMatch(/Nothing has been dialled/i);
   });
 
@@ -1074,7 +1075,10 @@ describe.skipIf(!scratch)("a write is only confirmed by the reference it wrote",
     expect(result.complete).toBe(false);
     expect(result.nextStep).toMatch(/queued/i);
     expect(result.nextStep).toMatch(/not a created customer/i);
-    expect(result.nextStep).toMatch(/company key/i);
+    // The count that could not be found must read as a failure, not a success:
+    // "1 of 1 can be found" described the opposite of what happened.
+    expect(result.nextStep).toMatch(/1 of 1 CANNOT be found/);
+    expect(result.nextStep).not.toMatch(/of 1 can be found/);
   });
 
   it("re-reads once, because a queued write may not be in the list yet", async () => {

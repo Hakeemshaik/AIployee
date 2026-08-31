@@ -724,7 +724,10 @@ export async function pushDiallingList(
           ? `${armed} written and accepted, but the platform's ${scanned} customer records carry no reference to match them against, so this cannot be confirmed either way. Check the customer list in Jobix before relying on it.`
           : !scanComplete
             ? `${armed} written and armed. Reading the platform back found ${confirmed} of them in ${scanned} records before running out of time, so treat that as a floor rather than a total — check the customer list in Jobix.`
-            : `Jobix accepted ${armed} write(s) and queued them, but ${missing > 0 ? `${missing} of ${writtenRows.length}` : "none"} can be found in its ${scanned} customer records afterwards. A queued write is not a created customer: the rows were accepted and then dropped, or are being rejected after acceptance. Nothing has been dialled, and the company key is the first thing to check — a wrong one is accepted and discarded.`;
+            // "missing" is the count that could NOT be found. Saying "can be
+            // found" inverted the meaning of the most important message in this
+            // flow, so it read as success while describing a failure.
+            : `Jobix accepted ${armed} write(s) and queued them, but ${missing} of ${writtenRows.length} CANNOT be found in its ${scanned} customer records afterwards. A queued write is not a created customer: the rows were accepted and then dropped, or rejected after acceptance. Nothing has been dialled. Run Test write under Settings — it tries each credential arrangement and reports which one the platform actually keeps.`;
 
   await audit({
     organizationId,
