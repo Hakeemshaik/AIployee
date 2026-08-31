@@ -49,6 +49,26 @@ different numbers, no figure you report from it is auditable — and for
 collections reporting that matters more than squeezing out a marginally better
 answer.
 
+## arena.py
+
+Blind model comparison on *your* prompts. Two phases, deliberately separate:
+generate (slow, batch, cached) then judge (fast, blind, at your pace).
+
+```bash
+./arena.py generate --base-url http://192.168.1.201:4000 --api-key sk-... \
+    --models workhorse,fast --prompts my-prompts.txt
+./arena.py judge
+./arena.py report
+```
+
+Sides are randomised per comparison so a habit of picking the left one does not
+become the result, and both phases resume — a two-hour batch survives Ctrl-C,
+and already-judged pairs are skipped.
+
+Replace the built-in starter prompts with your real work. A model that wins on
+generic questions may lose badly on your transcripts, and the whole point is to
+find that out before committing 18 GB of RAM to it.
+
 ## Pattern: local filter, hosted confirm
 
 The pattern from docs/05 that saves the most money without lying to you:

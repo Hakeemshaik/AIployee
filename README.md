@@ -26,6 +26,7 @@ harness, and batch workload runners.
 - [Giving Claude access to the cluster](llm-lab/docs/06-giving-claude-access.md)
 - [Coolify and self-hosted git](llm-lab/docs/07-coolify-and-self-hosted-git.md)
 - [Ways I can set this up for you](llm-lab/docs/08-ways-i-can-set-this-up.md)
+- [Weekend projects](llm-lab/docs/09-weekend-projects.md)
 
 ## The three facts that shape all of it
 
