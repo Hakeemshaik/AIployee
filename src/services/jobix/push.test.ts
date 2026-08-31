@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 
 // ---------------------------------------------------------------------------
@@ -544,7 +544,9 @@ describe.skipIf(!scratch)("a write is not the same fact as a customer existing",
     expect(result.armed).toBe(1);
     expect(result.confirmed).toBe(0);
     expect(result.complete).toBe(false);
-    expect(result.nextStep).toMatch(/do not start the calls yet/i);
+    // A queued write that never appears is the case: accepted, then gone.
+    expect(result.nextStep).toMatch(/queued/i);
+    expect(result.nextStep).toMatch(/Nothing has been dialled/i);
   });
 
   it("refuses to write at all when the customer list cannot be read in full", async () => {
@@ -968,5 +970,177 @@ describe.skipIf(!scratch)("a book-sized push stops itself rather than being kill
     } finally {
       delete process.env.JOBIX_WRITE_CONCURRENCY;
     }
+  });
+});
+
+describe.skipIf(!scratch)("a write is only confirmed by the reference it wrote", () => {
+  let orgId = "";
+  let userId = "";
+  let campaignId = "";
+
+  beforeEach(async () => {
+    writes.length = 0;
+    postWrite.mockClear();
+    customersEchoWrites();
+    await db.campaignContact.deleteMany();
+    await db.debtAccount.deleteMany();
+    await db.debtor.deleteMany();
+    await db.campaign.deleteMany();
+    await db.auditLog.deleteMany();
+    await db.integrationSettings.deleteMany();
+    await db.user.deleteMany();
+    await db.organization.deleteMany();
+    const org = await db.organization.create({ data: { name: "Strict Co", slug: "strict-co" } });
+    orgId = org.id;
+    userId = (
+      await db.user.create({
+        data: { organizationId: orgId, name: "Ops", email: "strict@example.com", role: "admin" },
+      })
+    ).id;
+    campaignId = (
+      await db.campaign.create({ data: { organizationId: orgId, name: "Run", status: "draft" } })
+    ).id;
+    const debtor = await db.debtor.create({
+      data: {
+        organizationId: orgId,
+        campaignId,
+        firstName: "tester",
+        lastName: "808",
+        accountNumber: "002M",
+        phone: "+27825104242",
+      },
+    });
+    await db.debtAccount.create({
+      data: {
+        organizationId: orgId,
+        debtorId: debtor.id,
+        reference: "002M",
+        creditorName: "Mafadi",
+        originalBalance: 1086,
+        currentBalance: 1086,
+        dueDate: new Date("2026-07-01"),
+        daysOverdue: 40,
+      },
+    });
+    process.env.JOBIX_CALL_FLAG = "READY";
+    process.env.JOBIX_QUEUE_SETTLE_MS = "1";
+  });
+
+  afterEach(() => {
+    delete process.env.JOBIX_QUEUE_SETTLE_MS;
+  });
+
+  it("does not count somebody else's record on the same number as confirmation", async () => {
+    // The false positive this pins: the number was already on the platform from
+    // an earlier run, a pasted file or a form. Matching on it reported
+    // "confirmed present" for a customer this run never created — which is
+    // exactly what "it says it is in Jobix but nothing was created" was.
+    vi.mocked(api.pullCustomers).mockResolvedValue({
+      customers: [
+        {
+          id: 1,
+          uuid: "someone-elses-record",
+          suid: "an-unrelated-reference",
+          phone: "+27825104242",
+          name: "tester",
+          unit: null,
+          building: null,
+          totalDue: null,
+          ptpConfirmed: false,
+          ptpAmount: null,
+          disputed: false,
+          paidClaimed: false,
+          escalated: false,
+          doNotCall: false,
+          wrongPerson: false,
+          callBatch: null,
+          callFlag: null,
+          modifiedAt: new Date(),
+          raw: {},
+        },
+      ],
+      rawCount: 1,
+      droppedStale: 0,
+      droppedDuplicate: 0,
+    });
+
+    const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-STRICT" });
+    expect(result.confirmed).toBe(0);
+    expect(result.complete).toBe(false);
+    expect(result.nextStep).toMatch(/queued/i);
+    expect(result.nextStep).toMatch(/not a created customer/i);
+    expect(result.nextStep).toMatch(/company key/i);
+  });
+
+  it("re-reads once, because a queued write may not be in the list yet", async () => {
+    const landed = {
+      id: 2,
+      uuid: "u-002M:28AUG-STRICT",
+      suid: "002M:28AUG-STRICT",
+      phone: "+27825104242",
+      name: "tester 808",
+      unit: null,
+      building: null,
+      totalDue: null,
+      ptpConfirmed: false,
+      ptpAmount: null,
+      disputed: false,
+      paidClaimed: false,
+      escalated: false,
+      doNotCall: false,
+      wrongPerson: false,
+      callBatch: null,
+      callFlag: null,
+      modifiedAt: new Date(),
+      raw: {},
+    };
+    // Empty on the first read, there on the second — the queue catching up.
+    vi.mocked(api.pullCustomers)
+      .mockResolvedValueOnce({ customers: [], rawCount: 0, droppedStale: 0, droppedDuplicate: 0 })
+      .mockResolvedValueOnce({
+        customers: [landed],
+        rawCount: 1,
+        droppedStale: 0,
+        droppedDuplicate: 0,
+      });
+
+    const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-STRICT" });
+    expect(result.confirmed).toBe(1);
+    expect(result.complete).toBe(true);
+  });
+
+  it("says it cannot confirm when the list carries no reference at all", async () => {
+    vi.mocked(api.pullCustomers).mockResolvedValue({
+      customers: [
+        {
+          id: 3,
+          uuid: "u-1",
+          suid: null,
+          phone: "+27825104242",
+          name: "tester",
+          unit: null,
+          building: null,
+          totalDue: null,
+          ptpConfirmed: false,
+          ptpAmount: null,
+          disputed: false,
+          paidClaimed: false,
+          escalated: false,
+          doNotCall: false,
+          wrongPerson: false,
+          callBatch: null,
+          callFlag: null,
+          modifiedAt: new Date(),
+          raw: {},
+        },
+      ],
+      rawCount: 1,
+      droppedStale: 0,
+      droppedDuplicate: 0,
+    });
+    const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-STRICT" });
+    expect(result.referenceless).toBe(true);
+    expect(result.complete).toBe(false);
+    expect(result.nextStep).toMatch(/cannot be confirmed either way/i);
   });
 });

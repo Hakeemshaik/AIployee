@@ -82,6 +82,7 @@ type SendResult = {
   duplicated: number;
   unsent: number;
   scanned: number;
+  referenceless: boolean;
   scanComplete: boolean;
   flagIsFixed: boolean;
   dialledOnWrite: boolean;

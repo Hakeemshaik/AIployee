@@ -96,6 +96,9 @@ export type PushResult = {
   scanned: number;
   /** False when the read ran out of time — confirmed is then a floor. */
   scanComplete: boolean;
+  /** The platform's customer list carries no reference, so a write cannot be
+   *  confirmed either way — reported as unverified, never as success. */
+  referenceless: boolean;
   /** True when the call column carries the configured flag rather than this
    *  run's code standing in for one. */
   flagIsFixed: boolean;
@@ -143,6 +146,17 @@ function confirmBudgetMs(): number {
   const configured = Number(process.env.JOBIX_CONFIRM_BUDGET_MS);
   return Number.isFinite(configured) && process.env.JOBIX_CONFIRM_BUDGET_MS ? configured : 25_000;
 }
+
+/**
+ * How long to wait before re-reading, when a written row is not in the list yet.
+ *
+ * The write API queues: a success means accepted for processing, so a row can be
+ * genuinely on its way and genuinely absent from a read taken immediately
+ * afterwards. One short wait separates "still queued" from "never landed".
+ */
+const QUEUE_SETTLE_MS = Number(process.env.JOBIX_QUEUE_SETTLE_MS ?? 4000);
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Last 9 digits — the stable core of a South African number in any format. */
 function phoneKey(phone: string): string {
@@ -548,22 +562,51 @@ export async function pushDiallingList(
   let scanned = before.customers.length;
   let scanComplete: boolean = before.complete;
   let duplicated = 0;
+  let referenceless = false;
   if (writtenRows.length > 0) {
-    const after = await readCustomers(client);
+    let after = await readCustomers(client);
     scanned = after.customers.length;
     scanComplete = after.complete;
-    const uuidBySuid = new Map<string, string>();
-    for (const customer of after.customers) {
-      if (customer.suid) uuidBySuid.set(customer.suid, customer.uuid);
+    const index = (customers: ExistingCustomer[]) => {
+      const uuidBySuid = new Map<string, string>();
+      for (const customer of customers) {
+        if (customer.suid) uuidBySuid.set(customer.suid, customer.uuid);
+      }
+      return uuidBySuid;
+    };
+    let uuidBySuid = index(after.customers);
+
+    // A save answers {queued: true} — accepted for processing, not created. So
+    // a row missing from the first read may simply not have been processed yet.
+    // One short wait and one more read, before concluding it never landed.
+    if (writtenRows.some((row) => !uuidBySuid.has(suidFor(row)))) {
+      await sleep(QUEUE_SETTLE_MS);
+      const settled = await readCustomers(client);
+      if (settled.complete || settled.customers.length > after.customers.length) {
+        after = settled;
+        scanned = settled.customers.length;
+        scanComplete = settled.complete;
+        uuidBySuid = index(settled.customers);
+      }
     }
+
     const phones = new Map<string, number>();
     for (const customer of after.customers) {
       const key = phoneKey(customer.phone);
       if (key) phones.set(key, (phones.get(key) ?? 0) + 1);
     }
-    confirmed = writtenRows.filter(
-      (row) => uuidBySuid.has(suidFor(row)) || (phones.get(phoneKey(row.phone)) ?? 0) > 0,
-    ).length;
+
+    // Matched ONLY on the reference this run wrote.
+    //
+    // There used to be a phone fallback here, and it made this check
+    // meaningless: any number already on the platform — from an earlier run, a
+    // pasted file, a form — satisfied it, so the push reported "confirmed
+    // present" for a customer it had not created. Confirming a write by
+    // finding somebody else's record is not confirming anything.
+    confirmed = writtenRows.filter((row) => uuidBySuid.has(suidFor(row))).length;
+    // If the list exposes no reference at all, nothing can be confirmed either
+    // way, and saying zero landed would be as wrong as saying all did.
+    referenceless = after.customers.length > 0 && uuidBySuid.size === 0;
 
     // Learn the provider's customer id from the list, since a save does not
     // return one. It turns call attribution from a phone match into an
@@ -599,7 +642,8 @@ export async function pushDiallingList(
     armed === list.rowCount &&
     confirmed === list.rowCount &&
     flagIsFixed &&
-    duplicated === 0;
+    duplicated === 0 &&
+    !referenceless;
   const missing = writtenRows.length - confirmed;
   const made = [
     created > 0 ? `${created} created` : null,
@@ -622,9 +666,11 @@ export async function pushDiallingList(
         : `${armed} customers written, armed with ${callFlag}, and confirmed present on the platform${made ? ` — ${made}` : ""}. Start the calls — the flow dials exactly these.`
       : failures.length > 0
         ? `${writtenRows.length} of ${list.rowCount} written, ${armed} armed. Fix the failures below before starting, or start and dial only what is armed.`
-        : !scanComplete
-          ? `${armed} written and armed. Reading the platform back found ${confirmed} of them in ${scanned} records before running out of time, so treat that as a floor rather than a total — check the customer list in Jobix.`
-          : `${armed} written and armed, but only ${confirmed} of ${writtenRows.length} could be found in the platform's ${scanned} customer records${missing > 0 ? ` — ${missing} did not land` : ""}. The write was accepted and the customer is not there, so do not start the calls yet.`;
+        : referenceless
+          ? `${armed} written and accepted, but the platform's ${scanned} customer records carry no reference to match them against, so this cannot be confirmed either way. Check the customer list in Jobix before relying on it.`
+          : !scanComplete
+            ? `${armed} written and armed. Reading the platform back found ${confirmed} of them in ${scanned} records before running out of time, so treat that as a floor rather than a total — check the customer list in Jobix.`
+            : `Jobix accepted ${armed} write(s) and queued them, but ${missing > 0 ? `${missing} of ${writtenRows.length}` : "none"} can be found in its ${scanned} customer records afterwards. A queued write is not a created customer: the rows were accepted and then dropped, or are being rejected after acceptance. Nothing has been dialled, and the company key is the first thing to check — a wrong one is accepted and discarded.`;
 
   await audit({
     organizationId,
@@ -663,6 +709,7 @@ export async function pushDiallingList(
     confirmed,
     scanned,
     scanComplete,
+    referenceless,
     flagIsFixed,
     dialledOnWrite: armOnWrite && !!callFlag,
     callFlag,
