@@ -1,7 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { JobixClient, JobixError, resolveJobixEnv } from "./client";
-import { buildJobixExport, type JobixRow } from "@/services/jobix-export";
+import { buildJobixExport, plainWireName, type JobixRow } from "@/services/jobix-export";
 import { callColumnValue, loadFlowConfig } from "@/services/flow-config";
 
 // ---------------------------------------------------------------------------
@@ -220,16 +221,28 @@ const IDENTITY = new Set(["SUID", "suid", "UUID", "uuid", "Timezone", "timezone"
  * payload is now the known-good set and nothing else.
  */
 const SENT_FIELDS = new Set([
-  "full_name", "name", "Name",
-  "phone", "Phone",
-  "email", "Email",
-  "total_due", "arrears_amount",
-  "unit_number", "main_unit_no",
-  "building_name", "location",
+  // Exactly the fields a dial this workspace has actually made carries:
+  // full_name, email, total_due, unit_number, building_name, and the flag in
+  // both `call` and `all`.
+  "full_name",
+  "email",
+  "total_due",
+  "unit_number",
+  "building_name",
+  // Attribution. Both are columns of the workspace's own import template, and
+  // without them a result cannot be tied back to an account or a run.
   "tenant_code",
-  "language", "month-of",
-  // The dialling columns: attribution, and the flag the flow filters on.
-  "batch", "call", "all",
+  "batch",
+  // The flag the flow's entry filter matches on, in both spellings a working
+  // dial uses.
+  "call", "all",
+  // Deliberately not sent, though the import template has a column for each:
+  // name, Name, Phone, Email, arrears_amount, main_unit_no, location,
+  // language, month-of. A queue that validates its input has one way to
+  // refuse a key it does not want — accept the write and drop the row — and
+  // that is exactly the failure being chased. The number and the name are
+  // identity and travel in `main`. The rest are script niceties, and none of
+  // them is needed to place a call; they go back in once a dial has landed.
 ]);
 
 function contactValues(row: JobixRow): Record<string, string | number> {
@@ -390,12 +403,28 @@ export async function pushDiallingList(
   /**
    * The key this run writes under.
    *
-   * Unique per run on an insert-started flow, because only an insert starts it
-   * and a reused key is an update. Prefixed with the account number so the
-   * record is still findable by eye and by the batch it belongs to.
+   * On an insert-started flow it is a fresh uuid per row, because only an
+   * insert starts the flow and a reused key is an update — and because a plain
+   * uuid is what every dial this workspace has actually made was keyed on. A
+   * readable key built from the account number was tried and the platform
+   * accepted those writes and kept none of them.
+   *
+   * The account is still findable on the record: the account number rides in
+   * `tenant_code` and the run's code in `batch`, which is what results are
+   * matched on afterwards.
+   *
+   * Memoised, so the confirmation read below looks for the same key the write
+   * used. Otherwise every row would be reported missing.
    */
-  const suidFor = (row: JobixRow) =>
-    armOnWrite ? safeSuid(`${row.suid}-${options.batchCode}`) : safeSuid(row.suid);
+  const runSuids = new Map<string, string>();
+  const suidFor = (row: JobixRow) => {
+    if (!armOnWrite) return safeSuid(row.suid);
+    const existing = runSuids.get(row.debtorId);
+    if (existing) return existing;
+    const fresh = randomUUID();
+    runSuids.set(row.debtorId, fresh);
+    return fresh;
+  };
 
   const list = await buildJobixExport(organizationId, {
     campaignId: options.campaignId,
@@ -506,12 +535,16 @@ export async function pushDiallingList(
     if (armOnWrite && callFlag) {
       // This write is the trigger. The flag goes in now or the flow never runs.
       values.call = callFlag;
+      // A working dial on this workspace carries the same value in `all` as in
+      // `call`. Which of the two the flow's filter reads is not visible from
+      // here, and setting both costs nothing.
+      values.all = callFlag;
     } else {
       // Held back deliberately: on a trigger-started flow nobody should be
       // dialled until a person fires the node.
       delete values.call;
+      delete values.all;
     }
-    const email = row.values.email ?? row.values.Email;
     const known = bySuid.get(row.suid);
     const samePhone = known ? null : byPhone.get(phoneKey(row.phone)) ?? null;
     const response = await save(
@@ -525,7 +558,6 @@ export async function pushDiallingList(
         ...(samePhone ? { uuid: samePhone.uuid } : {}),
         phone: row.phone,
         name: row.name,
-        ...(typeof email === "string" && email ? { email } : {}),
       },
       values,
     );
@@ -595,7 +627,7 @@ export async function pushDiallingList(
           client,
           companyKey,
           { suid: suidFor(row), timezone: TIMEZONE },
-          { batch: options.batchCode, call: callFlag },
+          { batch: options.batchCode, call: callFlag, all: callFlag },
         );
         armed += 1;
       } catch (err) {
@@ -727,7 +759,7 @@ export async function pushDiallingList(
             // "missing" is the count that could NOT be found. Saying "can be
             // found" inverted the meaning of the most important message in this
             // flow, so it read as success while describing a failure.
-            : `Jobix accepted ${armed} write(s) and queued them, but ${missing} of ${writtenRows.length} CANNOT be found in its ${scanned} customer records afterwards. A queued write is not a created customer: the rows were accepted and then dropped, or rejected after acceptance. Nothing has been dialled. Run Test write under Settings — it tries each credential arrangement and reports which one the platform actually keeps.`;
+            : `Jobix accepted ${armed} write(s) and queued them, but ${missing} of ${writtenRows.length} CANNOT be found in its ${scanned} customer records afterwards. A queued write is not a created customer: the rows were accepted and then dropped, or rejected after acceptance. Nothing has been dialled. Use "Find what Jobix rejected" below — it writes this account a dozen ways in one pass, including the payload the connection test lands and the shape every dial this workspace has already made, and reports which of them the platform kept.`;
 
   await audit({
     organizationId,
@@ -1048,17 +1080,29 @@ export type RowProbe = {
 /**
  * Write one real account several ways at once, then read once.
  *
- * The connection probe lands and a campaign send does not, which means the
- * credential and the shape are fine and something the SEND adds is being
- * rejected — accepted, queued, discarded, with no error to read.
+ * The connection probe lands and a campaign send does not. Two things can
+ * explain that, and they need very different fixes:
  *
- * Bisecting that one write at a time would need a full customer-list read
- * between each attempt, which on a real workspace is most of a minute. So every
- * variant is written first, each under its own reference, and a single read says
- * which ones the platform kept. One pass, one read, and the culprit is the
- * boundary between what landed and what did not.
+ *  - the SEND's payload carries something the platform refuses, or
+ *  - the SEND's code path writes with a credential arrangement the platform
+ *    refuses, while the connection probe found one that works.
  *
- * No variant carries the call flag, so none of them can dial.
+ * So the first variant is a control: the connection probe's own payload, byte
+ * for byte, sent through the same function a campaign send uses. If that is
+ * kept, the credential path is sound and the difference is in the account's
+ * data. If it is discarded, no amount of field-bisecting will help — the send
+ * is writing with the wrong credential.
+ *
+ * The rest bisect the account's data: its name, its number, its fields, and
+ * each extra key on its own.
+ *
+ * Bisecting one write at a time would need a full customer-list read between
+ * each attempt, which on a real workspace is most of a minute. So every variant
+ * is written first, each under its own reference, and a single read says which
+ * ones the platform kept.
+ *
+ * No variant carries the call flag, so none of them can dial, and every
+ * synthetic number is in the unassignable +2700… range.
  */
 export async function probeRow(
   organizationId: string,
@@ -1089,10 +1133,11 @@ export async function probeRow(
   delete full.call;
   const email = row.values.email ?? row.values.Email;
 
-  // The set the connection probe proved. Everything else is a candidate.
+  // The set the connection probe proved, minus the number: it belongs in the
+  // identity block, and a send no longer repeats it here. One variant below
+  // puts it back, so the difference is measured rather than assumed.
   const proven: Record<string, string | number> = {
     full_name: row.name,
-    phone: row.phone,
     ...(full.total_due !== undefined ? { total_due: full.total_due } : {}),
     ...(full.unit_number !== undefined ? { unit_number: full.unit_number } : {}),
     ...(full.building_name !== undefined ? { building_name: full.building_name } : {}),
@@ -1102,7 +1147,22 @@ export async function probeRow(
   );
 
   const stamp = Date.now();
-  const plans: { variant: string; main: Identity; values: Record<string, string | number> }[] = [];
+  // A number in the +2700… block: shaped like a South African number, never
+  // assigned to anybody, so a variant that tests "is this number the problem"
+  // cannot reach a person even if a flow somehow acted on it.
+  const unusedPhone = `+27000${String(stamp).slice(-6)}`;
+  const plainName = plainWireName(row.name);
+
+  type RowPlan = {
+    key: string;
+    variant: string;
+    main: Identity;
+    values: Record<string, string | number>;
+    /** Absent means "sent exactly the way a campaign send sends it". */
+    as?: { bearer: string; companyKey: string | null };
+  };
+
+  const plans: RowPlan[] = [];
   const base = (n: number): Identity => ({
     suid: safeSuid(`aiployee-row-${stamp}-${n}`),
     timezone: TIMEZONE,
@@ -1110,50 +1170,169 @@ export async function probeRow(
     name: row.name,
   });
 
+  // The control. Same payload as the connection test — which the platform kept
+  // — through the send's own write function.
   plans.push({
+    key: "control",
+    variant: "The connection test's exact payload, sent the way a campaign send sends it",
+    main: {
+      suid: safeSuid(`aiployee-row-${stamp}-0`),
+      timezone: TIMEZONE,
+      phone: "+27000000000",
+      name: "AIployee connection test",
+    },
+    values: {
+      full_name: "AIployee connection test",
+      phone: "+27000000000",
+      total_due: 1,
+      unit_number: "TEST",
+      building_name: "AIployee connection test",
+    },
+  });
+  plans.push({
+    key: "baseline",
     variant: "The fields the connection test proved, with this account's real data",
     main: base(1),
     values: proven,
   });
-  plans.push({
-    variant: "Everything a send writes",
-    main: base(2),
-    values: full,
-  });
-  if (typeof email === "string" && email) {
+  if (plainName !== row.name) {
     plans.push({
-      variant: "Proven fields, plus the email address in the identity block",
-      main: { ...base(3), email },
-      values: proven,
+      key: "name",
+      variant: `Same again, with the name as plain text ("${plainName}" instead of "${row.name}")`,
+      main: { ...base(2), name: plainName },
+      values: { ...proven, full_name: plainName },
     });
   }
+  plans.push({
+    key: "phone",
+    variant: "Same again, on a number the platform has never seen",
+    main: { ...base(3), phone: unusedPhone },
+    values: { ...proven, phone: unusedPhone },
+  });
+  plans.push({
+    key: "unit",
+    variant: "Same again, with a unit number present",
+    main: base(4),
+    values: { ...proven, unit_number: proven.unit_number ?? "TEST" },
+  });
+  plans.push({
+    key: "identity",
+    variant: "This account's amounts and building, under a fresh name and number",
+    main: { ...base(5), phone: unusedPhone, name: "AIployee connection test" },
+    values: { ...proven, full_name: "AIployee connection test", phone: unusedPhone },
+  });
+  plans.push({
+    key: "everything",
+    variant: "Everything a send writes",
+    main: base(6),
+    values: full,
+  });
+  plans.push({
+    key: "valuesphone",
+    variant: "Same again, with the number repeated in the fields as the connection test did",
+    main: base(7),
+    values: { ...proven, phone: row.phone },
+  });
+  plans.push({
+    key: "uuid",
+    variant: "Same again, under a plain uuid reference — the shape every dial this workspace has made used",
+    main: { ...base(8), suid: randomUUID() },
+    values: proven,
+  });
+  plans.push({
+    key: "working",
+    variant: "The exact shape of a dial this workspace has already made, with this account's data",
+    main: { suid: randomUUID(), timezone: TIMEZONE, phone: row.phone, name: plainName },
+    values: {
+      full_name: plainName,
+      ...(full.total_due !== undefined ? { total_due: full.total_due } : {}),
+      ...(full.unit_number !== undefined ? { unit_number: full.unit_number } : {}),
+      ...(full.building_name !== undefined ? { building_name: full.building_name } : {}),
+      ...(typeof email === "string" && email ? { email } : {}),
+    },
+  });
   // The extras, one key at a time — this is the interesting part, and it costs
   // one write each rather than one read each.
-  let n = 10;
+  let n = 20;
   for (const [key, value] of Object.entries(extras)) {
     plans.push({
+      key: `extra:${key}`,
       variant: `Proven fields, plus ${key}`,
       main: base(n),
       values: { ...proven, [key]: value },
     });
     n += 1;
   }
+  // The other credential arrangements, on the payload the control uses. If the
+  // control is discarded and one of these is kept, the send is simply writing
+  // with the wrong credential — and this says which one to use.
+  const session = await client.sessionToken();
+  const arrangements: { key: string; label: string; bearer: string | null; companyKey: string | null }[] = [
+    {
+      key: "arrangement:key-only",
+      label: "the API key as bearer and no company_key in the body",
+      bearer: env.token ?? null,
+      companyKey: null,
+    },
+    {
+      key: "arrangement:session",
+      label: "the dashboard session as bearer and the API key in the body",
+      bearer: session,
+      companyKey,
+    },
+  ];
+  let a = 90;
+  for (const arrangement of arrangements) {
+    if (!arrangement.bearer) continue;
+    plans.push({
+      key: arrangement.key,
+      variant: `The connection test's payload again, but with ${arrangement.label}`,
+      main: {
+        suid: safeSuid(`aiployee-row-${stamp}-${a}`),
+        timezone: TIMEZONE,
+        phone: "+27000000000",
+        name: "AIployee connection test",
+      },
+      values: {
+        full_name: "AIployee connection test",
+        phone: "+27000000000",
+        total_due: 1,
+        unit_number: "TEST",
+        building_name: "AIployee connection test",
+      },
+      as: { bearer: arrangement.bearer, companyKey: arrangement.companyKey },
+    });
+    a += 1;
+  }
 
   const variants: RowProbeVariant[] = [];
+  const byKey = new Map<string, RowProbeVariant>();
   for (const plan of plans) {
     let received: unknown;
     try {
-      received = await save(client, companyKey, plan.main, plan.values);
+      received = plan.as
+        ? await client.postWriteAs<Record<string, unknown>>(
+            "/v1/customer/save",
+            {
+              ...(plan.as.companyKey ? { company_key: plan.as.companyKey } : {}),
+              customer_data: { main: plan.main, values: plan.values },
+            },
+            plan.as.bearer,
+          )
+        : await save(client, companyKey, plan.main, plan.values);
     } catch (err) {
       received = { error: describe(err) };
     }
-    variants.push({
+    const variant: RowProbeVariant = {
       variant: plan.variant,
       suid: plan.main.suid,
+      // The credential never appears: an arrangement is named in words only.
       sent: { main: plan.main, values: plan.values },
       received,
       landed: false,
-    });
+    };
+    variants.push(variant);
+    byKey.set(plan.key, variant);
   }
 
   await sleep(QUEUE_SETTLE_MS);
@@ -1161,20 +1340,58 @@ export async function probeRow(
   const present = new Set(after.customers.map((customer) => customer.suid).filter(Boolean));
   for (const variant of variants) variant.landed = present.has(variant.suid);
 
-  const provenLanded = variants[0]?.landed ?? false;
-  const fullLanded = variants[1]?.landed ?? false;
-  const culprits = variants
-    .slice(2)
-    .filter((variant) => !variant.landed)
-    .map((variant) => variant.variant.replace("Proven fields, plus ", ""));
+  const kept = (key: string) => byKey.get(key)?.landed === true;
+  const tried = (key: string) => byKey.has(key);
+  const culprits = [...byKey.entries()]
+    .filter(([key, variant]) => key.startsWith("extra:") && !variant.landed)
+    .map(([, variant]) => variant.variant.replace("Proven fields, plus ", ""));
 
-  const verdict = !provenLanded
-    ? `Even the proven fields did not land for this account, so the problem is the account's own data rather than the extra fields — most likely its phone number or name. ${row.name} on ${row.phone}.`
-    : fullLanded
-      ? "Everything a send writes landed here. The send's payload is not the problem, so the difference is elsewhere — the call flag, or how many rows go at once."
-      : culprits.length > 0
-        ? `The send's full payload was discarded, and these are the fields that were rejected on their own: ${culprits.join(", ")}. Removing them from what a send writes should fix it.`
-        : "The send's full payload was discarded, but every field landed on its own — so it is the combination or the size of the payload, not one field.";
+  const workingArrangement = arrangements.find((arrangement) => kept(arrangement.key));
+
+  let verdict: string;
+  if (!after.complete) {
+    // A read that did not finish cannot say a record is absent. Saying
+    // otherwise here would send the next hour after a field that was fine.
+    verdict = `The read ran out of time after ${after.customers.length} records, so nothing below can be trusted to mean "discarded" — the read may simply not have reached it. Run this again when the workspace is quieter.`;
+  } else if (!kept("control") && !kept("baseline") && (kept("working") || kept("uuid"))) {
+    // Checked before the credential, because it explains a control that was
+    // itself discarded: the control copies the connection test, and the
+    // connection test's reference is readable too. Only when BOTH readable
+    // writes were refused and a uuid-keyed one was kept is the reference the
+    // thing that separates them.
+    verdict =
+      "The reference is what the platform refuses. A write keyed on a plain uuid was kept where a readable reference was not — which is exactly how every dial this workspace has already made was keyed. A send now keys each write on a uuid, so send again.";
+  } else if (!kept("control")) {
+    verdict = workingArrangement
+      ? `The payload is not the problem: the connection test's own payload was discarded when sent the way a campaign send sends it, and kept when sent with ${workingArrangement.label}. The send is writing with the wrong credential — that is the fix, and no field change is needed.`
+      : "The connection test's own payload was discarded even though the connection test itself keeps it, and no other credential arrangement worked either. Nothing about this account's data is implicated. The difference is in how the send writes — the same payload, the same key, a different outcome — so treat the write path as unproven and re-run the connection test to see whether it still lands.";
+  } else if (!kept("baseline")) {
+    let cause =
+      "something in this account's own data that none of these variants isolated. Its amounts, name and number were all refused together.";
+    if (kept("valuesphone")) {
+      cause =
+        "the number missing from the fields: the write was kept as soon as the number appeared there as well as in the identity block.";
+    } else if (kept("phone")) {
+      cause =
+        "the platform refuses a second record for a number it already holds. Every dial needs a fresh record, so this account cannot be re-dialled until its earlier records are removed or its number is written differently.";
+    } else if (tried("name") && kept("name")) {
+      cause = `the name. "${row.name}" was refused and "${plainName}" was kept, so the placeholder characters in the name are what the platform rejects.`;
+    } else if (kept("unit")) {
+      cause = "a missing unit number — the write was kept as soon as one was present.";
+    } else if (kept("identity")) {
+      cause =
+        "this account's own name or number, not its amounts: the same amounts were kept under a fresh name and number.";
+    }
+    verdict = `The write path is sound — the control was kept. What the platform refuses is ${cause}`;
+  } else if (kept("everything")) {
+    verdict =
+      "Everything a send writes was kept, on this account's real data. The payload is not the problem, so the difference is elsewhere — the call flag, or how many rows go at once.";
+  } else if (culprits.length > 0) {
+    verdict = `The send's full payload was discarded, and these are the fields that were refused on their own: ${culprits.join(", ")}. Removing them from what a send writes should fix it.`;
+  } else {
+    verdict =
+      "The send's full payload was discarded, but every field was kept on its own — so it is the combination or the size of the payload, not one field.";
+  }
 
   await audit({
     organizationId,
@@ -1187,6 +1404,8 @@ export async function probeRow(
       account: row.suid,
       landed: variants.filter((variant) => variant.landed).length,
       of: variants.length,
+      control: kept("control"),
+      baseline: kept("baseline"),
       culprits,
     },
   });

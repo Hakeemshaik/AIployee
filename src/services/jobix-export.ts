@@ -101,6 +101,24 @@ function csvCell(value: string | number | null | undefined): string {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
+/**
+ * The name as the platform should see it.
+ *
+ * A debtor with no surname on file carries an em-dash in ours, so lists stay
+ * readable and rows stay tellable-apart. That is a display convention, not part
+ * of anybody's name, and it has no business in a payload an agent reads out.
+ * Real letters — accents and apostrophes included — are left exactly as they
+ * are; only a standalone dash is dropped.
+ */
+export function plainWireName(name: string): string {
+  const cleaned = name
+    .split(/\s+/)
+    .filter((part) => part !== "" && !/^[\u2014\u2013-]+$/.test(part))
+    .join(" ")
+    .trim();
+  return cleaned || "Unknown";
+}
+
 export async function buildJobixExport(
   organizationId: string,
   options: JobixExportOptions = {},
@@ -173,7 +191,7 @@ export async function buildJobixExport(
       continue;
     }
 
-    const name = `${debtor.firstName} ${debtor.lastName}`.trim();
+    const name = plainWireName(`${debtor.firstName} ${debtor.lastName}`);
     const amount = Math.round(balance);
     const values: Record<string, string | number> = {
       SUID: debtor.accountNumber,

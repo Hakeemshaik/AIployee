@@ -233,7 +233,12 @@ export async function dispatchBatch(
       company_key: env.companyKey,
       customer_data: {
         main: { suid: candidate.suid, timezone: "Africa/Johannesburg" },
-        values: { batch: batch.batchCode, ...(armWith ? { call: armWith } : {}) },
+        values: {
+          batch: batch.batchCode,
+          // Both columns, because a working dial on this workspace carries the
+          // flag in `all` as well as in `call`.
+          ...(armWith ? { call: armWith, all: armWith } : {}),
+        },
       },
     });
     stamped += 1;

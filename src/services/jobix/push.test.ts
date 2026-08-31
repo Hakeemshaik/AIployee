@@ -16,11 +16,15 @@ type Write = {
   suid: string;
   main: Record<string, unknown>;
   values: Record<string, unknown>;
+  /** Present when the caller stated one, which only the diagnostics do. */
+  bearer?: string;
+  companyKey?: unknown;
 };
 const writes = vi.hoisted(() => [] as Write[]);
 const postWrite = vi.hoisted(() =>
-  vi.fn(async (path: string, body: unknown) => {
+  vi.fn(async (path: string, body: unknown, bearer?: string) => {
     const payload = body as {
+      company_key?: unknown;
       customer_data: { main: { suid: string }; values: Record<string, unknown> };
     };
     writes.push({
@@ -28,6 +32,8 @@ const postWrite = vi.hoisted(() =>
       suid: payload.customer_data.main.suid,
       main: payload.customer_data.main,
       values: payload.customer_data.values,
+      ...(bearer ? { bearer } : {}),
+      companyKey: payload.company_key,
     });
     return { uuid: `provider-uuid-${payload.customer_data.main.suid}` };
   }),
@@ -56,7 +62,8 @@ vi.mock("./client", async (importOriginal) => {
     JobixClient: class {
       postWrite = postWrite;
       // The probe names the credential it uses, so the stub records that too.
-      postWriteAs = (path: string, body: unknown) => postWrite(path, body);
+      postWriteAs = (path: string, body: unknown, bearer: string) =>
+        postWrite(path, body, bearer);
       sessionToken = async () => "session-token-for-tests";
     },
   };
@@ -242,7 +249,10 @@ describe.skipIf(!scratch)("pushing customers to Jobix (integration)", () => {
     const secondPass = writes.slice(2);
     for (const write of firstPass) {
       expect(write.values.call).toBeUndefined();
-      expect(write.values.phone).toBeTruthy();
+      // The number is identity, and every write the platform is known to have
+      // dialled from carries it in `main` alone.
+      expect(write.main.phone).toBeTruthy();
+      expect(write.values.phone).toBeUndefined();
       expect(write.values.batch).toBe("28AUG-TEST");
     }
     for (const write of secondPass) expect(write.values.call).toBe("READY");
@@ -275,10 +285,10 @@ describe.skipIf(!scratch)("pushing customers to Jobix (integration)", () => {
     const debtors = await db.debtor.findMany({ where: { organizationId: orgId } });
     // Read off the customer list afterwards, because a save answers
     // {queued:true} and carries no identifier of its own.
-    expect(debtors.map((d) => d.providerContactUuid).sort()).toEqual([
-      "uuid-PUSH-1-28AUG-TEST",
-      "uuid-PUSH-2-28AUG-TEST",
-    ]);
+    expect(debtors.map((d) => d.providerContactUuid).sort()).toEqual(
+      writes.map((w) => `uuid-${w.suid}`).sort(),
+    );
+    expect(debtors.every((d) => !!d.providerContactUuid)).toBe(true);
     expect(debtors.every((d) => d.callBatch === "28AUG-TEST")).toBe(true);
   });
 
@@ -523,8 +533,11 @@ describe.skipIf(!scratch)("a write is not the same fact as a customer existing",
     expect(create.main.suid).toBe("CONF-1");
     expect(create.main.phone).toBe("+27821234567");
     expect(create.main.name).toBe("Hakeem Test");
-    expect(create.main.email).toBe("hakeem@example.com");
     expect(create.main.timezone).toBe("Africa/Johannesburg");
+    // The email is a field, not identity: that is where the writes this
+    // workspace has actually dialled from carry it.
+    expect(create.main.email).toBeUndefined();
+    expect(create.values.email).toBe("hakeem@example.com");
     // Arming is an update and must not rewrite the identity.
     const arm = writes[1];
     expect(arm.main.phone).toBeUndefined();
@@ -803,14 +816,18 @@ describe.skipIf(!scratch)("how the flow starts decides how a customer is written
     await db.integrationSettings.create({
       data: { organizationId: orgId, provider: "jobix", callFlag: "READY", flowStart: "insert" },
     });
+    const uuidShape = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
     const first = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-AAAA" });
     const firstSuid = writes[0].suid;
-    expect(firstSuid).toBe("START-1-28AUG-AAAA");
+    // A plain uuid, because that is the reference every dial this workspace has
+    // actually made was keyed on. A readable key built from the account number
+    // was tried instead, and the platform accepted those writes and kept none.
+    expect(firstSuid).toMatch(uuidShape);
     expect(first.created).toBe(1);
 
     writes.length = 0;
     const second = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-BBBB" });
-    expect(writes[0].suid).toBe("START-1-28AUG-BBBB");
+    expect(writes[0].suid).toMatch(uuidShape);
     expect(writes[0].suid).not.toBe(firstSuid);
     // A second dial to the same person is a second record, not a fault.
     expect(second.created).toBe(1);
@@ -1108,12 +1125,13 @@ describe.skipIf(!scratch)("a write is only confirmed by the reference it wrote",
     // Empty on the first read, there on the second — the queue catching up.
     vi.mocked(api.pullCustomers)
       .mockResolvedValueOnce({ customers: [], rawCount: 0, droppedStale: 0, droppedDuplicate: 0 })
-      .mockResolvedValueOnce({
-        customers: [landed],
+      .mockImplementationOnce(async () => ({
+        // Keyed on whatever the write used: the reference is minted per run.
+        customers: [{ ...landed, suid: writes[0].suid, uuid: `u-${writes[0].suid}` }],
         rawCount: 1,
         droppedStale: 0,
         droppedDuplicate: 0,
-      });
+      }));
 
     const result = await pushDiallingList(orgId, userId, { campaignId, batchCode: "28AUG-STRICT" });
     expect(result.confirmed).toBe(1);
@@ -1306,12 +1324,12 @@ describe.skipIf(!scratch)("finding the field a send is rejected for", () => {
   });
 
   it("names the fields rejected on their own", async () => {
-    // Everything lands except the variant carrying month-of.
+    // Everything lands except the variant carrying tenant_code.
     postWrite.mockImplementation(async (path: string, body: unknown) => {
       const payload = body as {
         customer_data: { main: { suid: string }; values: Record<string, unknown> };
       };
-      if (payload.customer_data.values["month-of"] !== undefined) {
+      if (payload.customer_data.values["tenant_code"] !== undefined) {
         // Accepted and silently dropped, which is how the real API answers.
         return { uuid: "" };
       }
@@ -1326,20 +1344,82 @@ describe.skipIf(!scratch)("finding the field a send is rejected for", () => {
 
     const { probeRow } = await import("./push");
     const result = await probeRow(orgId, userId, { campaignId });
-    expect(result.verdict).toMatch(/month-of/);
-    expect(result.verdict).toMatch(/rejected on their own/i);
+    expect(result.verdict).toMatch(/tenant_code/);
+    expect(result.verdict).toMatch(/refused on their own/i);
   });
 
-  it("blames the account's own data when even the proven fields are refused", async () => {
-    vi.mocked(api.pullCustomers).mockResolvedValue({
-      customers: [],
-      rawCount: 0,
-      droppedStale: 0,
-      droppedDuplicate: 0,
+  /**
+   * Only the writes this predicate accepts are kept. The rest answer exactly
+   * what the real API answers when it discards a row: a 200, a queued flag, and
+   * no record afterwards.
+   */
+  const keepOnly = (predicate: (write: Write) => boolean) => {
+    postWrite.mockImplementation(async (path: string, body: unknown, bearer?: string) => {
+      const payload = body as {
+        company_key?: unknown;
+        customer_data: { main: { suid: string }; values: Record<string, unknown> };
+      };
+      const write: Write = {
+        path,
+        suid: payload.customer_data.main.suid,
+        main: payload.customer_data.main,
+        values: payload.customer_data.values,
+        ...(bearer ? { bearer } : {}),
+        companyKey: payload.company_key,
+      };
+      if (predicate(write)) writes.push(write);
+      // Exactly what the real API answers for a row it discards.
+      return { queued: true, saveInitTime: 1, uuid: "" };
     });
+  };
+
+  it("blames the account's own data when the control lands and the account's does not", async () => {
+    // The control is the connection test's own payload through the send's own
+    // write function. It landing is what makes everything else about the data.
+    keepOnly((write) => write.main.name === "AIployee connection test");
     const { probeRow } = await import("./push");
     const result = await probeRow(orgId, userId, { campaignId });
-    expect(result.verdict).toMatch(/the account's own data/i);
-    expect(result.verdict).toContain("+27825104242");
+    expect(result.verdict).toMatch(/the control was kept/i);
+    expect(result.verdict).toMatch(/name or number/i);
+  });
+
+  it("names the credential arrangement that worked when the send's own path does not", async () => {
+    // The exact failure this exists for: the connection test lands and a send
+    // does not, with the same payload. That is not a field problem, and looking
+    // for one wastes the operator's afternoon.
+    keepOnly((write) => write.companyKey === undefined);
+    const { probeRow } = await import("./push");
+    const result = await probeRow(orgId, userId, { campaignId });
+    expect(result.verdict).toMatch(/payload is not the problem/i);
+    expect(result.verdict).toMatch(/no company_key/i);
+    // Never the credential itself, only which arrangement it was.
+    expect(result.verdict).not.toContain("api-key-for-tests");
+  });
+
+  it("says the reference is the problem when only a uuid-keyed write is kept", async () => {
+    const uuidShape = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+    keepOnly((write) => uuidShape.test(write.suid));
+    const { probeRow } = await import("./push");
+    const result = await probeRow(orgId, userId, { campaignId });
+    expect(result.verdict).toMatch(/reference/i);
+    expect(result.verdict).toMatch(/uuid/i);
+  });
+
+  it("trusts nothing when the read did not finish", async () => {
+    // A truncated read cannot say a record is absent, and saying otherwise
+    // sends the next hour after a field that was fine.
+    vi.mocked(api.pullCustomers).mockImplementation(async (_client, options = {}) => {
+      await options.onPage?.({ page: 1, pulled: 0 });
+      return { customers: [], rawCount: 0, droppedStale: 0, droppedDuplicate: 0 };
+    });
+    process.env.JOBIX_CONFIRM_BUDGET_MS = "-1000";
+    try {
+      const { probeRow } = await import("./push");
+      const result = await probeRow(orgId, userId, { campaignId });
+      expect(result.scanComplete).toBe(false);
+      expect(result.verdict).toMatch(/ran out of time/i);
+    } finally {
+      delete process.env.JOBIX_CONFIRM_BUDGET_MS;
+    }
   });
 });
