@@ -307,6 +307,57 @@ export class JobixClient {
   }
 
   /**
+   * POST to the write API with a stated bearer, instead of the resolved one.
+   *
+   * Only for the diagnostic that compares credential arrangements. Which value
+   * belongs in the Authorization header and which belongs in the body has been
+   * inferred rather than read all along, and inference has been wrong about
+   * this integration repeatedly — so the arrangements are tried and the
+   * platform's own answer decides.
+   */
+  async postWriteAs<T>(path: string, body: unknown, bearer: string): Promise<T> {
+    return this.postWithBearer(`${this.env.apiBase}${path}`, body, bearer);
+  }
+
+  private async postWithBearer<T>(url: string, body: unknown, bearer: string): Promise<T> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${bearer}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+        cache: "no-store",
+      });
+      const text = await response.text();
+      if (!response.ok) {
+        throw new JobixError(
+          `Jobix write failed (HTTP ${response.status}).`,
+          response.status === 401 || response.status === 403 ? "unauthorized" : "rejected",
+          redact(text),
+        );
+      }
+      return (text ? JSON.parse(text) : {}) as T;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /** A session token, for a diagnostic that needs to name the credential. */
+  async sessionToken(): Promise<string | null> {
+    try {
+      return await this.bearer();
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * POST against the dashboard host. The flow trigger
    * (/api/nodes/now/trigger) lives here, NOT on the write API base — confirmed
    * from a DevTools capture of the flow builder's own Run button.

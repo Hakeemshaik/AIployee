@@ -317,25 +317,31 @@ export function ConnectionCard({
           appears nowhere — so trying a different one must not need a redeploy. */}
       <div className="mt-3 border-t border-line-2 pt-3">
         <p className="mb-1 flex items-center gap-2 text-[0.78125rem] font-medium text-ink">
-          <KeyRound size={13} className="text-accent" /> Company key
+          <KeyRound size={13} className="text-accent" /> Write API key
         </p>
+        {/* Named for what Jobix calls it. It was labelled "Company key" here,
+            and an API key went into it — the two are different slots: a key
+            that authenticates the request travels in the Authorization header,
+            while company_key inside the body names the workspace. Test write
+            below tries the arrangements and reports which one the platform
+            actually keeps. */}
         <p className="mb-2.5 text-[0.75rem] leading-relaxed text-ink-2">
           {key.using === "none"
-            ? "Not set. Writing a customer needs it — it names the workspace the write goes into."
+            ? "Not set. Writing a customer needs a credential — in Jobix this is the API key, described there as authenticating API requests."
             : `In use${key.hint ? ` (${key.hint})` : ""}, ${
                 key.using === "stored" ? "saved here" : "from an environment variable"
-              }. A wrong key is accepted and the customer appears nowhere, so if a send reports queued and nothing arrives, this is the first thing to change.`}
+              }. A key for another workspace is accepted and the customer appears nowhere, so if a send reports queued and nothing arrives, this is the first thing to change.`}
         </p>
         <div className="flex flex-wrap items-end gap-2">
           <label className="block">
             <span className="mb-1 block text-[0.6875rem] text-ink-3">
-              {key.stored ? "Replace it" : "Company key"}
+              {key.stored ? "Replace it" : "API key"}
             </span>
             <input
               className="field w-[280px]"
               type="password"
               autoComplete="off"
-              placeholder={key.hint ?? "The workspace key from Jobix"}
+              placeholder={key.hint ?? "The API key from Jobix"}
               value={keyInput}
               onChange={(event) => setKeyInput(event.target.value)}
             />
@@ -384,27 +390,37 @@ export function ConnectionCard({
           {probe && (
             <div
               className={`mt-2.5 rounded-lg border px-3 py-2.5 text-[0.78125rem] ${
-                probe.found
+                probe.worked
                   ? "border-[rgba(25,158,112,0.35)] bg-[rgba(25,158,112,0.08)]"
                   : "border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)]"
               }`}
             >
               <p className="flex items-start gap-2 text-ink">
-                {probe.found ? (
+                {probe.worked ? (
                   <CheckCircle2 size={13} className="mt-0.5 shrink-0 text-[#3ecf9a]" />
                 ) : (
                   <AlertTriangle size={13} className="mt-0.5 shrink-0 text-[#e2714a]" />
                 )}
                 {probe.verdict}
               </p>
-              <details className="mt-2 text-[0.6875rem] text-ink-2">
-                <summary className="cursor-pointer text-ink-3">
-                  What was sent, and what came back
-                </summary>
-                <pre className="scroll-x mt-1.5 rounded-lg border border-line bg-black/30 p-2.5 text-[0.625rem] leading-relaxed">
-{JSON.stringify({ sent: probe.sent, received: probe.received }, null, 2)}
-                </pre>
-              </details>
+              <ul className="mt-2 space-y-1.5">
+                {probe.attempts.map((attempt) => (
+                  <li key={attempt.suid} className="text-[0.71875rem]">
+                    <span className={attempt.landed ? "text-[#3ecf9a]" : "text-ink-3"}>
+                      {attempt.landed ? "landed" : "discarded"}
+                    </span>{" "}
+                    <span className="text-ink-2">{attempt.arrangement}</span>
+                    <details className="mt-1 text-[0.6875rem] text-ink-2">
+                      <summary className="cursor-pointer text-ink-3">
+                        What was sent, and what came back
+                      </summary>
+                      <pre className="scroll-x mt-1.5 rounded-lg border border-line bg-black/30 p-2.5 text-[0.625rem] leading-relaxed">
+{JSON.stringify({ sent: attempt.sent, received: attempt.received }, null, 2)}
+                      </pre>
+                    </details>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>

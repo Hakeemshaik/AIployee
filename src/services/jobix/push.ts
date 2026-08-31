@@ -861,17 +861,26 @@ export async function stopBatch(
 
 // --- proving the write, one record at a time -------------------------------
 
-export type WriteProbe = {
-  /** Exactly what was sent, so it can be compared against a working payload. */
-  sent: unknown;
-  /** Exactly what came back. */
-  received: unknown;
-  /** The reference written, and whether it turned up afterwards. */
+/** One credential arrangement, tried and answered for. */
+export type ProbeAttempt = {
+  /** What was tried, in words. */
+  arrangement: string;
+  /** The reference written for this attempt. */
   suid: string;
-  found: boolean;
+  /** What was sent — the credential itself never appears. */
+  sent: unknown;
+  /** What came back. */
+  received: unknown;
+  /** Whether a record with this reference turned up afterwards. */
+  landed: boolean;
+};
+
+export type WriteProbe = {
+  attempts: ProbeAttempt[];
+  /** The arrangement that produced a record, if any. */
+  worked: string | null;
   scanned: number;
   scanComplete: boolean;
-  companyKeyHint: string;
   verdict: string;
 };
 
@@ -895,50 +904,102 @@ export async function probeWrite(
 ): Promise<WriteProbe> {
   const env = await resolveJobixEnv();
   if (!env) throw new JobixError("Jobix is not configured on this server.", "not_configured");
-  if (!env.companyKey) {
+
+  const client = new JobixClient(env);
+  // Never a real person's number, and never a call flag: nothing here may be
+  // dialled.
+  const phone = options.phone?.trim() || "+27000000000";
+  const stamp = Date.now();
+
+  const session = await client.sessionToken();
+  const hint = (value: string) => (value.length <= 4 ? "…" : `…${value.slice(-4)}`);
+
+  /**
+   * The arrangements worth trying.
+   *
+   * Which value belongs in the Authorization header and which belongs in the
+   * body has been inferred throughout, and Jobix labels the key an "API key
+   * used to authenticate API requests" — a header credential, not a body
+   * field. Rather than argue about it, each arrangement is tried once and the
+   * platform's own answer decides. All are unarmed, so none can dial.
+   */
+  const plans: { arrangement: string; bearer: string | null; companyKey: string | null }[] = [
+    {
+      arrangement: "API key as the Authorization bearer, and in the body's company_key",
+      bearer: env.token ?? null,
+      companyKey: env.companyKey ?? null,
+    },
+    {
+      arrangement: "API key as the Authorization bearer, no company_key in the body",
+      bearer: env.token ?? null,
+      companyKey: null,
+    },
+    {
+      arrangement: "Dashboard session as the bearer, API key in the body's company_key",
+      bearer: session,
+      companyKey: env.companyKey ?? null,
+    },
+  ];
+
+  const attempts: ProbeAttempt[] = [];
+  for (const [index, plan] of plans.entries()) {
+    if (!plan.bearer) continue;
+    const suid = safeSuid(`aiployee-probe-${stamp}-${index + 1}`);
+    const main = { suid, timezone: TIMEZONE, phone, name: "AIployee connection test" };
+    const values = {
+      full_name: "AIployee connection test",
+      phone,
+      total_due: 1,
+      unit_number: "TEST",
+      building_name: "AIployee connection test",
+    };
+    const body = {
+      ...(plan.companyKey ? { company_key: plan.companyKey } : {}),
+      customer_data: { main, values },
+    };
+
+    let received: unknown;
+    try {
+      received = await client.postWriteAs<Record<string, unknown>>(
+        "/v1/customer/save",
+        body,
+        plan.bearer,
+      );
+    } catch (err) {
+      received = { error: describe(err) };
+    }
+
+    attempts.push({
+      arrangement: `${plan.arrangement}${plan.bearer ? ` (bearer ${hint(plan.bearer)})` : ""}${
+        plan.companyKey ? `, company_key ${hint(plan.companyKey)}` : ""
+      }`,
+      suid,
+      // The credential is replaced before this is ever displayed.
+      sent: { ...(plan.companyKey ? { company_key: "[redacted]" } : {}), customer_data: { main, values } },
+      received,
+      landed: false,
+    });
+  }
+
+  if (attempts.length === 0) {
     throw new JobixError(
-      "The company key is required to write. Set it under Settings.",
+      "No credential is available to write with. Set the API key and, if your workspace uses one, the company key under Settings.",
       "not_configured",
     );
   }
-  const client = new JobixClient(env);
-  const suid = safeSuid(`aiployee-probe-${Date.now()}`);
-  // Never a real person's number by default, and never a call flag: nothing
-  // here may be dialled.
-  const phone = options.phone?.trim() || "+27000000000";
-  const main = {
-    suid,
-    timezone: TIMEZONE,
-    phone,
-    name: "AIployee connection test",
-  };
-  const values = {
-    full_name: "AIployee connection test",
-    phone,
-    total_due: 1,
-    unit_number: "TEST",
-    building_name: "AIployee connection test",
-  };
-  const sent = { company_key: "[redacted]", customer_data: { main, values } };
 
-  let received: unknown;
-  try {
-    received = await save(client, env.companyKey, main, values);
-  } catch (err) {
-    received = { error: describe(err) };
-  }
-
-  // Give the queue a moment, exactly as a real send does.
+  // One read for all of them, after the queue has had a moment.
   await sleep(QUEUE_SETTLE_MS);
   const list = await readCustomers(client);
-  const found = list.customers.some((customer) => customer.suid === suid);
+  const present = new Set(list.customers.map((customer) => customer.suid).filter(Boolean));
+  for (const attempt of attempts) attempt.landed = present.has(attempt.suid);
 
-  const hint = env.companyKey.length <= 4 ? "…" : `…${env.companyKey.slice(-4)}`;
-  const verdict = found
-    ? `The write landed: a record with reference ${suid} is on the platform. Writing works, so a send that reports queued and nothing arriving is about the payload, not the connection.`
+  const worked = attempts.find((attempt) => attempt.landed)?.arrangement ?? null;
+  const verdict = worked
+    ? `This arrangement works: ${worked}. The platform will use it from now on.`
     : list.complete
-      ? `The write did NOT land. ${list.customers.length} customer records were read and none carries ${suid}, so the platform accepted this write and discarded it. The company key in use ends ${hint} — if that is not the workspace whose customer list you are looking at, that is the reason.`
-      : `Inconclusive: ${list.customers.length} records were read before the budget ran out, and ${suid} was not among them. Raise JOBIX_CONFIRM_BUDGET_MS and try again, or search the customer list in Jobix for ${suid}.`;
+      ? `None of the ${attempts.length} arrangements produced a record, in ${list.customers.length} customer records read. Every write was accepted and discarded, so the credential is being taken and ignored — which means the key is for a different workspace, or this endpoint needs something neither arrangement sent. The replies below are Jobix's own words on each.`
+      : `Inconclusive: ${list.customers.length} records were read before the budget ran out and none of the probe references was among them. Raise JOBIX_CONFIRM_BUDGET_MS, or search the customer list in Jobix for "AIployee connection test".`;
 
   await audit({
     organizationId,
@@ -947,17 +1008,17 @@ export async function probeWrite(
     action: "jobix.write_probed",
     entityType: "integration_settings",
     entityId: organizationId,
-    detail: { suid, found, scanned: list.customers.length, companyKeyHint: hint },
+    detail: {
+      attempts: attempts.map((attempt) => ({ arrangement: attempt.arrangement, landed: attempt.landed })),
+      scanned: list.customers.length,
+    },
   });
 
   return {
-    sent,
-    received,
-    suid,
-    found,
+    attempts,
+    worked,
     scanned: list.customers.length,
     scanComplete: list.complete,
-    companyKeyHint: hint,
     verdict,
   };
 }

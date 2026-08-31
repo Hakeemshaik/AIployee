@@ -42,6 +42,7 @@ vi.mock("./client", async (importOriginal) => {
       apiBase: "https://api.example.test",
       email: "ops@example.test",
       password: "irrelevant",
+      token: "api-key-for-tests",
       companyKey: "company-key-for-tests",
     }),
     resolveJobixEnv: async () => ({
@@ -49,10 +50,14 @@ vi.mock("./client", async (importOriginal) => {
       apiBase: "https://api.example.test",
       email: "ops@example.test",
       password: "irrelevant",
+      token: "api-key-for-tests",
       companyKey: "company-key-for-tests",
     }),
     JobixClient: class {
       postWrite = postWrite;
+      // The probe names the credential it uses, so the stub records that too.
+      postWriteAs = (path: string, body: unknown) => postWrite(path, body);
+      sessionToken = async () => "session-token-for-tests";
     },
   };
 });
@@ -1171,30 +1176,40 @@ describe.skipIf(!scratch)("the write probe", () => {
     delete process.env.JOBIX_QUEUE_SETTLE_MS;
   });
 
-  it("never sends a call flag, so a probe cannot dial anybody", async () => {
-    const { probeWrite } = await import("./push");
-    await probeWrite(orgId, userId);
-    expect(writes).toHaveLength(1);
-    expect(writes[0].values.call).toBeUndefined();
-    expect(writes[0].main.phone).toBe("+27000000000");
-  });
-
-  it("shows the payload and the reply, with the key redacted", async () => {
+  it("tries each credential arrangement and never sends a call flag", async () => {
     const { probeWrite } = await import("./push");
     const result = await probeWrite(orgId, userId);
-    expect(JSON.stringify(result.sent)).toContain("[redacted]");
-    expect(JSON.stringify(result.sent)).not.toContain("company-key-for-tests");
-    expect(result.received).toBeTruthy();
+    // More than one arrangement, because which value goes where is the
+    // question — and none of them may dial.
+    expect(result.attempts.length).toBeGreaterThan(1);
+    for (const attempt of result.attempts) {
+      const sent = attempt.sent as {
+        customer_data: { main: { phone: string }; values: Record<string, unknown> };
+      };
+      expect(sent.customer_data.values.call).toBeUndefined();
+      expect(sent.customer_data.main.phone).toBe("+27000000000");
+    }
   });
 
-  it("says the write landed when the record comes back", async () => {
+  it("never shows the credential, only which one was used", async () => {
     const { probeWrite } = await import("./push");
     const result = await probeWrite(orgId, userId);
-    expect(result.found).toBe(true);
-    expect(result.verdict).toMatch(/landed/i);
+    const dump = JSON.stringify(result);
+    expect(dump).not.toContain("company-key-for-tests");
+    expect(dump).not.toContain("api-key-for-tests");
+    expect(dump).not.toContain("session-token-for-tests");
+    // The last four characters are enough to tell two keys apart.
+    expect(result.attempts.some((a) => a.arrangement.includes("…"))).toBe(true);
   });
 
-  it("names the company key when the write is accepted and discarded", async () => {
+  it("says which arrangement worked when one lands", async () => {
+    const { probeWrite } = await import("./push");
+    const result = await probeWrite(orgId, userId);
+    expect(result.worked).not.toBeNull();
+    expect(result.verdict).toMatch(/this arrangement works/i);
+  });
+
+  it("says the credential is being taken and ignored when none lands", async () => {
     vi.mocked(api.pullCustomers).mockResolvedValue({
       customers: [],
       rawCount: 0,
@@ -1203,10 +1218,9 @@ describe.skipIf(!scratch)("the write probe", () => {
     });
     const { probeWrite } = await import("./push");
     const result = await probeWrite(orgId, userId);
-    expect(result.found).toBe(false);
-    expect(result.verdict).toMatch(/accepted this write and discarded it/i);
-    expect(result.verdict).toContain(result.companyKeyHint);
-    // The hint, never the key.
-    expect(result.companyKeyHint).not.toContain("company-key-for-tests");
+    expect(result.worked).toBeNull();
+    expect(result.attempts.every((attempt) => !attempt.landed)).toBe(true);
+    expect(result.verdict).toMatch(/accepted and discarded/i);
+    expect(result.verdict).toMatch(/different workspace/i);
   });
 });
