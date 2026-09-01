@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { CommandPalette } from "./CommandPalette";
 import { useCallback, useEffect, useRef } from "react";
 
 // ---------------------------------------------------------------------------
@@ -154,6 +155,14 @@ export function TopNav({ guest = false }: { guest?: boolean }) {
           </Link>
         );
       })}
+      {/* Search lives in the bar with everything else you reach for; pressed,
+          it detaches and stretches into the input. */}
+      {!guest && (
+        <>
+          <span className="dock-divider" aria-hidden />
+          <CommandPalette />
+        </>
+      )}
     </nav>
   );
 }

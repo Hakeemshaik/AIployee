@@ -749,6 +749,24 @@ select.field option {
   }
 }
 
+/* The search capsule lifting out of the bar: it grows leftward from the icon
+   it detached from, so the motion says where it came from and where Escape
+   puts it back. */
+.island-in {
+  animation: island-in 340ms var(--ease-spring) backwards;
+  transform-origin: right center;
+}
+@keyframes island-in {
+  from {
+    opacity: 0;
+    transform: scaleX(0.12);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* A menu opening from its own button: it grows out of the top edge rather
    than fading in over the page. */
 .menu-in {

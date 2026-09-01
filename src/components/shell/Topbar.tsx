@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { CommandPalette } from "./CommandPalette";
 import { AccountMenu } from "./AccountMenu";
 import { TopNav } from "./TopNav";
 import { BrandLockup } from "@/components/Brand";
@@ -73,7 +72,6 @@ export async function Topbar() {
             <span className="pulse-live h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
             <span className="max-w-[14rem] truncate font-medium text-ink">{orgName}</span>
           </p>
-          {!guest && <CommandPalette />}
           {/* Who you are and everything you change about the place, in one
               control. The separate sign-out button beside it was a permanent
               destructive-looking thing in the corner of every screen. */}
