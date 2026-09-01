@@ -1,6 +1,7 @@
 import { getContext } from "@/lib/auth";
 import { listCampaignOptions } from "@/services/debtors";
-import { BackLink, Card, PageHeader } from "@/components/ui";
+import { Card, PageHeader } from "@/components/ui";
+import { BackLink } from "@/components/BackLink";
 import { ImportForm } from "./ImportForm";
 import { BookImporter } from "@/components/BookImporter";
 

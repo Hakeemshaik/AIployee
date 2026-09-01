@@ -5,7 +5,8 @@ import { getContext } from "@/lib/auth";
 import { label } from "@/lib/domain";
 import { formatDateTime, money, percent } from "@/lib/format";
 import { getAgent } from "@/services/agents";
-import { BackLink, Badge, Card, Meta, PageHeader, StatCard } from "@/components/ui";
+import { Badge, Card, Meta, PageHeader, StatCard } from "@/components/ui";
+import { BackLink } from "@/components/BackLink";
 import { HBarChart } from "@/components/charts";
 
 export const dynamic = "force-dynamic";

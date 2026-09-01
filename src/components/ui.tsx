@@ -1,5 +1,3 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 
 // ---------------------------------------------------------------------------
@@ -470,17 +468,6 @@ export function EmptyState({
       {hint && <p className="max-w-sm text-[0.75rem] leading-relaxed text-ink-3">{hint}</p>}
       {action && <div className="mt-1">{action}</div>}
     </div>
-  );
-}
-
-export function BackLink({ href, label }: { href: string; label: string }) {
-  return (
-    <Link
-      href={href}
-      className="mb-4 inline-flex items-center gap-1 text-[0.75rem] text-ink-3 transition-colors hover:text-ink-2"
-    >
-      <ArrowLeft size={14} /> {label}
-    </Link>
   );
 }
 

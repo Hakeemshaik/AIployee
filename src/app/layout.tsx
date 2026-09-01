@@ -3,6 +3,8 @@ import "./globals.css";
 import { getSession } from "@/lib/session";
 import { Topbar } from "@/components/shell/Topbar";
 import { ConfirmProvider } from "@/components/Dialog";
+import { NavTracker } from "@/components/shell/NavTracker";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: {
@@ -41,6 +43,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             a sentence saying what will happen, which window.confirm has no
             room for. */}
         <ConfirmProvider>
+          {/* useSearchParams needs a Suspense boundary; the tracker renders
+              nothing, so an empty fallback costs nothing. */}
+          <Suspense fallback={null}>
+            <NavTracker />
+          </Suspense>
           <div className="flex min-h-screen flex-col">
             <Topbar />
             <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 pb-16 pt-6 sm:px-6 lg:px-8">

@@ -5,7 +5,8 @@ import { getContext } from "@/lib/auth";
 import { label } from "@/lib/domain";
 import { duration, formatDate, formatDateTime, formatTime, money } from "@/lib/format";
 import { getCall } from "@/services/calls";
-import { BackLink, Badge, Card, Meta, PageHeader } from "@/components/ui";
+import { Badge, Card, Meta, PageHeader } from "@/components/ui";
+import { BackLink } from "@/components/BackLink";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Call" };

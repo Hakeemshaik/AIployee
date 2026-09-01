@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   AlertTriangle,
   ArrowRight,
+  Banknote,
   CalendarClock,
   PhoneCall,
   Sparkles,
@@ -13,8 +14,8 @@ import { setupStatus } from "@/services/setup-status";
 import { SetupChecklist } from "@/components/SetupChecklist";
 import { label } from "@/lib/domain";
 import { count, formatDateTime, money, percent, relativeDays } from "@/lib/format";
-import { getDashboardData, getWorkQueue } from "@/services/dashboard";
-import { Badge, Card, Disclosure, Gauge, PageHeader, Sparkline, StatCard } from "@/components/ui";
+import { getDashboardData, getLatestActivity, getWorkQueue } from "@/services/dashboard";
+import { Badge, Card, Disclosure, Gauge, PageHeader, StatCard } from "@/components/ui";
 import {
   AgingChart,
   ContactActivityChart,
@@ -42,10 +43,11 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const ctx = await getContext();
-  const [data, queue, setup] = await Promise.all([
+  const [data, queue, setup, activity] = await Promise.all([
     getDashboardData(ctx.organizationId),
     getWorkQueue(ctx.organizationId),
     setupStatus(ctx.organizationId),
+    getLatestActivity(ctx.organizationId),
   ]);
   const m = data.metrics;
   const insight = data.insight;
@@ -55,7 +57,6 @@ export default async function DashboardPage() {
   // The shape behind each figure, at tile size. A number with its own line
   // under it answers "is this getting better" without a second look.
   const recoveredSpark = data.recoverySeries.map((d) => d.cumulative);
-  const paidSpark = data.recoverySeries.map((d) => d.received);
   // A day's reach ratio swings between 0 and 1 on a handful of calls, which in
   // a tile reads as noise rather than a trend. Seven days trailing is the
   // shortest window that shows the direction instead of the weather.
@@ -272,18 +273,62 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      {/* 3 — is it getting better.
-          Plots on white cards, single figures on washed ones: the series
-          colours are validated against white and lose their separation over a
-          tint, so the two never share a surface. */}
-      <div className="mb-4 grid gap-4 xl:grid-cols-3">
+      {/* 3 — what just happened.
+          The morning question. Calls, promises and payments as one stream,
+          newest first, each row a link to the thing itself. The trend charts
+          this row replaced still exist — they answer "is it getting better",
+          which is a weekly question, so they live in the fold below with the
+          rest of the weekly numbers. */}
+      <div className="mb-4 grid items-start gap-4 xl:grid-cols-3">
         <Card
           i={0}
           className="xl:col-span-2"
-          title="Recovery over time"
-          subtitle="Cumulative rand recovered, last 30 days"
+          title="Latest activity"
+          subtitle={activity.length === 0 ? "Nothing recorded yet" : "Calls, promises and payments as they land"}
+          actions={
+            <Link
+              href="/calls"
+              className="inline-flex items-center gap-1 text-[0.75rem] text-accent-ink hover:underline"
+            >
+              All calls <ArrowRight size={12} />
+            </Link>
+          }
         >
-          <RecoveryTrendChart data={data.recoverySeries} />
+          {activity.length === 0 ? (
+            <p className="py-8 text-center text-[0.8125rem] text-ink-3">
+              Activity appears here as calls run and money moves.
+            </p>
+          ) : (
+            <ul className="-mx-2">
+              {activity.map((entry, i) => (
+                <li key={entry.key}>
+                  <Link
+                    href={entry.href}
+                    className="row-hover rise-in group flex items-center gap-3 px-2 py-2"
+                    style={{ ["--i" as string]: Math.min(i, 8) }}
+                  >
+                    {entry.kind === "call" && <PhoneCall size={14} className="shrink-0 text-ink-3" />}
+                    {entry.kind === "promise" && <CalendarClock size={14} className="shrink-0 text-accent" />}
+                    {entry.kind === "payment" && <Banknote size={14} className="shrink-0 text-good" />}
+                    <span className="min-w-0 flex-1 truncate text-[0.8125rem] text-ink group-hover:text-accent-ink">
+                      <span className="font-medium">{entry.who}</span>{" "}
+                      <span className="text-ink-2">{entry.what}</span>
+                      {entry.amount !== null && (
+                        <span className="num font-medium"> {money(entry.amount)}</span>
+                      )}
+                    </span>
+                    <span className="flex w-[8.5rem] shrink-0 justify-end">
+                      {entry.badge ? (
+                        <Badge value={entry.badge.value} label={label(entry.badge.value)} />
+                      ) : (
+                        <span className="text-[0.71875rem] text-ink-3">{relativeDays(entry.at)}</span>
+                      )}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
         <Card i={1} title="Reach" subtitle="Connected calls as a share of attempts">
           <div className="pt-2">
@@ -293,23 +338,6 @@ export default async function DashboardPage() {
               caption="Last 30 days. A reached call is one a person answered."
             />
           </div>
-        </Card>
-        <Card
-          i={2}
-          className="xl:col-span-2"
-          title="Contact success"
-          subtitle="Daily call attempts and connections"
-        >
-          <ContactActivityChart data={data.contactSeries} />
-        </Card>
-        <Card i={3} title="Payments in" subtitle="Day by day, last 30 days">
-          <p className="num text-[1.5rem] font-semibold leading-none tracking-tight text-ink">
-            {money(m.paymentsValue)}
-          </p>
-          <p className="mt-1.5 text-[0.71875rem] text-ink-3">
-            across {m.paymentsReceived} payment{m.paymentsReceived === 1 ? "" : "s"}
-          </p>
-          <Sparkline values={paidSpark} height={64} className="mt-4" />
         </Card>
       </div>
 
@@ -328,6 +356,12 @@ export default async function DashboardPage() {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
+          <Card title="Recovery over time" subtitle="Cumulative rand recovered, last 30 days">
+            <RecoveryTrendChart data={data.recoverySeries} />
+          </Card>
+          <Card title="Contact success" subtitle="Daily call attempts and connections">
+            <ContactActivityChart data={data.contactSeries} />
+          </Card>
           <Card title="Book by account age" subtitle="Outstanding vs recovered per aging bucket">
             <AgingChart data={data.agingSeries} />
           </Card>

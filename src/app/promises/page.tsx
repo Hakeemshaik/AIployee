@@ -5,6 +5,7 @@ import { formatDate, money, percent } from "@/lib/format";
 import { listCampaignOptions } from "@/services/debtors";
 import { getPromiseStats, listPromises } from "@/services/promises";
 import { Badge, EmptyState, Card, PageHeader, StatCard } from "@/components/ui";
+import { CollectionsTabs } from "@/components/shell/CollectionsTabs";
 import { Pager } from "@/components/Pager";
 import { pageParam, paginate } from "@/lib/paginate";
 import { ParamSelect } from "@/components/actions/ParamSelect";
@@ -31,6 +32,7 @@ export default async function PromisesPage({
 
   return (
     <div className="page-in">
+      <CollectionsTabs />
       <PageHeader
         title="Promises to pay"
         description="Every commitment captured on calls, tracked to fulfilment."

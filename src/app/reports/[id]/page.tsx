@@ -4,7 +4,8 @@ import { getContext } from "@/lib/auth";
 import { label } from "@/lib/domain";
 import { formatDate, formatDateTime, money, percent } from "@/lib/format";
 import { getReport } from "@/services/reports";
-import { BackLink, Badge, Card, PageHeader, StatCard } from "@/components/ui";
+import { Badge, Card, PageHeader, StatCard } from "@/components/ui";
+import { BackLink } from "@/components/BackLink";
 import { ReportActions } from "./ReportActions";
 
 export const dynamic = "force-dynamic";

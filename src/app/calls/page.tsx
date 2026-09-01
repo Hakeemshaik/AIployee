@@ -5,6 +5,7 @@ import { duration, formatDateTime, money } from "@/lib/format";
 import { listCalls } from "@/services/calls";
 import { listCampaignOptions } from "@/services/debtors";
 import { Badge, EmptyState, Card, PageHeader } from "@/components/ui";
+import { CollectionsTabs } from "@/components/shell/CollectionsTabs";
 import { OutcomeCatchUp } from "@/components/OutcomeCatchUp";
 import { Pager } from "@/components/Pager";
 import { pageParam, paginate } from "@/lib/paginate";
@@ -34,6 +35,7 @@ export default async function CallsPage({
 
   return (
     <div className="page-in">
+      <CollectionsTabs />
       <OutcomeCatchUp />
       <PageHeader
         title="Calls"

@@ -4,6 +4,7 @@ import { ESCALATION_PRIORITIES, ESCALATION_REASONS, ESCALATION_STATUSES, label }
 import { formatDate } from "@/lib/format";
 import { getEscalationStats, listEscalations, listUsers } from "@/services/escalations";
 import { Badge, EmptyState, Card, PageHeader, StatCard } from "@/components/ui";
+import { CollectionsTabs } from "@/components/shell/CollectionsTabs";
 import { Pager } from "@/components/Pager";
 import { pageParam, paginate } from "@/lib/paginate";
 import { ParamSelect } from "@/components/actions/ParamSelect";
@@ -34,6 +35,7 @@ export default async function EscalationsPage({
 
   return (
     <div className="page-in">
+      <CollectionsTabs />
       <PageHeader
         title="Escalations"
         description="Cases the AI has handed off for human judgement — disputes, hardship, vulnerability and authority limits."

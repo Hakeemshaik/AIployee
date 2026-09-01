@@ -1,6 +1,7 @@
 import { getContext } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { BackLink, Card, PageHeader } from "@/components/ui";
+import { Card, PageHeader } from "@/components/ui";
+import { BackLink } from "@/components/BackLink";
 import { CampaignForm } from "./CampaignForm";
 
 export const dynamic = "force-dynamic";

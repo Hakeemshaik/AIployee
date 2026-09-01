@@ -22,27 +22,37 @@ import { useCallback, useEffect, useRef } from "react";
 // printer. "Promises to pay" has no such picture, so a small glyph is just a
 // thing you hover to find out what it is, which is slower than reading a word.
 //
-// So: every place the work happens is a word in the row. What is left is
-// set-up-and-forget, and lives under the account menu in the corner, which is
-// not inside the scrolling wrapper and therefore actually opens.
+// So: five words, one per place. Collections covers calls, promises, payments
+// and escalations, which are four rooms of the same place and get a tab bar
+// between themselves. What is left is set-up-and-forget and lives under the
+// account menu in the corner, which is not inside the scrolling wrapper and
+// therefore actually opens.
 // ---------------------------------------------------------------------------
 
 const NAV = [
   { href: "/", label: "Home" },
   { href: "/campaigns", label: "Campaigns" },
   { href: "/debtors", label: "Debtors" },
-  { href: "/calls", label: "Calls" },
+  { href: "/calls", label: "Collections" },
   { href: "/analytics", label: "Analytics" },
-  { href: "/promises", label: "Promises" },
-  { href: "/payments", label: "Payments" },
-  { href: "/escalations", label: "Escalations" },
 ] as const;
+
+/**
+ * Collections is one place with four rooms. Calls, promises, payments and
+ * escalations are all the same question — what has the dialling produced, and
+ * what does it still owe us — so they share one word in the row and a tab bar
+ * between themselves, instead of stretching the navigation to eight entries
+ * where five of them are siblings.
+ */
+const COLLECTIONS: readonly string[] = ["/calls", "/promises", "/payments", "/escalations"];
 
 /** A demo session can only reach the analytics screen. */
 const GUEST_NAV: readonly string[] = ["/analytics"];
 
 function isActive(pathname: string, href: string): boolean {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+  if (href === "/") return pathname === "/";
+  if (href === "/calls") return COLLECTIONS.some((room) => pathname.startsWith(room));
+  return pathname.startsWith(href);
 }
 
 /**

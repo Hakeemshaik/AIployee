@@ -19,7 +19,6 @@ import {
   User,
   Users,
 } from "lucide-react";
-import { Overlay } from "@/components/Overlay";
 
 type Result = {
   kind: "debtor" | "campaign" | "agent" | "page";
@@ -72,8 +71,8 @@ export function CommandPalette() {
   const [active, setActive] = useState(0);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const islandRef = useRef<HTMLDivElement>(null);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
 
   const openPalette = useCallback(() => {
     setQuery("");
@@ -96,6 +95,16 @@ export function CommandPalette() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, openPalette]);
+
+  // A click anywhere else shrinks the island back to the button.
+  useEffect(() => {
+    if (!open) return;
+    const away = (event: MouseEvent) => {
+      if (!islandRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", away);
+    return () => document.removeEventListener("mousedown", away);
+  }, [open]);
 
   function onQueryChange(value: string) {
     setQuery(value);
@@ -150,83 +159,101 @@ export function CommandPalette() {
   }
 
   return (
-    <>
-      {/* A pill of glass, not a form field: the same silhouette as the dock
-          beside it, and the key cap sits inside it like a chip in a slot. */}
-      <button
-        onClick={openPalette}
-        className="group hidden items-center gap-2 rounded-full border border-ink/[0.08] bg-gradient-to-b from-white/90 to-white/65 py-1.5 pl-3 pr-1.5 text-[0.78125rem] text-ink-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_1px_2px_rgba(21,32,46,0.05)] backdrop-blur-xl transition-all hover:border-accent/35 hover:text-ink-2 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_6px_18px_-10px_rgba(14,158,144,0.45)] sm:inline-flex"
-        aria-label="Open search"
+    // -----------------------------------------------------------------------
+    // The island.
+    //
+    // Collapsed, search is a round button of glass — just the magnifier, the
+    // same silhouette as everything else in the bar. Pressed (or ⌘K), the
+    // capsule itself stretches into the input, and the results hang off it in
+    // a floating panel: the control grows into the thing you asked for instead
+    // of summoning a dialog somewhere else on the screen. Escape, or a click
+    // anywhere else, shrinks it back to the button.
+    //
+    // The width is animated on the container, so the stretch is the capsule
+    // deforming — not a second element fading in over the first.
+    // -----------------------------------------------------------------------
+    <div ref={islandRef} className="relative">
+      <div
+        className={`flex items-center overflow-hidden rounded-full border bg-gradient-to-b from-white/90 to-white/65 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_1px_2px_rgba(21,32,46,0.05)] backdrop-blur-xl transition-all duration-300 ${
+          open
+            ? "w-[19rem] border-accent/35 sm:w-[23rem]"
+            : "w-9 border-ink/[0.08] hover:border-accent/35"
+        }`}
+        style={{ transitionTimingFunction: "var(--ease-spring)" }}
       >
-        <Search size={14} className="text-ink-3 transition-colors group-hover:text-accent" />
-        <span className="pr-6">Search…</span>
-        <kbd
-          suppressHydrationWarning
-          className="num rounded-full border border-ink/[0.07] bg-ink/[0.045] px-2 py-1 text-[0.625rem] leading-none text-ink-3"
+        <button
+          onClick={() => (open ? setOpen(false) : openPalette())}
+          className="flex h-9 w-9 shrink-0 items-center justify-center text-ink-3 transition-colors hover:text-accent"
+          aria-label={open ? "Close search" : "Open search"}
+          aria-expanded={open}
         >
-          {isMac ? "⌘K" : "Ctrl K"}
-        </kbd>
-      </button>
-      <button
-        onClick={openPalette}
-        className="rounded-full border border-ink/[0.08] bg-white/80 p-2.5 text-ink-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-xl sm:hidden"
-        aria-label="Open search"
-      >
-        <Search size={15} />
-      </button>
+          <Search size={15} />
+        </button>
+        {/* The input exists only while the island is stretched, so a stray Tab
+            can never land in an invisible field. */}
+        {open && (
+          <>
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => onQueryChange(e.target.value)}
+              onKeyDown={onInputKey}
+              placeholder="Search, or jump to a page…"
+              className="min-w-0 flex-1 bg-transparent py-2 pr-2 text-[0.8125rem] text-ink outline-none placeholder:text-ink-3"
+              aria-label="Search"
+            />
+            {loading && (
+              <span className="pulse-live mr-3 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
+            )}
+            {!loading && (
+              <kbd
+                suppressHydrationWarning
+                className="num mr-2 shrink-0 rounded-full border border-ink/[0.07] bg-ink/[0.045] px-2 py-1 text-[0.625rem] leading-none text-ink-3"
+              >
+                esc
+              </kbd>
+            )}
+          </>
+        )}
+      </div>
 
       {open && (
-        <Overlay>
-        <div className="fixed inset-0 z-[60] flex items-start justify-center p-4 pt-[12vh]">
-          <div className="scrim-in absolute inset-0 bg-ink/25 backdrop-blur-[3px]" onClick={() => setOpen(false)} />
-          <div className="card-float relative w-full max-w-lg overflow-hidden p-0">
-            <div className="flex items-center gap-2.5 border-b border-line px-5">
-              <Search size={15} className="shrink-0 text-ink-3" />
-              <input
-                ref={inputRef}
-                value={query}
-                onChange={(e) => onQueryChange(e.target.value)}
-                onKeyDown={onInputKey}
-                placeholder="Search debtors, campaigns, agents… or jump to a page"
-                className="w-full bg-transparent py-4 text-[0.9375rem] text-ink outline-none placeholder:text-ink-3"
-                aria-label="Search"
-              />
-              {loading && <span className="text-[0.6875rem] text-ink-3">Searching…</span>}
-            </div>
-            <ul className="max-h-[46vh] overflow-y-auto p-1.5">
-              {results.length === 0 ? (
-                <li className="px-3 py-6 text-center text-[0.8125rem] text-ink-3">
-                  {query.trim().length >= 2 ? "No matches." : "Type to search across the platform."}
-                </li>
-              ) : (
-                results.map((r, i) => {
-                  const Icon = r.kind === "page" ? (PAGE_ICONS[r.href] ?? FileText) : KIND_ICONS[r.kind];
-                  return (
-                    <li key={`${r.kind}-${r.href}`}>
-                      <button
-                        onClick={() => go(r.href)}
-                        onMouseEnter={() => setActive(i)}
-                        className={`flex w-full items-center gap-3 rounded-full px-3.5 py-2.5 text-left transition-colors ${
-                          i === active ? "bg-accent-soft" : ""
-                        }`}
-                      >
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line bg-ink/[0.04]">
-                          <Icon size={13} className={i === active ? "text-accent" : "text-ink-3"} />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block truncate text-[0.8125rem] font-medium text-ink">{r.title}</span>
-                          <span className="block truncate text-[0.6875rem] text-ink-3">{r.subtitle}</span>
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })
-              )}
-            </ul>
-          </div>
+        <div
+          className="card-float menu-in absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[19rem] overflow-hidden p-0 sm:w-[23rem]"
+          style={{ ["--origin" as string]: "top right" }}
+        >
+          <ul className="max-h-[46vh] overflow-y-auto overscroll-contain p-1.5">
+            {results.length === 0 ? (
+              <li className="px-3 py-6 text-center text-[0.8125rem] text-ink-3">
+                {query.trim().length >= 2 ? "No matches." : "Type to search across the platform."}
+              </li>
+            ) : (
+              results.map((r, i) => {
+                const Icon = r.kind === "page" ? (PAGE_ICONS[r.href] ?? FileText) : KIND_ICONS[r.kind];
+                return (
+                  <li key={`${r.kind}-${r.href}`}>
+                    <button
+                      onClick={() => go(r.href)}
+                      onMouseEnter={() => setActive(i)}
+                      className={`flex w-full items-center gap-3 rounded-full px-3.5 py-2.5 text-left transition-colors ${
+                        i === active ? "bg-accent-soft" : ""
+                      }`}
+                    >
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line bg-ink/[0.04]">
+                        <Icon size={13} className={i === active ? "text-accent" : "text-ink-3"} />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-[0.8125rem] font-medium text-ink">{r.title}</span>
+                        <span className="block truncate text-[0.6875rem] text-ink-3">{r.subtitle}</span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })
+            )}
+          </ul>
         </div>
-        </Overlay>
       )}
-    </>
+    </div>
   );
 }

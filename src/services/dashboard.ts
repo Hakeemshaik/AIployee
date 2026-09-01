@@ -277,3 +277,113 @@ export async function getWorkQueue(organizationId: string) {
 
   return { duePromises, escalations, callbacks: pendingCallbacks };
 }
+
+
+// ---------------------------------------------------------------------------
+// What just happened.
+//
+// The dashboard answered "how is it going" and "what needs me", but not "what
+// happened while I was away" — the first question anybody opening the app in
+// the morning actually has. This is that: the most recent calls, promises and
+// payments, one stream, newest first.
+// ---------------------------------------------------------------------------
+
+export type ActivityEntry = {
+  key: string;
+  kind: "call" | "promise" | "payment";
+  at: Date;
+  who: string;
+  /** One line saying what happened, readable without the icon. */
+  what: string;
+  amount: number | null;
+  href: string;
+  /** Feeds the Badge component; null renders nothing. */
+  badge: { value: string; label: string } | null;
+};
+
+export async function getLatestActivity(organizationId: string, limit = 8): Promise<ActivityEntry[]> {
+  // Each source over-fetches to the full limit so a burst of one kind cannot
+  // hide the others entirely, then the merged stream is cut to size.
+  const [calls, promises, payments] = await Promise.all([
+    db.call.findMany({
+      where: { organizationId },
+      orderBy: { startedAt: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        startedAt: true,
+        status: true,
+        outcome: true,
+        debtor: { select: { id: true, firstName: true, lastName: true } },
+      },
+    }),
+    db.promiseToPay.findMany({
+      where: { organizationId },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        createdAt: true,
+        amount: true,
+        promisedDate: true,
+        debtor: { select: { id: true, firstName: true, lastName: true } },
+      },
+    }),
+    db.payment.findMany({
+      where: { organizationId, status: "completed" },
+      orderBy: { paidAt: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        paidAt: true,
+        amount: true,
+        method: true,
+        debtor: { select: { id: true, firstName: true, lastName: true } },
+      },
+    }),
+  ]);
+
+  const name = (d: { firstName: string; lastName: string }) => `${d.firstName} ${d.lastName}`;
+
+  const entries: ActivityEntry[] = [
+    ...calls.map((c): ActivityEntry => ({
+      key: `call-${c.id}`,
+      kind: "call",
+      at: c.startedAt,
+      who: name(c.debtor),
+      what:
+        c.status === "completed"
+          ? c.outcome
+            ? "answered a call"
+            : "answered — being analysed"
+          : c.status === "voicemail"
+            ? "went to voicemail"
+            : "did not answer",
+      amount: null,
+      href: `/calls/${c.id}`,
+      badge: c.outcome ? { value: c.outcome, label: c.outcome } : null,
+    })),
+    ...promises.map((p): ActivityEntry => ({
+      key: `promise-${p.id}`,
+      kind: "promise",
+      at: p.createdAt,
+      who: name(p.debtor),
+      what: "promised to pay",
+      amount: p.amount,
+      href: `/debtors/${p.debtor.id}`,
+      badge: null,
+    })),
+    ...payments.map((p): ActivityEntry => ({
+      key: `payment-${p.id}`,
+      kind: "payment",
+      at: p.paidAt,
+      who: name(p.debtor),
+      what: "paid",
+      amount: p.amount,
+      href: `/debtors/${p.debtor.id}`,
+      badge: null,
+    })),
+  ];
+
+  return entries.sort((a, b) => b.at.getTime() - a.at.getTime()).slice(0, limit);
+}

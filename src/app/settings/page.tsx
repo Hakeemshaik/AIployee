@@ -1,4 +1,5 @@
 import { KeyRound, Webhook } from "lucide-react";
+import { CreateKeyButton } from "./CreateKeyButton";
 import { getContext, hasRole } from "@/lib/auth";
 import { EVENT_TYPES } from "@/lib/domain";
 import { formatDateTime } from "@/lib/format";
@@ -222,6 +223,7 @@ export default async function SettingsPage() {
           <p className="mt-2 text-[0.65625rem] text-ink-3">
             Keys are stored as SHA-256 hashes; the full key is shown once at creation.
           </p>
+          <CreateKeyButton />
         </Card>
 
         <Card title="Event architecture" subtitle="Internal events, persisted and replayable">
