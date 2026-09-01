@@ -58,6 +58,7 @@ model Organization {
   engineBatches       EngineBatch[]
   engineAttempts      EngineAttempt[]
   engineAlerts        EngineAlert[]
+  engineMappings      EngineMapping[]
 }
 
 model User {
@@ -969,4 +970,19 @@ model EngineAlert {
   campaign     Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   @@index([campaignId, acknowledgedAt])
+}
+
+/// A manual column mapping, remembered against a fingerprint of the header
+/// row so the same odd file layout is mapped once and reused silently.
+model EngineMapping {
+  id             String   @id @default(cuid())
+  organizationId String
+  fingerprint    String
+  /// JSON FieldMapping: { tenant, bal, phone, unit, building, code }.
+  mapping        String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, fingerprint])
 }

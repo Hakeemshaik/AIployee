@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Workflow } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getContext, hasRole } from "@/lib/auth";
 import { label } from "@/lib/domain";
@@ -67,6 +68,12 @@ export default async function CampaignDetailPage({
         description={campaign.description ?? undefined}
         actions={
           <div className="flex flex-wrap items-center justify-end gap-2">
+            {/* The engine: paste → rounds → report, end to end. The manual
+                launch panel below stays for one-off sends; the engine is the
+                repeatable workflow. */}
+            <Link href={`/campaigns/${campaign.id}/engine`} className="btn btn-primary">
+              <Workflow size={14} /> Campaign engine
+            </Link>
             {/* A draft campaign has nothing to press up here on purpose: the
                 only thing that starts a run is step 2, and a button in the
                 header could only flip a status without dialling anyone. */}
