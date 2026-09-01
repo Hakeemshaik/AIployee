@@ -270,7 +270,7 @@ function contactValues(row: JobixRow): Record<string, string | number> {
  * with them buried in fields has no identity for the platform's own list to
  * show, which is what "the write succeeded and nothing appeared" looked like.
  */
-type Identity = {
+export type Identity = {
   suid: string;
   timezone: string;
   /** The provider's own customer id, sent when this record already exists
@@ -330,7 +330,12 @@ async function readCustomers(
   }
 }
 
-async function save(
+/**
+ * The one write everything goes through — the campaign send, the single dial,
+ * the probes, and the Campaign Engine's drip. Exported so no second component
+ * ever reconstructs the payload shape and drifts from it.
+ */
+export async function save(
   client: JobixClient,
   companyKey: string,
   main: Identity,

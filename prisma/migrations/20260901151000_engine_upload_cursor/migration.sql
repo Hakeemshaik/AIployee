@@ -1,0 +1,1 @@
+ALTER TABLE "EngineBatch" ADD COLUMN "uploadedCount" INTEGER NOT NULL DEFAULT 0;

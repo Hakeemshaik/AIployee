@@ -54,6 +54,10 @@ model Organization {
   jobixNodeEvents     JobixNodeEvent[]
   invites             Invite[]
   dialAttempts        DialAttempt[]
+  engineAccounts      EngineAccount[]
+  engineBatches       EngineBatch[]
+  engineAttempts      EngineAttempt[]
+  engineAlerts        EngineAlert[]
 }
 
 model User {
@@ -142,6 +146,7 @@ model Debtor {
   escalations      Escalation[]
   campaignContacts CampaignContact[]
   dialAttempts     DialAttempt[]
+  engineAccounts   EngineAccount[]
 
   @@unique([organizationId, accountNumber])
   @@index([organizationId, status])
@@ -187,6 +192,16 @@ model Campaign {
   maxAttempts        Int       @default(6)
   retryIntervalHours Int       @default(48)
   strategy           String    @default("standard") // standard | payment_plan_first | early_settlement | firm_reminder
+  // --- Campaign Engine (round-driven calling) -------------------------------
+  // none = this campaign does not use the engine (legacy manual flow).
+  engineStatus       String    @default("none") // none | draft | ready | calling | between_rounds | review | complete
+  currentRound       Int       @default(0)
+  maxRounds          Int       @default(3)
+  batchSize          Int       @default(200)
+  maxConcurrency     Int       @default(4)
+  /// A blocking alert (balance drift, delivery failure) that must be
+  /// acknowledged before the next round can start. Null = nothing blocking.
+  engineBlock        String?
   // draft | scheduled | queued | running | paused | completed | stopped | failed
   // ("active" is retained as a synonym of "running" for existing records)
   status             String    @default("draft")
@@ -211,15 +226,18 @@ model Campaign {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  organization  Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  agent         AIAgent?          @relation(fields: [agentId], references: [id], onDelete: SetNull)
-  debtors       Debtor[]
-  calls         Call[]
-  promises      PromiseToPay[]
-  payments      Payment[]
-  escalations   Escalation[]
-  contacts      CampaignContact[]
-  redialBatches RedialBatch[]
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agent          AIAgent?          @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  debtors        Debtor[]
+  calls          Call[]
+  promises       PromiseToPay[]
+  payments       Payment[]
+  escalations    Escalation[]
+  contacts       CampaignContact[]
+  redialBatches  RedialBatch[]
+  engineAccounts EngineAccount[]
+  engineBatches  EngineBatch[]
+  engineAlerts   EngineAlert[]
 
   @@index([organizationId, status])
   @@index([organizationId, providerCampaignId])
@@ -808,4 +826,147 @@ model DialAttempt {
   @@unique([organizationId, suid])
   @@index([organizationId, requestedAt])
   @@index([organizationId, debtorId])
+}
+
+// -----------------------------------------------------------------------------
+// Campaign Engine — the round-driven calling state machine.
+//
+// EngineAccount is one row per PERSON per campaign (deduped by phone at import),
+// carrying the state the rounds turn on. It references the org-wide Debtor so
+// the rest of the platform sees the same person; the engine fields live here so
+// two campaigns can work the same debtor without fighting over one status column.
+// -----------------------------------------------------------------------------
+
+model EngineAccount {
+  id             String    @id @default(cuid())
+  organizationId String
+  campaignId     String
+  debtorId       String?
+  /// Stable reference minted at import; travels to Jobix as main.suid.
+  suid           String
+  fullName       String
+  /// The version of the name safe to put in a written message.
+  greetingName   String
+  /// Null = no usable number. The account stays visible, is never uploaded.
+  phone          String?
+  email          String?
+  unitNumber     String?
+  buildingName   String?
+  tenantCode     String?
+  /// Whole rand, sum of every source row this person appeared on.
+  totalDue       Int
+  unitsHeld      Int       @default(1)
+  multiUnit      Boolean   @default(false)
+  sourceFile     String?
+  sourceRow      Int?
+  state          String    @default("pending") // pending | queued | dialling | reached | resolved | exhausted | undialable
+  outcome        String? // PTP | PART | PAID | DISPUTE | CALLBACK | OFFICE | WRONG | ESCALATED | REFUSED | NO_OUTCOME
+  attempts       Int       @default(0)
+  lastAttemptAt  DateTime?
+  doNotCall      Boolean   @default(false)
+  /// Transcript and platform disagree, or a conversation went uncaptured.
+  needsReview    Boolean   @default(false)
+  reviewReason   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaign     Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  debtor       Debtor?         @relation(fields: [debtorId], references: [id], onDelete: SetNull)
+  attemptsLog  EngineAttempt[]
+
+  /// One account per phone per campaign — the dedupe is a constraint, not a hope.
+  /// Postgres exempts NULL phones, which is exactly right for the undialable.
+  @@unique([campaignId, phone])
+  @@unique([organizationId, suid])
+  @@index([campaignId, state])
+}
+
+model EngineBatch {
+  id             String    @id @default(cuid())
+  organizationId String
+  campaignId     String
+  round          Int
+  index          Int
+  /// e.g. 01SEP-R1-B3 — how calls are attributed back to a round.
+  code           String
+  status         String    @default("pending") // pending | uploaded | calling | paused | complete
+  /// JSON array of EngineAccount ids, written once at creation, never recomputed.
+  accountIds     String
+  /// How many of those have been written to Jobix so far — the drip cursor.
+  /// Writes start dials on an insert-started flow, so pacing writes IS pacing
+  /// calls, and a batch is fed to the platform a few rows per tick.
+  uploadedCount  Int       @default(0)
+  accountCount   Int
+  arrears        Int
+  /// hash(campaignId + code) — replaying the same upload is a no-op.
+  idempotencyKey String    @unique
+  uploadRef      String?
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  pausedReason   String?
+  /// Share of this batch's attempts that connected for zero seconds.
+  zeroRate       Float?
+  /// False when the round was voided as a run-level delivery failure — the
+  /// dials happened but do not count against anybody's attempt cap.
+  countsAttempt  Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaign     Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  attemptsLog  EngineAttempt[]
+
+  @@unique([campaignId, code])
+  @@index([campaignId, round, index])
+}
+
+model EngineAttempt {
+  id               String   @id @default(cuid())
+  organizationId   String
+  campaignId       String
+  accountId        String
+  batchId          String
+  round            Int
+  /// The Jobix conversation. Unique per org — the lock against double-counting.
+  conversationUuid String
+  startedAt        DateTime
+  durationSeconds  Int      @default(0)
+  userTurns        Int      @default(0)
+  userWords        Int      @default(0)
+  agentWords       Int      @default(0)
+  /// First 600 characters of what the tenant said.
+  excerpt          String   @default("")
+  reach            String // SPOKE | VOICEMAIL | NO_ANSWER | ZERO_DURATION
+  /// user_words >= 15 — an actual account discussion, not a greeting.
+  substantive      Boolean  @default(false)
+  /// True when the batch was voided as a delivery failure: kept for the
+  /// record, excluded from attempt counts and from the one-per-round lock.
+  voided           Boolean  @default(false)
+  classifiedAt     DateTime @default(now())
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  account      EngineAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  batch        EngineBatch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, conversationUuid])
+  @@index([campaignId, round])
+  @@index([accountId, round])
+}
+
+/// A guard finding that blocks the next round until a person acknowledges it.
+model EngineAlert {
+  id             String    @id @default(cuid())
+  organizationId String
+  campaignId     String
+  kind           String // balance_drift | delivery_failure
+  message        String
+  detail         String? // JSON evidence — quoted figure, accounts affected
+  createdAt      DateTime  @default(now())
+  acknowledgedAt DateTime?
+  acknowledgedBy String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaign     Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, acknowledgedAt])
 }
