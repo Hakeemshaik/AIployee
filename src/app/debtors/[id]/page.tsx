@@ -60,6 +60,8 @@ export default async function DebtorProfilePage({
               }}
               campaigns={campaigns}
               currentCampaignId={debtor.campaignId}
+              outstanding={stats.outstanding}
+              hasOpenPromise={stats.openPromise !== null}
             />
           </div>
         }
@@ -111,17 +113,31 @@ export default async function DebtorProfilePage({
                 {formatDate(openPromise.promisedDate)}{" "}
                 <span className="text-ink-3">({relativeDays(openPromise.promisedDate)})</span>
               </Meta>
+              <Meta label="Paying by">
+                {openPromise.method ? label(openPromise.method) : "Not said"}
+                {openPromise.bank && <span className="text-ink-3"> · {openPromise.bank}</span>}
+              </Meta>
               <Meta label="Payment plan">
-                {openPromise.paymentPlan
-                  ? (() => {
-                      const plan = JSON.parse(openPromise.paymentPlan!) as {
-                        installments: number;
-                        amount_per_installment: number;
-                        frequency: string;
-                      };
-                      return `${plan.installments} × ${money(plan.amount_per_installment)} ${plan.frequency}`;
-                    })()
-                  : "Single payment"}
+                {(() => {
+                  if (!openPromise.paymentPlan) return "Single payment";
+                  // Two shapes live in this column: an instalment plan from a
+                  // call, and a note typed by whoever captured the promise.
+                  // Reading one as the other used to throw and blank the card.
+                  try {
+                    const plan = JSON.parse(openPromise.paymentPlan) as Partial<{
+                      installments: number;
+                      amount_per_installment: number;
+                      frequency: string;
+                      note: string;
+                    }>;
+                    if (plan.installments && plan.amount_per_installment) {
+                      return `${plan.installments} × ${money(plan.amount_per_installment)} ${plan.frequency ?? ""}`.trim();
+                    }
+                    return plan.note ?? "Single payment";
+                  } catch {
+                    return "Single payment";
+                  }
+                })()}
               </Meta>
               <Meta label="Status">
                 <Badge

@@ -600,6 +600,13 @@ select.field option {
 }
 
 /* --- misc --- */
+/* Careful with this one. CSS says that when one overflow axis is not `visible`
+   the other computes to `auto` as well, so `overflow-x: auto` here also clips
+   vertically. A popover positioned below something inside a .scroll-x wrapper
+   is cut off at the wrapper's edge and never appears — which is exactly what
+   happened to the navigation's "More" menu, and looked for months like a dead
+   click handler. Anything that has to escape its container goes through
+   <Overlay> instead. */
 .scroll-x {
   overflow-x: auto;
   scrollbar-width: thin;

@@ -10,6 +10,7 @@
  * fresh deployment.
  */
 import { createHash, randomBytes } from "crypto";
+import { formatDate } from "@/lib/format";
 import { db } from "@/lib/db";
 import { mockProvider } from "@/services/ai/mock";
 import { buildCollectionSnapshot } from "@/services/insights";
@@ -782,7 +783,7 @@ export async function seedDemoData(): Promise<DemoSeedResult> {
         type: spec.type,
         title: `${
           { executive_summary: "Executive Summary", weekly: "Weekly Collection Report", daily: "Daily Collection Report", ptp: "Promise-to-Pay Report", recovery: "Recovery Report" }[spec.type]
-        } — ${now.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}`,
+        } — ${formatDate(now)}`,
         periodStart: daysAgo(spec.periodDays),
         periodEnd: now,
         status: "ready",

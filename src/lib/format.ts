@@ -110,6 +110,21 @@ export function formatDate(date: Date | string | null | undefined): string {
   return `${w.day} ${MONTHS[w.month - 1]} ${w.year}`;
 }
 
+/**
+ * 17 Aug — day and month, no year.
+ *
+ * Not `toLocaleDateString(… { month: "short" })`, which gives "Sept" for
+ * September in every English locale ICU knows. That four-letter month has
+ * already broken a batch code in this codebase once; MONTHS above is the
+ * single answer to what a short month looks like here.
+ */
+export function formatDayMonth(date: Date | string | null | undefined): string {
+  if (!date) return "—";
+  const w = wallClock(toDate(date));
+  if (!w) return "—";
+  return `${w.day} ${MONTHS[w.month - 1]}`;
+}
+
 /** 17 Aug 2026, 09:26 — SAST. */
 export function formatDateTime(date: Date | string | null | undefined): string {
   if (!date) return "—";

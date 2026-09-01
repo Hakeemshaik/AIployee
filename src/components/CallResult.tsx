@@ -13,7 +13,7 @@ import {
   Search,
 } from "lucide-react";
 import { label } from "@/lib/domain";
-import { money } from "@/lib/format";
+import { formatDayMonth, money } from "@/lib/format";
 
 // ---------------------------------------------------------------------------
 // What happened on the call.
@@ -277,11 +277,7 @@ export function CallResult({
           {attempt.promise && (
             <span className="value-in inline-flex items-center gap-1.5 rounded-full border border-good/35 bg-good/10 px-2.5 py-1 text-[0.75rem] font-semibold text-good">
               <CalendarClock size={11} />
-              {money(attempt.promise.amount)} by{" "}
-              {new Date(attempt.promise.promisedDate).toLocaleDateString("en-ZA", {
-                day: "numeric",
-                month: "short",
-              })}
+              {money(attempt.promise.amount)} by {formatDayMonth(attempt.promise.promisedDate)}
             </span>
           )}
           {attempt.analysis?.requiresHuman && (

@@ -106,6 +106,31 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 export const PAYMENT_STATUSES = ["completed", "pending", "reversed"] as const;
 
+/**
+ * South African retail banks, for a debit order or an EFT.
+ *
+ * A list, not an enum column, and "Other" is on it on purpose: somebody banks
+ * somewhere this list has never heard of, and a form that will not let them
+ * say so is a form that gets the wrong answer instead of no answer.
+ */
+export const SA_BANKS = [
+  "Absa",
+  "African Bank",
+  "Bidvest Bank",
+  "Capitec",
+  "Discovery Bank",
+  "FNB",
+  "Investec",
+  "Nedbank",
+  "Old Mutual Bank",
+  "Standard Bank",
+  "TymeBank",
+  "Other",
+] as const;
+
+/** The methods that need to know which bank the money leaves from. */
+export const METHODS_NEEDING_BANK: readonly string[] = ["debit_order", "eft"];
+
 export const ESCALATION_REASONS = [
   "dispute",
   "legal_request",

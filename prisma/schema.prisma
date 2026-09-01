@@ -527,6 +527,12 @@ model PromiseToPay {
   callId         String?
   amount         Float
   promisedDate   DateTime
+  /// How they said they would pay, so the follow-up can check the right place.
+  /// Same vocabulary as Payment.method.
+  method         String? // eft | debit_order | card | cash_deposit | payment_link
+  /// Which bank, when the method needs one (a debit order has to be set up
+  /// somewhere). Free text rather than an enum: a bank list goes out of date.
+  bank           String?
   paymentPlan    String? // JSON payment plan if the promise is an arrangement
   status         String    @default("pending") // pending | fulfilled | broken | cancelled  (upcoming/due today/overdue derived from promisedDate)
   fulfilledAt    DateTime?

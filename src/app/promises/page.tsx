@@ -75,6 +75,7 @@ export default async function PromisesPage({
                   <th className="text-right">Promised amount</th>
                   <th className="text-right">Paid towards</th>
                   <th>Promise date</th>
+                  <th>Paying by</th>
                   <th>Status</th>
                   <th className="text-right">Days overdue</th>
                   <th>Campaign</th>
@@ -93,6 +94,12 @@ export default async function PromisesPage({
                     <td className="num text-right font-medium text-ink">{money(p.amount)}</td>
                     <td className="num text-right">{p.paidTowards > 0 ? money(p.paidTowards) : "—"}</td>
                     <td>{formatDate(p.promisedDate)}</td>
+                    {/* How the money is coming, so a follow-up knows which
+                        account to check rather than asking again. */}
+                    <td className="text-ink-3">
+                      {p.method ? label(p.method) : "—"}
+                      {p.bank && <span className="ml-1.5 text-ink-2">· {p.bank}</span>}
+                    </td>
                     <td><Badge value={p.displayStatus} label={label(p.displayStatus)} /></td>
                     <td className="num text-right">{p.daysOverdue > 0 ? p.daysOverdue : "—"}</td>
                     <td className="max-w-[180px] truncate text-ink-3">{p.campaignName ?? "—"}</td>

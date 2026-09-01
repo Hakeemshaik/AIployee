@@ -2,7 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { CommandPalette } from "./CommandPalette";
-import { SignOutButton } from "./SignOutButton";
+import { AccountMenu } from "./AccountMenu";
 import { TopNav } from "./TopNav";
 import { BrandLockup } from "@/components/Brand";
 
@@ -74,18 +74,10 @@ export async function Topbar() {
             <span className="max-w-[14rem] truncate font-medium text-ink">{orgName}</span>
           </p>
           {!guest && <CommandPalette />}
-          {userName && (
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/10 bg-ink/[0.06] text-[0.6875rem] font-semibold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.09)]">
-                {initials}
-              </span>
-              <div className="hidden leading-tight md:block">
-                <p className="text-[0.8125rem] font-medium text-ink">{userName}</p>
-                <p className="text-[0.6875rem] capitalize text-ink-3">{userRole}</p>
-              </div>
-            </div>
-          )}
-          <SignOutButton label={guest ? "Leave demo" : "Sign out"} />
+          {/* Who you are and everything you change about the place, in one
+              control. The separate sign-out button beside it was a permanent
+              destructive-looking thing in the corner of every screen. */}
+          <AccountMenu name={userName} role={userRole} initials={initials} guest={guest} />
         </div>
       </div>
     </header>

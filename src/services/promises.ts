@@ -1,7 +1,8 @@
+import { z } from "zod";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { emitEvent } from "@/lib/events";
-import type { PromiseDisplayStatus } from "@/lib/domain";
+import { PAYMENT_METHODS, type PromiseDisplayStatus } from "@/lib/domain";
 import { daysBetween, startOfDay } from "@/lib/format";
 
 // ---------------------------------------------------------------------------
@@ -49,6 +50,8 @@ export async function listPromises(
     displayStatus: promiseDisplayStatus(p),
     daysOverdue:
       p.status === "pending" ? Math.max(0, -daysBetween(new Date(), p.promisedDate)) : 0,
+    method: p.method,
+    bank: p.bank,
     campaignName: p.campaign?.name ?? null,
     createdAt: p.createdAt,
   }));
@@ -126,4 +129,115 @@ export async function cancelPromise(organizationId: string, userId: string, prom
     entityType: "promise",
     entityId: promiseId,
   });
+}
+
+
+// ---------------------------------------------------------------------------
+// Capturing a promise by hand.
+//
+// Until now a promise could only be born on a call, which is wrong the moment
+// somebody phones in, replies to a message, or tells a collector at the
+// counter. The commitment is the single most valuable thing this business
+// collects, and there was no way to write one down.
+// ---------------------------------------------------------------------------
+
+export const createPromiseSchema = z.object({
+  debtorId: z.string().min(1),
+  amount: z.coerce.number().positive().max(10_000_000),
+  promisedDate: z.coerce.date(),
+  method: z.enum(PAYMENT_METHODS).optional(),
+  bank: z.string().max(60).optional(),
+  note: z.string().max(500).optional(),
+});
+
+export type CreatePromiseInput = z.infer<typeof createPromiseSchema>;
+
+/** A date somebody could actually pay on: today or later, within a year. */
+function checkDate(promisedDate: Date): void {
+  const day = startOfDay(promisedDate);
+  const today = startOfDay(new Date());
+  if (day < today) {
+    throw new Error("A promise cannot be dated in the past");
+  }
+  if (daysBetween(today, day) > 365) {
+    throw new Error("A promise more than a year out is not a promise");
+  }
+}
+
+export async function createPromise(
+  organizationId: string,
+  userId: string,
+  input: CreatePromiseInput,
+) {
+  const data = createPromiseSchema.parse(input);
+  checkDate(data.promisedDate);
+
+  const debtor = await db.debtor.findFirst({
+    where: { id: data.debtorId, organizationId },
+    select: { id: true, campaignId: true, status: true },
+  });
+  if (!debtor) throw new Error("Debtor not found in this organization");
+
+  // One live promise at a time. Two open commitments on one account means the
+  // follow-up, the dialling guard and the "promised, unpaid" figure are all
+  // reading a number nobody agreed to.
+  const existing = await db.promiseToPay.findFirst({
+    where: { organizationId, debtorId: debtor.id, status: "pending" },
+    orderBy: { promisedDate: "asc" },
+  });
+  if (existing) {
+    throw new Error(
+      "This account already has an open promise. Cancel it first, or record a payment against it.",
+    );
+  }
+
+  const promise = await db.promiseToPay.create({
+    data: {
+      organizationId,
+      debtorId: debtor.id,
+      campaignId: debtor.campaignId,
+      amount: data.amount,
+      promisedDate: data.promisedDate,
+      method: data.method,
+      bank: data.bank,
+      paymentPlan: data.note ? JSON.stringify({ note: data.note }) : null,
+      status: "pending",
+    },
+  });
+
+  // An account with a live promise is not dialled, so the status has to move
+  // with the promise or the guard never sees it.
+  await db.debtor.update({
+    where: { id: debtor.id },
+    data: { status: "promise" },
+  });
+
+  await emitEvent({
+    type: "promise.created",
+    organizationId,
+    entityType: "promise",
+    entityId: promise.id,
+    payload: {
+      amount: promise.amount,
+      promisedDate: promise.promisedDate.toISOString(),
+      source: "manual",
+    },
+  });
+  await audit({
+    organizationId,
+    actorType: "user",
+    actorId: userId,
+    action: "promise.created",
+    entityType: "promise",
+    entityId: promise.id,
+    detail: {
+      debtorId: debtor.id,
+      amount: promise.amount,
+      promisedDate: promise.promisedDate.toISOString(),
+      method: promise.method,
+      bank: promise.bank,
+    },
+  });
+
+  return promise;
 }

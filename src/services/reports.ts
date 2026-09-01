@@ -2,6 +2,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { label, REPORT_TYPES } from "@/lib/domain";
+import { formatDate } from "@/lib/format";
 import { getAIProvider } from "@/services/ai";
 import type { CollectionSnapshot, ReportNarrative } from "@/services/ai";
 import { buildCollectionSnapshot } from "@/services/insights";
@@ -94,11 +95,7 @@ export async function generateReport(
   const narrative = await provider.generateReportNarrative(data.type, snapshot);
   const content: ReportContent = { narrative, snapshot };
 
-  const title = `${label(data.type)} — ${periodEnd.toLocaleDateString("en-ZA", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  })}`;
+  const title = `${label(data.type)} — ${formatDate(periodEnd)}`;
 
   const payload = {
     organizationId,

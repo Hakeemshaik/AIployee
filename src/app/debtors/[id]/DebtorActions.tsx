@@ -8,16 +8,21 @@ import { RecordPaymentButton } from "@/app/payments/RecordPayment";
 import { CallResult } from "@/components/CallResult";
 import { useConfirm } from "@/components/Dialog";
 import { Select } from "@/components/Select";
+import { PromiseButton } from "@/components/PromiseButton";
 import { Overlay } from "@/components/Overlay";
 
 export function DebtorActions({
   debtor,
   campaigns,
   currentCampaignId,
+  outstanding,
+  hasOpenPromise,
 }: {
   debtor: { id: string; name: string; accountNumber: string };
   campaigns: { id: string; name: string }[];
   currentCampaignId: string | null;
+  outstanding: number;
+  hasOpenPromise: boolean;
 }) {
   const router = useRouter();
   const [escalateOpen, setEscalateOpen] = useState(false);
@@ -131,7 +136,13 @@ export function DebtorActions({
       <button className="btn" onClick={callNow} disabled={busy} title="Write this account and let the flow dial it">
         {busy ? <Loader2 size={13} className="animate-spin" /> : <PhoneOutgoing size={13} />} Call now
       </button>
-      <RecordPaymentButton fixedDebtor={debtor} buttonClass="btn" />
+      <PromiseButton
+        debtor={debtor}
+        outstanding={outstanding}
+        hasOpenPromise={hasOpenPromise}
+        buttonClass="btn"
+      />
+      <RecordPaymentButton fixedDebtor={debtor} buttonClass="btn" outstanding={outstanding} />
       <button className="btn btn-danger" onClick={() => setEscalateOpen(true)}>
         <AlertTriangle size={13} /> Escalate
       </button>

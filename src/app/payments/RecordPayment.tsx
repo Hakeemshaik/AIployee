@@ -6,22 +6,27 @@ import { Plus, X } from "lucide-react";
 import { Select } from "@/components/Select";
 import { Overlay } from "@/components/Overlay";
 import { label, PAYMENT_METHODS } from "@/lib/domain";
+import { money } from "@/lib/format";
 
 export function RecordPaymentButton({
   debtors = [],
   fixedDebtor,
   buttonClass = "btn btn-primary",
+  outstanding,
 }: {
   debtors?: { id: string; name: string; accountNumber: string }[];
   /** Lock the payment to one debtor (used on the debtor profile). */
   fixedDebtor?: { id: string; name: string; accountNumber: string };
   buttonClass?: string;
+  /** What the account owes, when we know — makes "settled in full" one press. */
+  outstanding?: number;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [amount, setAmount] = useState("");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -38,6 +43,7 @@ export function RecordPaymentButton({
       const body = await res.json();
       if (!res.ok) throw new Error(body.error === "validation_failed" ? "Check the amount and debtor." : "The payment could not be recorded. Try again.");
       setDone(true);
+      setAmount("");
       router.refresh();
       setTimeout(() => {
         setOpen(false);
@@ -100,7 +106,18 @@ export function RecordPaymentButton({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="amount">Amount (R) *</label>
-                    <input id="amount" name="amount" type="number" min={1} step="0.01" required className="field w-full" placeholder="1500" />
+                    <input
+                      id="amount"
+                      name="amount"
+                      type="number"
+                      min={1}
+                      step="0.01"
+                      required
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="field num w-full"
+                      placeholder="1500"
+                    />
                   </div>
                   <div>
                     <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="method">Method</label>
@@ -113,6 +130,31 @@ export function RecordPaymentButton({
                     />
                   </div>
                 </div>
+                {/* The commonest payment by far is the whole balance, and
+                    typing it out from the page behind the dialog is where the
+                    typos come from. */}
+                {outstanding !== undefined && outstanding > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { label: "Settled in full", value: String(Math.round(outstanding)) },
+                      { label: "Half", value: String(Math.round(outstanding / 2)) },
+                    ].map((c) => (
+                      <button
+                        key={c.label}
+                        type="button"
+                        onClick={() => setAmount(c.value)}
+                        className={`rounded-full border px-3 py-1.5 text-[0.75rem] transition-all ${
+                          amount === c.value
+                            ? "border-accent/50 bg-accent/12 font-medium text-ink"
+                            : "border-line bg-white/60 text-ink-2 hover:border-accent/40 hover:bg-white hover:text-ink"
+                        }`}
+                      >
+                        {c.label}
+                        <span className="num ml-1.5 text-ink-3">{money(Number(c.value))}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div>
                   <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="reference">Reference</label>
                   <input id="reference" name="reference" className="field w-full" placeholder="Bank / EFT reference" />

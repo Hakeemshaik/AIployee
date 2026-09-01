@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatDate,
   formatDateTime,
+  formatDayMonth,
   formatTime,
   money,
   moneyExact,
@@ -122,5 +123,35 @@ describe("count", () => {
     expect(count(null)).toBe("—");
     expect(count(undefined)).toBe("—");
     expect(count(NaN)).toBe("—");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The four-letter month.
+//
+// `toLocaleDateString(… { month: "short" })` returns "Sept" for September in
+// every English locale ICU ships, and only for September. It has already
+// broken a batch code in this codebase; these walk all twelve so it cannot
+// come back through a date shown on a screen either.
+// ---------------------------------------------------------------------------
+
+describe("short months are always three letters", () => {
+  const expected = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  ];
+
+  it("formats every month of the year", () => {
+    expected.forEach((month, index) => {
+      // Midday, so the SAST conversion cannot roll the date into another month.
+      const date = new Date(Date.UTC(2026, index, 15, 12, 0, 0));
+      expect(formatDayMonth(date)).toBe(`15 ${month}`);
+      expect(formatDate(date)).toBe(`15 ${month} 2026`);
+    });
+  });
+
+  it("says nothing rather than 'Invalid Date' when there is no date", () => {
+    expect(formatDayMonth(null)).toBe("—");
+    expect(formatDayMonth(undefined)).toBe("—");
   });
 });
