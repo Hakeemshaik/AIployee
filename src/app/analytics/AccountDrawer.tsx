@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Overlay } from "@/components/Overlay";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -103,7 +104,7 @@ function CallTurns({ turns }: { turns: Turn[] }) {
         return (
           <div key={i} className={`flex ${isTenant ? "justify-end" : ""}`}>
             <div
-              className={`max-w-[88%] rounded-xl px-3 py-2 text-[0.78125rem] leading-relaxed ${
+              className={`max-w-[88%] break-words rounded-xl px-3 py-2 text-[0.78125rem] leading-relaxed ${
                 isTenant
                   ? "rounded-tr-sm border border-accent/28 bg-accent/11 text-ink"
                   : "rounded-tl-sm border border-line bg-ink/[0.035] text-ink-2"
@@ -294,17 +295,42 @@ function DrawerBody({ accountId, onClose, bucketLabels, bucketExplanations }: Dr
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  // While the sheet is open the page behind it does not scroll. Without this,
+  // reaching the end of a long call history hands the wheel to the analytics
+  // page underneath and the account you were reading slides away.
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label="Account detail">
-      <div className="absolute inset-0 bg-ink/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative flex h-full w-full max-w-[620px] flex-col border-l border-line bg-plane shadow-2xl">
-        <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
+    // Portalled to <body>, and that is not decoration: `fixed inset-0` only
+    // means "the window" while no ancestor has a transform or a filter, and
+    // this app is built out of glass panels inside animated pages.
+    //
+    // Sized off the viewport, never off its content: 100dvh so a phone's own
+    // browser chrome cannot push the bottom of it off the screen, and a width
+    // that is a share of the window up to a cap, so it is a panel on a laptop
+    // and the whole screen on a phone. Everything inside scrolls within it.
+    <Overlay>
+    <div
+      className="fixed inset-0 z-50 flex justify-end"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Account detail"
+    >
+      <div className="scrim-in absolute inset-0 bg-ink/25 backdrop-blur-[3px]" onClick={onClose} />
+      <div className="sheet-in relative flex h-[100dvh] w-full max-w-[min(94vw,700px)] flex-col overflow-hidden border-l border-white/70 bg-plane/92 shadow-[0_0_60px_-12px_rgba(21,32,46,0.4)] backdrop-blur-2xl sm:rounded-l-[26px]">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-line px-5 py-4">
           <div className="min-w-0">
             <h2 className="truncate text-[0.9375rem] font-semibold tracking-tight text-ink">
               {journey?.name ?? "Loading account…"}
             </h2>
             {journey && (
-              <p className="num mt-0.5 text-[0.75rem] text-ink-3">
+              <p className="num mt-0.5 break-words text-[0.75rem] text-ink-3">
                 {journey.unit ?? "—"} · {journey.building ?? "—"} · {journey.phone}
               </p>
             )}
@@ -312,13 +338,13 @@ function DrawerBody({ accountId, onClose, bucketLabels, bucketExplanations }: Dr
           <button
             onClick={onClose}
             aria-label="Close account detail"
-            className="shrink-0 rounded-lg p-1.5 text-ink-3 hover:bg-ink/[0.05] hover:text-ink"
+            className="shrink-0 rounded-full p-1.5 text-ink-3 transition-colors hover:bg-ink/[0.06] hover:text-ink"
           >
             <X size={17} />
           </button>
         </div>
 
-        <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-5 py-5">
           {state === "loading" && (
             <p className="flex items-center gap-2 py-10 text-[0.8125rem] text-ink-3">
               <Loader2 size={14} className="animate-spin" /> Loading call history…
@@ -439,6 +465,7 @@ function DrawerBody({ accountId, onClose, bucketLabels, bucketExplanations }: Dr
         </div>
       </div>
     </div>
+    </Overlay>
   );
 }
 

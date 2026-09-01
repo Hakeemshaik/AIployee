@@ -4,6 +4,8 @@ import { ESCALATION_PRIORITIES, ESCALATION_REASONS, ESCALATION_STATUSES, label }
 import { formatDate } from "@/lib/format";
 import { getEscalationStats, listEscalations, listUsers } from "@/services/escalations";
 import { Badge, EmptyState, Card, PageHeader, StatCard } from "@/components/ui";
+import { Pager } from "@/components/Pager";
+import { pageParam, paginate } from "@/lib/paginate";
 import { ParamSelect } from "@/components/actions/ParamSelect";
 import { EscalationControls } from "./Controls";
 
@@ -26,6 +28,9 @@ export default async function EscalationsPage({
     }),
     listUsers(ctx.organizationId),
   ]);
+  // Fifty at a time. The stats above count everything; these are the rows
+  // on this page.
+  const escalationsPage = paginate(escalations, pageParam(params.page));
 
   return (
     <div className="page-in">
@@ -70,7 +75,7 @@ export default async function EscalationsPage({
                 </tr>
               </thead>
               <tbody>
-                {escalations.map((e) => (
+                {escalationsPage.rows.map((e) => (
                   <tr key={e.id}>
                     <td><Badge value={e.priority} label={label(e.priority)} /></td>
                     <td>
@@ -107,6 +112,14 @@ export default async function EscalationsPage({
           </div>
         )}
       </Card>
+      <Pager
+        page={escalationsPage.page}
+        pageCount={escalationsPage.pageCount}
+        total={escalationsPage.total}
+        from={escalationsPage.from}
+        to={escalationsPage.to}
+        noun="escalations"
+      />
     </div>
   );
 }

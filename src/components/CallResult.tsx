@@ -190,13 +190,17 @@ export function CallResult({
   }
 
   const stale = attempt.state === "placed" && attempt.waitingSeconds > GRACE_SECONDS;
+  // A dial the sweep gave up on: the record was written and the flow took it,
+  // and then nothing ever came back. That is not the same as a call that failed
+  // to go out, and it must not be told as one.
+  const unreported = attempt.state === "failed" && attempt.outcome === "no_outcome_reported";
   const tone =
     attempt.state === "reached"
       ? "border-good/35 bg-good/[0.07]"
-      : attempt.state === "failed"
-        ? "border-critical/35 bg-critical/[0.06]"
-        : stale
-          ? "border-warning/35 bg-warning/[0.07]"
+      : unreported || stale
+        ? "border-warning/35 bg-warning/[0.07]"
+        : attempt.state === "failed"
+          ? "border-critical/35 bg-critical/[0.06]"
           : attempt.state === "no_answer"
             ? "border-line bg-ink/[0.03]"
             : "border-accent/35 bg-accent/[0.06]";
@@ -245,17 +249,26 @@ export function CallResult({
             </span>
           </>
         )}
-        {attempt.state === "failed" && (
+        {attempt.state === "failed" && !unreported && (
           <>
             <AlertTriangle size={15} className="shrink-0 text-critical" />
             <span className="text-[0.875rem] font-semibold text-ink">The call did not go out</span>
             <span className="text-[0.75rem] text-ink-2">{attempt.phone}</span>
           </>
         )}
+        {unreported && (
+          <>
+            <AlertTriangle size={15} className="shrink-0 text-warning" />
+            <span className="text-[0.875rem] font-semibold text-ink">No result ever came back</span>
+            <span className="text-[0.75rem] text-ink-2">
+              {attempt.phone} · placed {when(attempt.requestedAt)}
+            </span>
+          </>
+        )}
       </div>
 
       {/* --- the outcome, which is the reason anybody called --- */}
-      {attempt.outcome && (
+      {attempt.outcome && !unreported && (
         <p className="mt-2.5 flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white/70 px-2.5 py-1 text-[0.75rem] font-medium text-ink">
             <PhoneOutgoing size={11} className="text-ink-3" />
@@ -297,6 +310,17 @@ export function CallResult({
         <p className="mt-2 text-[0.71875rem] leading-relaxed text-ink-3">
           The result lands here on its own — the transcript, whether a person answered, and any
           promise to pay. Nothing to press.
+        </p>
+      )}
+      {unreported && (
+        <p className="mt-2 text-[0.71875rem] leading-relaxed text-ink-2">
+          The platform was asked for this call&rsquo;s result until it was too old to match a
+          conversation to safely. Whether it was answered is not recorded, because nobody knows.
+          Point the flow&rsquo;s call webhook at{" "}
+          <code className="rounded bg-ink/[0.06] px-1 py-0.5">
+            /api/integrations/voice/dial-outcome
+          </code>{" "}
+          and results arrive the moment a call ends.
         </p>
       )}
       {stale && (

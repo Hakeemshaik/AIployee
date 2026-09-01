@@ -5,6 +5,9 @@ import { duration, formatDateTime, money } from "@/lib/format";
 import { listCalls } from "@/services/calls";
 import { listCampaignOptions } from "@/services/debtors";
 import { Badge, EmptyState, Card, PageHeader } from "@/components/ui";
+import { OutcomeCatchUp } from "@/components/OutcomeCatchUp";
+import { Pager } from "@/components/Pager";
+import { pageParam, paginate } from "@/lib/paginate";
 import { ParamSelect } from "@/components/actions/ParamSelect";
 
 export const dynamic = "force-dynamic";
@@ -25,12 +28,16 @@ export default async function CallsPage({
     }),
     listCampaignOptions(ctx.organizationId),
   ]);
+  // Fifty at a time. The stats above count everything; these are the rows
+  // on this page.
+  const callsPage = paginate(calls, pageParam(params.page));
 
   return (
     <div className="page-in">
+      <OutcomeCatchUp />
       <PageHeader
         title="Calls"
-        description={`${calls.length} most recent call attempts across all campaigns.`}
+        description={`${callsPage.total} recent call attempt${callsPage.total === 1 ? "" : "s"} across all campaigns.`}
       />
       <div className="card-2 mb-4 flex flex-wrap items-center gap-2 p-3">
         <ParamSelect
@@ -74,7 +81,7 @@ export default async function CallsPage({
                 </tr>
               </thead>
               <tbody>
-                {calls.map((c) => (
+                {callsPage.rows.map((c) => (
                   <tr key={c.id}>
                     <td>
                       <Link href={`/calls/${c.id}`} className="font-medium text-ink hover:text-accent">
@@ -102,6 +109,14 @@ export default async function CallsPage({
           </div>
         )}
       </Card>
+      <Pager
+        page={callsPage.page}
+        pageCount={callsPage.pageCount}
+        total={callsPage.total}
+        from={callsPage.from}
+        to={callsPage.to}
+        noun="calls"
+      />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { RecordPaymentButton } from "@/app/payments/RecordPayment";
 import { CallResult } from "@/components/CallResult";
 import { useConfirm } from "@/components/Dialog";
 import { Select } from "@/components/Select";
+import { Overlay } from "@/components/Overlay";
 
 export function DebtorActions({
   debtor,
@@ -151,9 +152,10 @@ export function DebtorActions({
       )}
 
       {escalateOpen && (
+        <Overlay>
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[14vh]">
-          <div className="absolute inset-0 bg-ink/30 backdrop-blur-sm" onClick={() => !busy && setEscalateOpen(false)} />
-          <div className="card-float relative w-full max-w-md p-5">
+          <div className="scrim-in absolute inset-0 bg-ink/25 backdrop-blur-[3px]" onClick={() => !busy && setEscalateOpen(false)} />
+          <div className="card-float pop-in relative flex max-h-[86dvh] w-full max-w-md flex-col overflow-y-auto p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-[0.9375rem] font-semibold text-ink">Escalate {debtor.name}</h2>
               <button className="btn btn-ghost p-1.5" onClick={() => setEscalateOpen(false)} aria-label="Close">
@@ -197,6 +199,7 @@ export function DebtorActions({
             </form>
           </div>
         </div>
+        </Overlay>
       )}
     </div>
   );

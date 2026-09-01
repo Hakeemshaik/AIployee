@@ -7,6 +7,7 @@ import { formatDate, formatDateTime, money, relativeDays } from "@/lib/format";
 import { getDebtorProfile, listCampaignOptions } from "@/services/debtors";
 import { promiseDisplayStatus } from "@/services/promises";
 import { BackLink, Badge, Card, Meta, PageHeader } from "@/components/ui";
+import { OutcomeCatchUp } from "@/components/OutcomeCatchUp";
 import { CallResult } from "@/components/CallResult";
 import { listDialAttempts } from "@/services/dial-attempts";
 import { DebtorActions } from "./DebtorActions";
@@ -42,6 +43,7 @@ export default async function DebtorProfilePage({
   return (
     <div className="page-in">
       <BackLink href="/debtors" label="All debtors" />
+      <OutcomeCatchUp />
       <PageHeader
         title={`${debtor.firstName} ${debtor.lastName}`}
         description={`Account ${debtor.accountNumber}${account ? ` · ${account.creditorName}` : ""}`}

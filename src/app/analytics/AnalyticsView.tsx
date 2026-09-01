@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, Download, PhoneOff, Search } from "lucide-react";
 import { count, money, percent } from "@/lib/format";
 import { Badge, Card } from "@/components/ui";
+import { Pager } from "@/components/Pager";
+import { paginate } from "@/lib/paginate";
 import { FunnelStep, Metric } from "@/components/Metric";
 import { CumulativeReachChart, ReachByHourChart } from "@/components/charts";
 import { AccountDrawer } from "./AccountDrawer";
@@ -92,6 +94,10 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [openAccount, setOpenAccount] = useState<string | null>(null);
+  // The list used to show the 200 largest balances and quietly drop the rest.
+  // Fifty at a time, with every page reachable — a book of two thousand
+  // accounts has nowhere to hide.
+  const [page, setPage] = useState(1);
 
   const chips: Chip[] = useMemo(() => {
     const flag = (key: string, label: string, pred: (r: AnalyticsPayload["rows"][number]) => boolean, title: string) => ({
@@ -127,6 +133,7 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
       .sort((x, y) => y.balance - x.balance); // default: balance descending
   }, [rows, filter, search]);
 
+  const shown = paginate(visible, page);
   const deadRows = useMemo(() => rows.filter((r) => r.bucket === "never_connected"), [rows]);
   const selectedRows = visible.filter((r) => selected.has(r.accountId));
   const selectedValue = selectedRows.reduce((s, r) => s + r.balance, 0);
@@ -312,13 +319,16 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
             These accounts need new phone numbers, not more attempts. Re-dialling them will not
             improve recovery — send the export to whoever maintains the contact data.
           </p>
-          <div className="scroll-x max-h-56 overflow-y-auto">
+          {/* Its own scroll pane rather than a cut-off list: the export is the
+              thing to act on, so the table is here to confirm what is in it and
+              every row belongs in it. */}
+          <div className="scroll-x max-h-72 overflow-y-auto overscroll-contain">
             <table className="data-table">
               <thead>
                 <tr><th>Name</th><th>Unit</th><th>Phone</th><th className="text-right">Balance</th><th className="text-right">Attempts</th></tr>
               </thead>
               <tbody>
-                {deadRows.slice(0, 60).map((r) => (
+                {deadRows.map((r) => (
                   <tr key={r.accountId}>
                     <td>
                       <button
@@ -348,7 +358,10 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
             <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3" />
             <input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               placeholder="Name, phone or unit…"
               className="field w-[230px] pl-8"
               aria-label="Search accounts"
@@ -358,7 +371,10 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
             {chips.map((chip) => (
               <button
                 key={chip.key}
-                onClick={() => setFilter(chip.key)}
+                onClick={() => {
+                  setFilter(chip.key);
+                  setPage(1);
+                }}
                 title={chip.title}
                 className={`rounded-full border px-2.5 py-1 text-[0.6875rem] transition-colors ${
                   filter === chip.key
@@ -387,7 +403,7 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
               </tr>
             </thead>
             <tbody>
-              {visible.slice(0, 200).map((r) => (
+              {shown.rows.map((r) => (
                 <tr key={r.accountId}>
                   <td>
                     <input
@@ -462,11 +478,17 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
             </tbody>
           </table>
         </div>
-        {visible.length > 200 && (
-          <p className="p-3 text-center text-[0.6875rem] text-ink-3">
-            Showing the 200 largest balances of {visible.length} matching accounts.
-          </p>
-        )}
+        <div className="px-4 pb-3">
+          <Pager
+            page={shown.page}
+            pageCount={shown.pageCount}
+            total={shown.total}
+            from={shown.from}
+            to={shown.to}
+            noun="accounts"
+            onPage={setPage}
+          />
+        </div>
       </Card>
 
       <AccountDrawer

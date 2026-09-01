@@ -6,6 +6,8 @@ import { formatDate, money, moneyExact, percent } from "@/lib/format";
 import { listCampaignOptions } from "@/services/debtors";
 import { getPaymentStats, listPayments } from "@/services/payments";
 import { Badge, EmptyState, Card, PageHeader, StatCard } from "@/components/ui";
+import { Pager } from "@/components/Pager";
+import { pageParam, paginate } from "@/lib/paginate";
 import { ParamSelect } from "@/components/actions/ParamSelect";
 import { RecordPaymentButton } from "./RecordPayment";
 
@@ -29,6 +31,9 @@ export default async function PaymentsPage({
       orderBy: { firstName: "asc" },
     }),
   ]);
+  // Fifty at a time. The stats above count everything; these are the rows
+  // on this page.
+  const paymentsPage = paginate(payments, pageParam(params.page));
 
   return (
     <div className="page-in">
@@ -90,7 +95,7 @@ export default async function PaymentsPage({
                 </tr>
               </thead>
               <tbody>
-                {payments.map((p) => (
+                {paymentsPage.rows.map((p) => (
                   <tr key={p.id}>
                     <td>
                       <Link href={`/debtors/${p.debtor.id}`} className="font-medium text-ink hover:text-accent">
@@ -118,6 +123,14 @@ export default async function PaymentsPage({
           </div>
         )}
       </Card>
+      <Pager
+        page={paymentsPage.page}
+        pageCount={paymentsPage.pageCount}
+        total={paymentsPage.total}
+        from={paymentsPage.from}
+        to={paymentsPage.to}
+        noun="payments"
+      />
     </div>
   );
 }

@@ -19,6 +19,7 @@ import {
   User,
   Users,
 } from "lucide-react";
+import { Overlay } from "@/components/Overlay";
 
 type Result = {
   kind: "debtor" | "campaign" | "agent" | "page";
@@ -175,8 +176,9 @@ export function CommandPalette() {
       </button>
 
       {open && (
+        <Overlay>
         <div className="fixed inset-0 z-[60] flex items-start justify-center p-4 pt-[12vh]">
-          <div className="absolute inset-0 bg-ink/30 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <div className="scrim-in absolute inset-0 bg-ink/25 backdrop-blur-[3px]" onClick={() => setOpen(false)} />
           <div className="card-float relative w-full max-w-lg overflow-hidden p-0">
             <div className="flex items-center gap-2.5 border-b border-line px-5">
               <Search size={15} className="shrink-0 text-ink-3" />
@@ -223,6 +225,7 @@ export function CommandPalette() {
             </ul>
           </div>
         </div>
+        </Overlay>
       )}
     </>
   );

@@ -5,6 +5,8 @@ import { formatDate, money, percent } from "@/lib/format";
 import { listCampaignOptions } from "@/services/debtors";
 import { getPromiseStats, listPromises } from "@/services/promises";
 import { Badge, EmptyState, Card, PageHeader, StatCard } from "@/components/ui";
+import { Pager } from "@/components/Pager";
+import { pageParam, paginate } from "@/lib/paginate";
 import { ParamSelect } from "@/components/actions/ParamSelect";
 import { CancelPromiseButton, SweepButton } from "./Actions";
 
@@ -23,6 +25,9 @@ export default async function PromisesPage({
     listPromises(ctx.organizationId, { status: params.status, campaignId: params.campaign }),
     listCampaignOptions(ctx.organizationId),
   ]);
+  // Fifty at a time. The stats above count everything; these are the rows
+  // on this page.
+  const promisesPage = paginate(rows, pageParam(params.page));
 
   return (
     <div className="page-in">
@@ -77,7 +82,7 @@ export default async function PromisesPage({
                 </tr>
               </thead>
               <tbody>
-                {rows.map((p) => (
+                {promisesPage.rows.map((p) => (
                   <tr key={p.id}>
                     <td>
                       <Link href={`/debtors/${p.debtorId}`} className="font-medium text-ink hover:text-accent">
@@ -105,6 +110,14 @@ export default async function PromisesPage({
           </div>
         )}
       </Card>
+      <Pager
+        page={promisesPage.page}
+        pageCount={promisesPage.pageCount}
+        total={promisesPage.total}
+        from={promisesPage.from}
+        to={promisesPage.to}
+        noun="promises"
+      />
     </div>
   );
 }

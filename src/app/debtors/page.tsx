@@ -8,6 +8,8 @@ import { Badge, EmptyState, Card, PageHeader } from "@/components/ui";
 import { DebtorFilters } from "./Filters";
 import { findDuplicates } from "@/services/duplicates";
 import { DuplicatesCard, type DuplicateReport } from "./DuplicatesCard";
+import { Pager } from "@/components/Pager";
+import { pageParam, paginate } from "@/lib/paginate";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Debtors" };
@@ -41,20 +43,24 @@ export default async function DebtorsPage({
     promiseStatus: params.promise as Filters["promiseStatus"],
   };
 
-  const [rows, campaigns, duplicates] = await Promise.all([
+  const [matching, campaigns, duplicates] = await Promise.all([
     listDebtors(ctx.organizationId, filters),
     listCampaignOptions(ctx.organizationId),
     // Read on every visit, because a duplicate arrives with an import and the
     // damage is invisible until somebody looks.
     hasRole(ctx, ["admin", "manager"]) ? findDuplicates(ctx.organizationId) : null,
   ]);
-  const totalOutstanding = rows.reduce((s, r) => s + r.outstanding, 0);
+  // The money in the header is for everything the filters matched, not for the
+  // fifty rows on screen — a total that changed as you paged would be useless.
+  const totalOutstanding = matching.reduce((s, r) => s + r.outstanding, 0);
+  const page = paginate(matching, pageParam(params.page));
+  const rows = page.rows;
 
   return (
     <div className="page-in">
       <PageHeader
         title="Debtors"
-        description={`${rows.length} account${rows.length === 1 ? "" : "s"} · ${money(totalOutstanding)} outstanding in view`}
+        description={`${page.total} account${page.total === 1 ? "" : "s"} · ${money(totalOutstanding)} outstanding in view`}
         actions={
           <Link href="/debtors/import" className="btn btn-primary">
             <Upload size={14} /> Import debtors
@@ -120,6 +126,14 @@ export default async function DebtorsPage({
           </div>
         )}
       </Card>
+      <Pager
+        page={page.page}
+        pageCount={page.pageCount}
+        total={page.total}
+        from={page.from}
+        to={page.to}
+        noun="accounts"
+      />
     </div>
   );
 }

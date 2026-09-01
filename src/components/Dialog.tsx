@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { AlertTriangle, PhoneOutgoing, Trash2, X } from "lucide-react";
+import { Overlay } from "@/components/Overlay";
 
 // ---------------------------------------------------------------------------
 // Asking, in our own voice.
@@ -106,6 +107,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     <ConfirmContext.Provider value={ask}>
       {children}
       {pending && (
+        <Overlay>
         <div
           className="fixed inset-0 z-[70] flex items-center justify-center p-4"
           role="dialog"
@@ -149,6 +151,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             </div>
           </div>
         </div>
+        </Overlay>
       )}
     </ConfirmContext.Provider>
   );

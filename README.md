@@ -459,6 +459,51 @@ from it. Keys are stored as SHA-256 hashes; the organization is always derived f
 payload. The endpoint is rate limited per key (120 requests/minute, in-memory — swap for
 Redis when running multiple instances).
 
+## Filling in call results
+
+A dial's outcome reaches the platform one of three ways, in order of preference:
+
+1. **The outcome webhook.** Point the flow's call-completed step at
+   `POST /api/integrations/voice/dial-outcome` and results arrive the moment a call ends.
+   This is the only path that is exact — it carries the `suid` the dial was written with,
+   so there is no guessing about which call is which.
+2. **The panel on screen.** While a dial is open, the call panel polls for it and asks the
+   platform directly every twenty seconds.
+3. **The sweep**, for calls nobody watched — the common case, because people place a call
+   and close the tab.
+
+The sweep is `sweepDialOutcomes()`. It takes dials still sitting at `placed`, asks the
+platform what happened to each, and puts the answer through the same path the webhook uses,
+so an unattended call produces the same call record, analysis and promise to pay as a
+watched one. It runs from two places:
+
+- **On page load.** Opening Calls or an account sweeps up to five dials in the background
+  (`POST /api/calling/sweep`, session-scoped) and refreshes the page if it recovered
+  anything.
+- **On a schedule**, if you want it filled in without anybody opening the app:
+
+  ```
+  GET /api/cron/outcomes
+  Authorization: Bearer $CRON_SECRET
+  ```
+
+  `CRON_SECRET` is **required** — with it unset the endpoint answers 503 rather than running
+  unauthenticated. To have Vercel call it, add a third entry to `vercel.json`:
+
+  ```json
+  { "path": "/api/cron/outcomes", "schedule": "*/10 * * * *" }
+  ```
+
+  It is deliberately not committed: cron count and frequency are capped by plan, and a
+  `vercel.json` your plan will not accept fails the deployment. Add it once you know the
+  plan allows it. Any external scheduler works equally well — it is an ordinary
+  authenticated GET.
+
+A dial the sweep cannot match after three days is recorded as `failed` with the outcome
+`no_outcome_reported`, and the UI says exactly that: the record was written and the flow
+took it, and nothing ever came back. It does not say "no answer", because nobody knows
+whether it was answered.
+
 ## Event architecture
 
 Every domain action emits a persisted, replayable `PlatformEvent` and fans out to

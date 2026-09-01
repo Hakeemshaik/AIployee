@@ -603,13 +603,23 @@ select.field option {
    the pointer. Nothing loops, nothing moves on its own, and nothing shifts the
    layout — a page that keeps moving is a page you cannot read.
 
-   `--i` staggers a row: style={{ "--i": 2 }} delays that card by two steps. */
+   `--i` staggers a row: style={{ "--i": 2 }} delays that card by two steps.
+
+   Every entrance below fills BACKWARDS, never `both`, and this is load-bearing
+   rather than a preference. `both` leaves the final keyframe applied for ever,
+   and a final keyframe of `transform: none` computes to an identity matrix —
+   which still makes the element a containing block for `position: fixed`
+   descendants. The page wrapper carries `.page-in`, so with `both` every
+   drawer, modal and sticky bar inside a page was being sized against the page
+   instead of the window: a 3900px-tall "full screen" sheet hanging off the top
+   of the viewport. `backwards` fills only during the delay, which is all the
+   stagger needs, and leaves nothing behind when the animation ends. */
 
 .page-in {
-  animation: rise-in 340ms var(--ease-out-soft) both;
+  animation: rise-in 340ms var(--ease-out-soft) backwards;
 }
 .rise-in {
-  animation: rise-in 420ms var(--ease-spring) both;
+  animation: rise-in 420ms var(--ease-spring) backwards;
   animation-delay: calc(var(--i, 0) * 50ms);
 }
 @keyframes rise-in {
@@ -626,7 +636,7 @@ select.field option {
 /* A number arriving: it fades up from under its own label rather than being
    there before the eye reaches it. Used on the figures a page opens with. */
 .value-in {
-  animation: value-in 520ms var(--ease-out-soft) both;
+  animation: value-in 520ms var(--ease-out-soft) backwards;
   animation-delay: calc(120ms + var(--i, 0) * 60ms);
 }
 @keyframes value-in {
@@ -683,7 +693,7 @@ select.field option {
    slightly under and slightly small — near enough to instant that it reads as
    the page responding rather than something being loaded. */
 .scrim-in {
-  animation: scrim-in 220ms var(--ease-out-soft) both;
+  animation: scrim-in 220ms var(--ease-out-soft) backwards;
 }
 @keyframes scrim-in {
   from {
@@ -695,7 +705,7 @@ select.field option {
   }
 }
 .pop-in {
-  animation: pop-in 280ms var(--ease-spring) both;
+  animation: pop-in 280ms var(--ease-spring) backwards;
 }
 @keyframes pop-in {
   from {
@@ -708,10 +718,26 @@ select.field option {
   }
 }
 
+/* A side sheet arriving: it slides in from the edge it is anchored to rather
+   than fading in place, so it reads as a panel being pulled out of the screen. */
+.sheet-in {
+  animation: sheet-in 320ms var(--ease-out-soft) backwards;
+}
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateX(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* A menu opening from its own button: it grows out of the top edge rather
    than fading in over the page. */
 .menu-in {
-  animation: menu-in 180ms var(--ease-out-soft) both;
+  animation: menu-in 180ms var(--ease-out-soft) backwards;
   transform-origin: var(--origin, top left);
 }
 @keyframes menu-in {
