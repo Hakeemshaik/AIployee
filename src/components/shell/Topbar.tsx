@@ -60,9 +60,11 @@ export async function Topbar() {
           <BrandLockup />
         </Link>
 
-        {/* Its own row, always. Sharing one with the account cluster was tight
-            at 1440 and the More button ended up under the organisation name. */}
-        <div className="scroll-x order-last w-full min-w-0 pb-0.5">
+        {/* Its own row, centred. Sharing one with the account cluster was tight
+            at 1440 and the More button ended up under the organisation name;
+            centred, the dock reads as one object rather than a row of links
+            trailing off the brand. */}
+        <div className="scroll-x order-last flex w-full min-w-0 justify-center pb-1 pt-0.5">
           <TopNav guest={guest} />
         </div>
 

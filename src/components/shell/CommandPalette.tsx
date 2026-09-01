@@ -150,20 +150,25 @@ export function CommandPalette() {
 
   return (
     <>
+      {/* A pill of glass, not a form field: the same silhouette as the dock
+          beside it, and the key cap sits inside it like a chip in a slot. */}
       <button
         onClick={openPalette}
-        className="hidden items-center gap-2 rounded-lg border border-line bg-ink/[0.04] px-2.5 py-1.5 text-[0.75rem] text-ink-3 transition-colors hover:bg-ink/[0.07] hover:text-ink-2 sm:inline-flex"
+        className="group hidden items-center gap-2 rounded-full border border-ink/[0.08] bg-gradient-to-b from-white/90 to-white/65 py-1.5 pl-3 pr-1.5 text-[0.78125rem] text-ink-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_1px_2px_rgba(21,32,46,0.05)] backdrop-blur-xl transition-all hover:border-accent/35 hover:text-ink-2 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_6px_18px_-10px_rgba(14,158,144,0.45)] sm:inline-flex"
         aria-label="Open search"
       >
-        <Search size={13} />
-        Search…
-        <kbd suppressHydrationWarning className="rounded border border-line bg-ink/[0.05] px-1.5 py-0.5 text-[0.625rem] text-ink-3">
+        <Search size={14} className="text-ink-3 transition-colors group-hover:text-accent" />
+        <span className="pr-6">Search…</span>
+        <kbd
+          suppressHydrationWarning
+          className="num rounded-full border border-ink/[0.07] bg-ink/[0.045] px-2 py-1 text-[0.625rem] leading-none text-ink-3"
+        >
           {isMac ? "⌘K" : "Ctrl K"}
         </kbd>
       </button>
       <button
         onClick={openPalette}
-        className="rounded-lg border border-line bg-ink/[0.04] p-2 text-ink-3 sm:hidden"
+        className="rounded-full border border-ink/[0.08] bg-white/80 p-2.5 text-ink-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-xl sm:hidden"
         aria-label="Open search"
       >
         <Search size={15} />
@@ -173,7 +178,7 @@ export function CommandPalette() {
         <div className="fixed inset-0 z-[60] flex items-start justify-center p-4 pt-[12vh]">
           <div className="absolute inset-0 bg-ink/30 backdrop-blur-sm" onClick={() => setOpen(false)} />
           <div className="card-float relative w-full max-w-lg overflow-hidden p-0">
-            <div className="flex items-center gap-2.5 border-b border-line px-4">
+            <div className="flex items-center gap-2.5 border-b border-line px-5">
               <Search size={15} className="shrink-0 text-ink-3" />
               <input
                 ref={inputRef}
@@ -181,7 +186,7 @@ export function CommandPalette() {
                 onChange={(e) => onQueryChange(e.target.value)}
                 onKeyDown={onInputKey}
                 placeholder="Search debtors, campaigns, agents… or jump to a page"
-                className="w-full bg-transparent py-3.5 text-[0.875rem] text-ink outline-none placeholder:text-ink-3"
+                className="w-full bg-transparent py-4 text-[0.9375rem] text-ink outline-none placeholder:text-ink-3"
                 aria-label="Search"
               />
               {loading && <span className="text-[0.6875rem] text-ink-3">Searching…</span>}
@@ -199,7 +204,7 @@ export function CommandPalette() {
                       <button
                         onClick={() => go(r.href)}
                         onMouseEnter={() => setActive(i)}
-                        className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
+                        className={`flex w-full items-center gap-3 rounded-full px-3.5 py-2.5 text-left transition-colors ${
                           i === active ? "bg-accent-soft" : ""
                         }`}
                       >

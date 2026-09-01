@@ -93,7 +93,7 @@ export function TopNav({ guest = false }: { guest?: boolean }) {
   const moreActive = more.some((item) => isActive(pathname, item.href));
 
   return (
-    <nav className="flex min-w-0 items-center gap-1.5">
+    <nav className="dock max-w-full">
       {/* The daily four, as words. */}
       {primary.map(({ href, label, icon: Icon }) => {
         const active = isActive(pathname, href);
@@ -102,20 +102,16 @@ export function TopNav({ guest = false }: { guest?: boolean }) {
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
-            className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-[0.8125rem] transition-all ${
-              active
-                ? "bg-white text-ink shadow-[0_1px_2px_rgba(21,32,46,0.06),0_8px_20px_-12px_rgba(21,32,46,0.3)]"
-                : "text-ink-2 hover:bg-ink/[0.045] hover:text-ink"
-            }`}
+            className="dock-item shrink-0"
           >
-            <Icon size={15} strokeWidth={1.85} className={active ? "text-accent" : "text-ink-3"} />
+            <Icon size={15} strokeWidth={1.9} className={active ? "text-accent" : "text-ink-3"} />
             <span className="hidden sm:inline">{label}</span>
           </Link>
         );
       })}
 
       {primary.length > 0 && quick.length > 0 && (
-        <span className="mx-1 hidden h-5 w-px shrink-0 bg-line md:block" aria-hidden />
+        <span className="dock-divider hidden md:block" aria-hidden />
       )}
 
       {/* The four that answer a question, as icons with their name on hover. */}
@@ -129,13 +125,9 @@ export function TopNav({ guest = false }: { guest?: boolean }) {
               title={label}
               aria-label={label}
               aria-current={active ? "page" : undefined}
-              className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
-                active
-                  ? "bg-white text-accent shadow-[0_1px_2px_rgba(21,32,46,0.06),0_8px_20px_-12px_rgba(21,32,46,0.3)]"
-                  : "text-ink-3 hover:bg-ink/[0.045] hover:text-ink"
-              }`}
+              className="dock-item dock-icon"
             >
-              <Icon size={16} strokeWidth={1.85} />
+              <Icon size={16} strokeWidth={1.9} className={active ? "text-accent" : "text-ink-3"} />
             </Link>
           );
         })}
@@ -147,9 +139,8 @@ export function TopNav({ guest = false }: { guest?: boolean }) {
             onClick={() => setOpenMore((open) => !open)}
             aria-expanded={openMore}
             aria-haspopup="menu"
-            className={`flex items-center gap-1 rounded-xl px-2.5 py-2 text-[0.8125rem] transition-colors ${
-              moreActive || openMore ? "bg-white text-ink shadow-[0_1px_2px_rgba(21,32,46,0.06)]" : "text-ink-2 hover:bg-ink/[0.045] hover:text-ink"
-            }`}
+            aria-current={moreActive ? "page" : undefined}
+            className="dock-item"
           >
             <span className="hidden sm:inline">More</span>
             <ChevronDown
@@ -158,7 +149,7 @@ export function TopNav({ guest = false }: { guest?: boolean }) {
             />
           </button>
           {openMore && (
-            <div className="card-float page-in absolute right-0 top-[calc(100%+0.5rem)] z-50 w-56 p-1.5">
+            <div className="card-float page-in absolute right-0 top-[calc(100%+0.75rem)] z-50 w-56 p-1.5">
               {more.map(({ href, label, icon: Icon }) => {
                 const active = isActive(pathname, href);
                 return (
@@ -166,7 +157,7 @@ export function TopNav({ guest = false }: { guest?: boolean }) {
                     key={href}
                     href={href}
                     onClick={() => setOpenMore(false)}
-                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-[0.8125rem] transition-colors ${
+                    className={`flex items-center gap-2.5 rounded-full px-3 py-2 text-[0.8125rem] transition-colors ${
                       active ? "bg-accent/10 text-ink" : "text-ink-2 hover:bg-ink/[0.05] hover:text-ink"
                     }`}
                   >
