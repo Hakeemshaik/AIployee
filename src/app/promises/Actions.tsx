@@ -2,14 +2,23 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useConfirm } from "@/components/Dialog";
 
 export function CancelPromiseButton({ promiseId }: { promiseId: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   async function cancel() {
-    if (!window.confirm("Cancel this promise? The debtor returns to normal follow-up.")) return;
+    const ok = await confirm({
+      title: "Cancel this promise?",
+      body: "The arrangement is dropped and the account returns to normal follow-up, so it becomes eligible to be dialled again.",
+      confirmLabel: "Cancel the promise",
+      cancelLabel: "Keep it",
+      kind: "danger",
+    });
+    if (!ok) return;
     setBusy(true);
     setError(null);
     try {

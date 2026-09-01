@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
+import { Select } from "@/components/Select";
 
 /** A select box bound to a URL search param — server components re-filter on change. */
 export function ParamSelect({
@@ -19,23 +20,17 @@ export function ParamSelect({
   const [, startTransition] = useTransition();
 
   return (
-    <select
-      className="field min-w-[140px]"
+    <Select
+      className="min-w-[140px]"
       aria-label={placeholder}
       value={params.get(param) ?? ""}
-      onChange={(e) => {
+      onChange={(value) => {
         const next = new URLSearchParams(params.toString());
-        if (e.target.value) next.set(param, e.target.value);
+        if (value) next.set(param, value);
         else next.delete(param);
         startTransition(() => router.replace(`${pathname}?${next.toString()}`, { scroll: false }));
       }}
-    >
-      <option value="">{placeholder}</option>
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
+      options={[{ value: "", label: placeholder }, ...options]}
+    />
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { getSession } from "@/lib/session";
 import { Topbar } from "@/components/shell/Topbar";
+import { ConfirmProvider } from "@/components/Dialog";
 
 export const metadata: Metadata = {
   title: {
@@ -35,12 +36,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* Navigation lives in the header now. A column down the left held
             twelve links and 236px of permanent air on a screen whose job is
             data; the page gets that back. */}
-        <div className="flex min-h-screen flex-col">
-          <Topbar />
-          <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 pb-16 pt-6 sm:px-6 lg:px-8">
-            {children}
-          </main>
-        </div>
+        {/* Every "are you sure" in the app is asked here rather than by the
+            browser: dialing a real phone and deleting a real campaign deserve
+            a sentence saying what will happen, which window.confirm has no
+            room for. */}
+        <ConfirmProvider>
+          <div className="flex min-h-screen flex-col">
+            <Topbar />
+            <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 pb-16 pt-6 sm:px-6 lg:px-8">
+              {children}
+            </main>
+          </div>
+        </ConfirmProvider>
       </body>
     </html>
   );

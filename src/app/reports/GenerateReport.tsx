@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FilePlus2 } from "lucide-react";
+import { Select } from "@/components/Select";
 import { label, REPORT_TYPES } from "@/lib/domain";
 
 export function GenerateReportControl({ campaigns }: { campaigns: { id: string; name: string }[] }) {
@@ -34,18 +35,22 @@ export function GenerateReportControl({ campaigns }: { campaigns: { id: string; 
   return (
     <div className="flex flex-wrap items-center gap-2">
       {error && <span className="text-[0.6875rem] text-critical">The report could not be generated.</span>}
-      <select className="field" value={type} onChange={(e) => setType(e.target.value)} aria-label="Report type">
-        {REPORT_TYPES.map((t) => (
-          <option key={t} value={t}>{label(t)}</option>
-        ))}
-      </select>
+      <Select
+        value={type}
+        onChange={setType}
+        aria-label="Report type"
+        options={REPORT_TYPES.map((t) => ({ value: t, label: label(t) }))}
+      />
       {type === "campaign" && (
-        <select className="field" value={campaignId} onChange={(e) => setCampaignId(e.target.value)} aria-label="Campaign">
-          <option value="">All campaigns</option>
-          {campaigns.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
+        <Select
+          value={campaignId}
+          onChange={setCampaignId}
+          aria-label="Campaign"
+          options={[
+            { value: "", label: "All campaigns" },
+            ...campaigns.map((c) => ({ value: c.id, label: c.name })),
+          ]}
+        />
       )}
       <button onClick={generate} disabled={busy} className="btn btn-primary">
         <FilePlus2 size={14} />

@@ -518,8 +518,14 @@ select.field option {
   transition: background-color 180ms var(--ease-out-soft), color 180ms var(--ease-out-soft),
     box-shadow 220ms var(--ease-out-soft), transform 180ms var(--ease-spring);
 }
-.dock-item:hover {
+/* The pointer's own glass. When the bubble is running it is the hover state,
+   so the flat wash below would double up under it — it stays only as the
+   fallback for a dock the script has not reached (and for touch, where there
+   is no pointer to follow). */
+.dock:not([data-bubble="on"]) .dock-item:hover {
   background: rgba(21, 32, 46, 0.05);
+}
+.dock-item:hover {
   color: var(--color-ink);
 }
 .dock-item[aria-current="page"] {
@@ -538,6 +544,51 @@ select.field option {
   height: 1.125rem;
   margin: 0 0.25rem;
   background: rgba(21, 32, 46, 0.1);
+}
+
+/* The bubble itself: one lens of glass that slides between the items as the
+   pointer crosses them, the way the icons under a cursor on a Mac dock hand
+   the highlight along rather than each lighting up on its own. It is a single
+   element the script moves, so what you see is one object travelling, not a
+   row of hovers switching on and off.
+
+   It sits behind the labels (the items are z-1 against it) and it is inert to
+   the pointer, so it can never eat a click meant for a link. */
+.dock-bubble {
+  position: absolute;
+  top: 0.3125rem;
+  left: 0;
+  height: calc(100% - 0.625rem);
+  border-radius: 999px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(var(--x, 0px), 0, 0) scale(0.86);
+  width: var(--w, 0px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.7));
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 0 rgba(21, 32, 46, 0.04),
+    0 1px 2px rgba(21, 32, 46, 0.06),
+    0 10px 22px -12px rgba(14, 158, 144, 0.5);
+  transition:
+    transform 380ms var(--ease-spring),
+    width 380ms var(--ease-spring),
+    opacity 200ms var(--ease-out-soft);
+}
+.dock-bubble[data-shown="true"] {
+  opacity: 1;
+  transform: translate3d(var(--x, 0px), 0, 0) scale(1);
+}
+/* While the bubble is over an item, that item's own resting pill would show
+   through it. The active one keeps its colour, loses its glass. */
+.dock[data-bubble="on"][data-riding="true"] .dock-item[aria-current="page"] {
+  background: transparent;
+  box-shadow: none;
+}
+.dock[data-bubble="on"] .dock-item {
+  position: relative;
+  z-index: 1;
 }
 
 /* --- misc --- */
@@ -628,6 +679,52 @@ select.field option {
 .pulse-live {
   animation: pulse-live 2.4s var(--ease-out-soft) infinite;
 }
+/* Asking a question: the page behind goes soft, and the panel arrives from
+   slightly under and slightly small — near enough to instant that it reads as
+   the page responding rather than something being loaded. */
+.scrim-in {
+  animation: scrim-in 220ms var(--ease-out-soft) both;
+}
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+  to {
+    opacity: 1;
+  }
+}
+.pop-in {
+  animation: pop-in 280ms var(--ease-spring) both;
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.965);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A menu opening from its own button: it grows out of the top edge rather
+   than fading in over the page. */
+.menu-in {
+  animation: menu-in 180ms var(--ease-out-soft) both;
+  transform-origin: var(--origin, top left);
+}
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @keyframes pulse-live {
   0%,
   100% {
@@ -658,6 +755,9 @@ select.field option {
   }
   .row-hover:hover {
     padding-left: 0;
+  }
+  .dock-bubble {
+    transition-duration: 1ms !important;
   }
 }
 

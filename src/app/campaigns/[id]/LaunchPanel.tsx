@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { count, money, formatDateTime } from "@/lib/format";
 import { Card } from "@/components/ui";
+import { useConfirm } from "@/components/Dialog";
 
 // ---------------------------------------------------------------------------
 // Campaign launch, as one flow.
@@ -133,6 +134,7 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
     }
   }
   const [copied, setCopied] = useState(false);
+  const confirm = useConfirm();
   const [busy, setBusy] = useState<
     "list" | "send" | "diagnose" | "start" | "schedule" | "cancel" | "armed" | null
   >(null);
@@ -186,17 +188,17 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
     // Whether this is a staging step or the start of the run depends on how the
     // flow begins, and the question has to say which.
     const dialsNow = state?.flowStart === "insert";
-    if (
-      !window.confirm(
-        dialsNow
-          ? `Call ${list.rowCount} account${list.rowCount === 1 ? "" : "s"} now?\n\n` +
-              "This flow starts when a customer is written, so each account is written with the call flag set and the phone rings as it lands. There is no separate start."
-          : `Write ${list.rowCount} customer${list.rowCount === 1 ? "" : "s"} into Jobix and arm them to dial?\n\n` +
-              "Each is created or updated with every field. Nothing is called until you start the run.",
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: dialsNow
+        ? `Call ${list.rowCount} account${list.rowCount === 1 ? "" : "s"} now?`
+        : `Write ${list.rowCount} customer${list.rowCount === 1 ? "" : "s"} into Jobix?`,
+      body: dialsNow
+        ? "This flow starts when a customer is written, so each account is written with the call flag set and the phone rings as it lands. There is no separate start."
+        : "Each is created or updated with every field. Nothing is called until you start the run.",
+      confirmLabel: dialsNow ? `Call ${list.rowCount}` : "Write them",
+      kind: dialsNow ? "call" : "default",
+    });
+    if (!ok) return;
     setBusy("send");
     setActionError(null);
     try {

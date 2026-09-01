@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Search } from "lucide-react";
 import { DEBTOR_STATUSES, label } from "@/lib/domain";
+import { Select } from "@/components/Select";
 
 export function DebtorFilters({ campaigns }: { campaigns: { id: string; name: string }[] }) {
   const router = useRouter();
@@ -44,50 +45,88 @@ export function DebtorFilters({ campaigns }: { campaigns: { id: string; name: st
           aria-label="Search debtors"
         />
       </div>
-      <select className={select} value={params.get("status") ?? ""} onChange={(e) => setParam("status", e.target.value)} aria-label="Status">
-        <option value="">All statuses</option>
-        {DEBTOR_STATUSES.map((s) => (
-          <option key={s} value={s}>{label(s)}</option>
-        ))}
-      </select>
-      <select className={select} value={params.get("campaign") ?? ""} onChange={(e) => setParam("campaign", e.target.value)} aria-label="Campaign">
-        <option value="">All campaigns</option>
-        {campaigns.map((c) => (
-          <option key={c.id} value={c.id}>{c.name}</option>
-        ))}
-      </select>
-      <select className={select} value={params.get("risk") ?? ""} onChange={(e) => setParam("risk", e.target.value)} aria-label="Risk">
-        <option value="">All risk</option>
-        <option value="low">Low risk</option>
-        <option value="medium">Medium risk</option>
-        <option value="high">High risk</option>
-      </select>
-      <select className={select} value={params.get("amount") ?? ""} onChange={(e) => setParam("amount", e.target.value)} aria-label="Amount">
-        <option value="">Any amount</option>
-        <option value="0-2500">Under R2,500</option>
-        <option value="2500-10000">R2,500 – R10,000</option>
-        <option value="10000-50000">R10,000 – R50,000</option>
-        <option value="50000-">Over R50,000</option>
-      </select>
-      <select className={select} value={params.get("overdue") ?? ""} onChange={(e) => setParam("overdue", e.target.value)} aria-label="Days overdue">
-        <option value="">Any age</option>
-        <option value="0-30">0–30 days</option>
-        <option value="31-60">31–60 days</option>
-        <option value="61-90">61–90 days</option>
-        <option value="91-">90+ days</option>
-      </select>
-      <select className={select} value={params.get("contact") ?? ""} onChange={(e) => setParam("contact", e.target.value)} aria-label="Last contact">
-        <option value="">Any last contact</option>
-        <option value="7">Contacted in 7 days</option>
-        <option value="14">Contacted in 14 days</option>
-        <option value="30">Contacted in 30 days</option>
-      </select>
-      <select className={select} value={params.get("promise") ?? ""} onChange={(e) => setParam("promise", e.target.value)} aria-label="Promise status">
-        <option value="">Any promise state</option>
-        <option value="has_open">Has open promise</option>
-        <option value="overdue">Promise overdue</option>
-        <option value="none">No promise</option>
-      </select>
+      <Select
+        className={select}
+        value={params.get("status") ?? ""}
+        onChange={(value) => setParam("status", value)}
+        aria-label="Status"
+        options={[
+          { value: "", label: "All statuses" },
+          ...DEBTOR_STATUSES.map((s) => ({ value: s, label: label(s) })),
+        ]}
+      />
+      <Select
+        className={select}
+        value={params.get("campaign") ?? ""}
+        onChange={(value) => setParam("campaign", value)}
+        aria-label="Campaign"
+        options={[
+          { value: "", label: "All campaigns" },
+          ...campaigns.map((c) => ({ value: c.id, label: c.name })),
+        ]}
+      />
+      <Select
+        className={select}
+        value={params.get("risk") ?? ""}
+        onChange={(value) => setParam("risk", value)}
+        aria-label="Risk"
+        options={[
+          { value: "", label: "All risk" },
+          { value: "low", label: "Low risk" },
+          { value: "medium", label: "Medium risk" },
+          { value: "high", label: "High risk" },
+        ]}
+      />
+      <Select
+        className={select}
+        value={params.get("amount") ?? ""}
+        onChange={(value) => setParam("amount", value)}
+        aria-label="Amount"
+        options={[
+          { value: "", label: "Any amount" },
+          { value: "0-2500", label: "Under R2,500" },
+          { value: "2500-10000", label: "R2,500 \u2013 R10,000" },
+          { value: "10000-50000", label: "R10,000 \u2013 R50,000" },
+          { value: "50000-", label: "Over R50,000" },
+        ]}
+      />
+      <Select
+        className={select}
+        value={params.get("overdue") ?? ""}
+        onChange={(value) => setParam("overdue", value)}
+        aria-label="Days overdue"
+        options={[
+          { value: "", label: "Any age" },
+          { value: "0-30", label: "0\u201330 days" },
+          { value: "31-60", label: "31\u201360 days" },
+          { value: "61-90", label: "61\u201390 days" },
+          { value: "91-", label: "90+ days" },
+        ]}
+      />
+      <Select
+        className={select}
+        value={params.get("contact") ?? ""}
+        onChange={(value) => setParam("contact", value)}
+        aria-label="Last contact"
+        options={[
+          { value: "", label: "Any last contact" },
+          { value: "7", label: "Contacted in 7 days" },
+          { value: "14", label: "Contacted in 14 days" },
+          { value: "30", label: "Contacted in 30 days" },
+        ]}
+      />
+      <Select
+        className={select}
+        value={params.get("promise") ?? ""}
+        onChange={(value) => setParam("promise", value)}
+        aria-label="Promise status"
+        options={[
+          { value: "", label: "Any promise state" },
+          { value: "has_open", label: "Has open promise" },
+          { value: "overdue", label: "Promise overdue" },
+          { value: "none", label: "No promise" },
+        ]}
+      />
       {params.size > 0 && (
         <button
           className="btn btn-ghost text-[0.75rem]"

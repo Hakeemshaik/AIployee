@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Trash2 } from "lucide-react";
+import { useConfirm } from "@/components/Dialog";
 
 // ---------------------------------------------------------------------------
 // Deleting a campaign.
@@ -28,21 +29,31 @@ export function DeleteCampaignButton({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   async function remove() {
-    if (
-      !window.confirm(
-        `Delete the campaign "${name}"?\n\n` +
-          (accounts > 0
-            ? accounts === 1
-              ? "Its 1 account is NOT deleted — it stays in your book and becomes unassigned, ready for another campaign."
-              : `Its ${accounts} accounts are NOT deleted — they stay in your book and become unassigned, ready for another campaign.`
-            : "It holds no accounts.") +
-          "\n\nThe campaign, its contact history and its redial batches go. This cannot be undone.",
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: `Delete \u201c${name}\u201d?`,
+      body: (
+        <>
+          <span className="block">
+            {accounts > 0
+              ? `${accounts === 1 ? "Its 1 account is" : `Its ${accounts} accounts are`} not deleted \u2014 ${
+                  accounts === 1 ? "it stays" : "they stay"
+                } in your book and ${
+                  accounts === 1 ? "becomes" : "become"
+                } unassigned, ready for another campaign.`
+              : "It holds no accounts."}
+          </span>
+          <span className="mt-1.5 block text-critical">
+            The campaign, its contact history and its redial batches go. This cannot be undone.
+          </span>
+        </>
+      ),
+      confirmLabel: "Delete the campaign",
+      kind: "danger",
+    });
+    if (!ok) return;
     setBusy(true);
     setError(null);
     try {

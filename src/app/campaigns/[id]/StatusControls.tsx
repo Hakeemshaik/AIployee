@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CheckCircle2, Pause, Play } from "lucide-react";
+import { useConfirm } from "@/components/Dialog";
 
 // ---------------------------------------------------------------------------
 // Status bookkeeping — and ONLY bookkeeping.
@@ -20,7 +21,14 @@ import { CheckCircle2, Pause, Play } from "lucide-react";
 // moves to reporting.
 // ---------------------------------------------------------------------------
 
-const TRANSITIONS: Record<string, { to: string; label: string; icon: "play" | "pause" | "done"; confirm?: string }[]> = {
+type Transition = {
+  to: string;
+  label: string;
+  icon: "play" | "pause" | "done";
+  ask?: { title: string; body: string };
+};
+
+const TRANSITIONS: Record<string, Transition[]> = {
   draft: [],
   scheduled: [],
   active: [
@@ -28,7 +36,10 @@ const TRANSITIONS: Record<string, { to: string; label: string; icon: "play" | "p
       to: "completed",
       label: "Mark complete",
       icon: "done",
-      confirm: "Complete this campaign? It moves to reporting, and the launch panel no longer offers to start it.",
+      ask: {
+        title: "Complete this campaign?",
+        body: "It moves to reporting, and the launch panel no longer offers to start it. Nothing already recorded changes.",
+      },
     },
   ],
   paused: [
@@ -36,7 +47,10 @@ const TRANSITIONS: Record<string, { to: string; label: string; icon: "play" | "p
       to: "completed",
       label: "Mark complete",
       icon: "done",
-      confirm: "Complete this campaign? It moves to reporting, and the launch panel no longer offers to start it.",
+      ask: {
+        title: "Complete this campaign?",
+        body: "It moves to reporting, and the launch panel no longer offers to start it. Nothing already recorded changes.",
+      },
     },
   ],
   completed: [],
@@ -48,9 +62,10 @@ export function StatusControls({ campaignId, status }: { campaignId: string; sta
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState(false);
+  const confirm = useConfirm();
 
-  async function transition(to: string, confirm?: string) {
-    if (confirm && !window.confirm(confirm)) return;
+  async function transition(to: string, ask?: Transition["ask"]) {
+    if (ask && !(await confirm({ ...ask, confirmLabel: "Mark complete" }))) return;
     setBusy(to);
     setError(false);
     try {
@@ -78,7 +93,7 @@ export function StatusControls({ campaignId, status }: { campaignId: string; sta
         return (
           <button
             key={opt.to}
-            onClick={() => transition(opt.to, opt.confirm)}
+            onClick={() => transition(opt.to, opt.ask)}
             disabled={busy !== null}
             className={`btn ${opt.icon === "play" ? "btn-primary" : ""}`}
           >

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, Check, Copy, Loader2, UserPlus, X } from "lucide-react";
 import { Badge, Card } from "@/components/ui";
+import { useConfirm } from "@/components/Dialog";
+import { Select } from "@/components/Select";
 
 // ---------------------------------------------------------------------------
 // Team management (admin).
@@ -49,6 +51,7 @@ export function TeamCard({ selfId }: { selfId: string }) {
   const [showForm, setShowForm] = useState(false);
 
   const [refresh, setRefresh] = useState(0);
+  const confirm = useConfirm();
 
   useEffect(() => {
     let cancelled = false;
@@ -174,13 +177,13 @@ export function TeamCard({ selfId }: { selfId: string }) {
             <label className="mb-1 block text-[0.6875rem] font-medium text-ink-2" htmlFor="invite-role">
               Role
             </label>
-            <select id="invite-role" name="role" defaultValue="collector" className="field w-full capitalize">
-              {ROLES.map((role) => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </select>
+            <Select
+              id="invite-role"
+              name="role"
+              defaultValue="collector"
+              className="w-full capitalize"
+              options={ROLES.map((role) => ({ value: role, label: role }))}
+            />
           </div>
           <div className="flex items-end">
             <button type="submit" disabled={busy === "invite"} className="btn btn-primary w-full justify-center">
@@ -211,27 +214,34 @@ export function TeamCard({ selfId }: { selfId: string }) {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <select
+                  <Select
                     value={member.role}
                     disabled={busy !== null || member.id === selfId}
-                    onChange={(event) => void act({ action: "change_role", userId: member.id, role: event.target.value }, member.id)}
-                    className="field w-auto px-2 py-1 text-[0.71875rem] capitalize"
+                    onChange={(role) => void act({ action: "change_role", userId: member.id, role }, member.id)}
+                    className="w-auto px-2 py-1 text-[0.71875rem] capitalize"
                     aria-label={`Role for ${member.name}`}
-                  >
-                    {ROLES.map((role) => (
-                      <option key={role} value={role}>
-                        {role}
-                      </option>
-                    ))}
-                  </select>
+                    options={ROLES.map((role) => ({ value: role, label: role }))}
+                  />
                   {member.id !== selfId && (
                     <button
                       className="btn btn-ghost text-[0.6875rem]"
                       disabled={busy !== null}
                       onClick={() => {
-                        if (window.confirm(`Remove ${member.name} (${member.email}) from the organization?`)) {
-                          void act({ action: "remove_user", userId: member.id }, member.id);
-                        }
+                        void (async () => {
+                          const ok = await confirm({
+                            title: `Remove ${member.name}?`,
+                            body: (
+                              <>
+                                <span className="font-medium text-ink">{member.email}</span> loses
+                                access to this organisation immediately. Their sign-in stops
+                                working; nothing they recorded is deleted.
+                              </>
+                            ),
+                            confirmLabel: "Remove them",
+                            kind: "danger",
+                          });
+                          if (ok) act({ action: "remove_user", userId: member.id }, member.id);
+                        })();
                       }}
                     >
                       Remove

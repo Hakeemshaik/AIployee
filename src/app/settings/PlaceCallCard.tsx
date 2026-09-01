@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AlertTriangle, Loader2, PhoneOutgoing } from "lucide-react";
 import { Card } from "@/components/ui";
 import { CallResult } from "@/components/CallResult";
+import { useConfirm } from "@/components/Dialog";
 
 // ---------------------------------------------------------------------------
 // Place one call.
@@ -35,9 +36,16 @@ export function PlaceCallCard() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   async function place() {
-    if (!window.confirm(`Call ${phone} now?\n\nThis dials a real phone the moment it is sent.`)) return;
+    const ok = await confirm({
+      title: `Call ${phone} now?`,
+      body: "One customer is written to the voice platform and the flow dials it as it lands. This rings a real phone.",
+      confirmLabel: "Place the call",
+      kind: "call",
+    });
+    if (!ok) return;
     setBusy(true);
     setError(null);
     setResult(null);

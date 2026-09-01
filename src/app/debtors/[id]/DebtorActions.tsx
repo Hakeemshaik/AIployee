@@ -6,6 +6,8 @@ import { AlertTriangle, Loader2, PhoneOutgoing, X } from "lucide-react";
 import { ESCALATION_PRIORITIES, ESCALATION_REASONS, label } from "@/lib/domain";
 import { RecordPaymentButton } from "@/app/payments/RecordPayment";
 import { CallResult } from "@/components/CallResult";
+import { useConfirm } from "@/components/Dialog";
+import { Select } from "@/components/Select";
 
 export function DebtorActions({
   debtor,
@@ -23,6 +25,7 @@ export function DebtorActions({
   const [assignError, setAssignError] = useState<string | null>(null);
   const [callNote, setCallNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [attemptId, setAttemptId] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   /**
    * Call this one account, now.
@@ -33,13 +36,18 @@ export function DebtorActions({
    * every status that is never dialled are all checked on the server.
    */
   async function callNow() {
-    if (
-      !window.confirm(
-        `Call ${debtor.name} now?\n\nOne customer is written to the voice platform and the flow dials it as it lands. This is a real call.`,
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: `Call ${debtor.name} now?`,
+      body: (
+        <>
+          Account <span className="font-medium text-ink">{debtor.accountNumber}</span> is written to
+          the voice platform and the flow dials it as it lands. This rings a real phone.
+        </>
+      ),
+      confirmLabel: "Place the call",
+      kind: "call",
+    });
+    if (!ok) return;
     setBusy(true);
     setCallNote(null);
     setAttemptId(null);
@@ -109,19 +117,16 @@ export function DebtorActions({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <select
-        className="field"
+      <Select
         value={currentCampaignId ?? ""}
         disabled={busy}
-        onChange={(e) => assignCampaign(e.target.value)}
+        onChange={assignCampaign}
         aria-label="Assign campaign"
-        title="Assign this debtor to a campaign"
-      >
-        <option value="">No campaign</option>
-        {campaigns.map((c) => (
-          <option key={c.id} value={c.id}>{c.name}</option>
-        ))}
-      </select>
+        options={[
+          { value: "", label: "No campaign" },
+          ...campaigns.map((c) => ({ value: c.id, label: c.name })),
+        ]}
+      />
       <button className="btn" onClick={callNow} disabled={busy} title="Write this account and let the flow dial it">
         {busy ? <Loader2 size={13} className="animate-spin" /> : <PhoneOutgoing size={13} />} Call now
       </button>
@@ -159,19 +164,23 @@ export function DebtorActions({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="esc-reason">Reason</label>
-                  <select id="esc-reason" name="reason" className="field w-full" defaultValue="ai_unable_to_resolve">
-                    {ESCALATION_REASONS.map((r) => (
-                      <option key={r} value={r}>{label(r)}</option>
-                    ))}
-                  </select>
+                  <Select
+                    id="esc-reason"
+                    name="reason"
+                    className="w-full"
+                    defaultValue="ai_unable_to_resolve"
+                    options={ESCALATION_REASONS.map((r) => ({ value: r, label: label(r) }))}
+                  />
                 </div>
                 <div>
                   <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="esc-priority">Priority</label>
-                  <select id="esc-priority" name="priority" className="field w-full" defaultValue="medium">
-                    {ESCALATION_PRIORITIES.map((p) => (
-                      <option key={p} value={p}>{label(p)}</option>
-                    ))}
-                  </select>
+                  <Select
+                    id="esc-priority"
+                    name="priority"
+                    className="w-full"
+                    defaultValue="medium"
+                    options={ESCALATION_PRIORITIES.map((p) => ({ value: p, label: label(p) }))}
+                  />
                 </div>
               </div>
               <div>

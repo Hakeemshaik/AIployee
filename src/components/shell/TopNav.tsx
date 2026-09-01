@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   Banknote,
@@ -64,8 +64,87 @@ function isActive(pathname: string, href: string): boolean {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
+/**
+ * One lens of glass that follows the pointer along the dock.
+ *
+ * The alternative — every item lighting up on its own as the pointer crosses
+ * it — reads as a row of switches. Handing a single highlight along makes the
+ * dock feel like one object with something moving over it, which is the whole
+ * reason a dock is a dock.
+ *
+ * It is done on the DOM rather than in state on purpose: this runs on every
+ * pointer move, and re-rendering twelve links sixty times a second to move one
+ * rectangle would cost more than the effect is worth.
+ */
+function useDockBubble(pathname: string) {
+  const navRef = useRef<HTMLElement | null>(null);
+  const bubbleRef = useRef<HTMLSpanElement | null>(null);
+
+  const place = useCallback((target: HTMLElement | null) => {
+    const bubble = bubbleRef.current;
+    const nav = navRef.current;
+    if (!bubble || !nav) return;
+    if (!target) {
+      bubble.dataset.shown = "false";
+      nav.dataset.riding = "false";
+      return;
+    }
+    const from = nav.getBoundingClientRect();
+    const to = target.getBoundingClientRect();
+    bubble.style.setProperty("--x", `${to.left - from.left}px`);
+    bubble.style.setProperty("--w", `${to.width}px`);
+    bubble.dataset.shown = "true";
+    nav.dataset.riding = "true";
+  }, []);
+
+  /** Where it sits when nobody is pointing at anything. */
+  const rest = useCallback(() => {
+    const nav = navRef.current;
+    place(nav?.querySelector<HTMLElement>('[aria-current="page"]') ?? null);
+  }, [place]);
+
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    // Only once the script is running: without it the items keep their own
+    // hover wash and the active one keeps its own pill.
+    nav.dataset.bubble = "on";
+
+    // A frame, so the dock has been laid out before anything is measured.
+    const first = requestAnimationFrame(rest);
+
+    const over = (event: PointerEvent) => {
+      const item = (event.target as HTMLElement | null)?.closest<HTMLElement>(".dock-item");
+      if (item && nav.contains(item)) place(item);
+    };
+    const leave = () => rest();
+    const resize = () => rest();
+
+    nav.addEventListener("pointermove", over);
+    nav.addEventListener("pointerleave", leave);
+    nav.addEventListener("focusin", over as EventListener);
+    window.addEventListener("resize", resize);
+    return () => {
+      cancelAnimationFrame(first);
+      nav.removeEventListener("pointermove", over);
+      nav.removeEventListener("pointerleave", leave);
+      nav.removeEventListener("focusin", over as EventListener);
+      window.removeEventListener("resize", resize);
+    };
+  }, [place, rest]);
+
+  // A new page means a new resting place.
+  useEffect(() => {
+    const frame = requestAnimationFrame(rest);
+    return () => cancelAnimationFrame(frame);
+  }, [pathname, rest]);
+
+  return { navRef, bubbleRef };
+}
+
 export function TopNav({ guest = false }: { guest?: boolean }) {
   const pathname = usePathname();
+  const { navRef, bubbleRef } = useDockBubble(pathname);
   const [openMore, setOpenMore] = useState(false);
   const moreRef = useRef<HTMLDivElement | null>(null);
 
@@ -93,7 +172,9 @@ export function TopNav({ guest = false }: { guest?: boolean }) {
   const moreActive = more.some((item) => isActive(pathname, item.href));
 
   return (
-    <nav className="dock max-w-full">
+    <nav ref={navRef} className="dock relative max-w-full">
+      <span ref={bubbleRef} className="dock-bubble" data-shown="false" aria-hidden />
+
       {/* The daily four, as words. */}
       {primary.map(({ href, label, icon: Icon }) => {
         const active = isActive(pathname, href);
@@ -149,7 +230,8 @@ export function TopNav({ guest = false }: { guest?: boolean }) {
             />
           </button>
           {openMore && (
-            <div className="card-float page-in absolute right-0 top-[calc(100%+0.75rem)] z-50 w-56 p-1.5">
+            <div className="card-float menu-in absolute right-0 top-[calc(100%+0.75rem)] z-50 w-56 p-1.5"
+              style={{ ["--origin" as string]: "top right" }}>
               {more.map(({ href, label, icon: Icon }) => {
                 const active = isActive(pathname, href);
                 return (

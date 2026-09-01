@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CAMPAIGN_STRATEGIES, label } from "@/lib/domain";
+import { Select } from "@/components/Select";
 
 export function CampaignForm({ agents }: { agents: { id: string; name: string }[] }) {
   const router = useRouter();
@@ -51,20 +52,26 @@ export function CampaignForm({ agents }: { agents: { id: string; name: string }[
         </div>
         <div>
           <label className={labelCls} htmlFor="agentId">AI agent</label>
-          <select id="agentId" name="agentId" className="field w-full" defaultValue="">
-            <option value="">Assign later</option>
-            {agents.map((a) => (
-              <option key={a.id} value={a.id}>{a.name}</option>
-            ))}
-          </select>
+          <Select
+            id="agentId"
+            name="agentId"
+            className="w-full"
+            defaultValue=""
+            options={[
+              { value: "", label: "Assign later" },
+              ...agents.map((a) => ({ value: a.id, label: a.name })),
+            ]}
+          />
         </div>
         <div>
           <label className={labelCls} htmlFor="strategy">Collection strategy</label>
-          <select id="strategy" name="strategy" className="field w-full" defaultValue="standard">
-            {CAMPAIGN_STRATEGIES.map((s) => (
-              <option key={s} value={s}>{label(s)}</option>
-            ))}
-          </select>
+          <Select
+            id="strategy"
+            name="strategy"
+            className="w-full"
+            defaultValue="standard"
+            options={CAMPAIGN_STRATEGIES.map((s) => ({ value: s, label: label(s) }))}
+          />
         </div>
         <div>
           <label className={labelCls} htmlFor="startDate">Start date</label>
@@ -92,11 +99,17 @@ export function CampaignForm({ agents }: { agents: { id: string; name: string }[
         </div>
         <div>
           <label className={labelCls} htmlFor="status">Initial status</label>
-          <select id="status" name="status" className="field w-full" defaultValue="draft">
-            <option value="draft">Draft</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="active">Active</option>
-          </select>
+          <Select
+            id="status"
+            name="status"
+            className="w-full"
+            defaultValue="draft"
+            options={[
+              { value: "draft", label: "Draft", hint: "Nothing runs until you launch it." },
+              { value: "scheduled", label: "Scheduled", hint: "Set a start time on the campaign." },
+              { value: "active", label: "Active", hint: "Bookkeeping only \u2014 no calls go out from here." },
+            ]}
+          />
         </div>
       </div>
       {error && <p className="text-[0.78125rem] text-critical">{error}</p>}

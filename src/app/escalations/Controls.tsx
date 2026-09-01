@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ESCALATION_STATUSES, label } from "@/lib/domain";
+import { useConfirm } from "@/components/Dialog";
+import { Select } from "@/components/Select";
 
 export function EscalationControls({
   escalationId,
@@ -18,6 +20,7 @@ export function EscalationControls({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   async function update(patch: Record<string, unknown>) {
     setBusy(true);
@@ -40,36 +43,39 @@ export function EscalationControls({
   return (
     <div className="flex items-center justify-end gap-1.5">
       {error && <span className="text-[0.6875rem] text-critical">{error}</span>}
-      <select
-        className="field py-1 text-[0.71875rem]"
+      <Select
+        className="py-1 text-[0.71875rem]"
         value={assignedToUserId ?? ""}
         disabled={busy || status === "resolved"}
         aria-label="Assign collector"
-        onChange={(e) => update({ assignedToUserId: e.target.value || null })}
-      >
-        <option value="">Unassigned</option>
-        {users.map((u) => (
-          <option key={u.id} value={u.id}>{u.name}</option>
-        ))}
-      </select>
-      <select
-        className="field py-1 text-[0.71875rem]"
+        onChange={(value) => update({ assignedToUserId: value || null })}
+        options={[
+          { value: "", label: "Unassigned" },
+          ...users.map((u) => ({ value: u.id, label: u.name })),
+        ]}
+      />
+      <Select
+        className="py-1 text-[0.71875rem]"
         value={status}
         disabled={busy}
         aria-label="Status"
-        onChange={(e) => {
-          const next = e.target.value;
-          if (next === "resolved" && !window.confirm("Mark this escalation as resolved?")) {
-            router.refresh();
+        onChange={(next) => {
+          if (next !== "resolved") {
+            update({ status: next });
             return;
           }
-          update({ status: next });
+          void (async () => {
+            const ok = await confirm({
+              title: "Mark this escalation as resolved?",
+              body: "It leaves the queue and stops counting as outstanding. You can reopen it afterwards if it turns out not to be settled.",
+              confirmLabel: "Mark resolved",
+            });
+            if (ok) update({ status: next });
+            else router.refresh();
+          })();
         }}
-      >
-        {ESCALATION_STATUSES.map((s) => (
-          <option key={s} value={s}>{label(s)}</option>
-        ))}
-      </select>
+        options={ESCALATION_STATUSES.map((s) => ({ value: s, label: label(s) }))}
+      />
     </div>
   );
 }

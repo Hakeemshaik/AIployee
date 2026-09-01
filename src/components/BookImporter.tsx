@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Check, FileSpreadsheet, Loader2, Upload } from "lucide-react";
+import { Select } from "@/components/Select";
 import { count, money } from "@/lib/format";
 
 // ---------------------------------------------------------------------------
@@ -209,32 +210,24 @@ export function BookImporter({
             <FileSpreadsheet size={13} className="text-accent" /> {file.name}
           </span>
         )}
-        <select
-          className="field min-w-[240px]"
+        <Select
+          className="min-w-[240px]"
           value={format}
-          onChange={(event) => setFormat(event.target.value)}
+          onChange={setFormat}
           aria-label="File format"
-        >
-          {FORMAT_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+          options={FORMAT_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+        />
         {!fixedCampaign && (
-          <select
-            className="field min-w-[220px]"
+          <Select
+            className="min-w-[220px]"
             value={campaignId}
-            onChange={(event) => setCampaignId(event.target.value)}
+            onChange={setCampaignId}
             aria-label="Assign to campaign"
-          >
-            <option value="">No campaign</option>
-            {campaigns.map((campaign) => (
-              <option key={campaign.id} value={campaign.id}>
-                {campaign.name}
-              </option>
-            ))}
-          </select>
+            options={[
+              { value: "", label: "No campaign" },
+              ...campaigns.map((campaign) => ({ value: campaign.id, label: campaign.name })),
+            ]}
+          />
         )}
         <button className="btn btn-primary" disabled={!file || busy !== null} onClick={() => send("preview")}>
           {busy === "preview" ? <Loader2 size={13} className="animate-spin" /> : null}

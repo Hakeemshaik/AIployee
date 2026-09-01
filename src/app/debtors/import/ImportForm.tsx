@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { CheckCircle2, FileUp, Upload } from "lucide-react";
+import { Select } from "@/components/Select";
 
 const TEMPLATE = `firstName,lastName,accountNumber,phone,email,city,province,creditorName,originalBalance,currentBalance,dueDate
 Jane,Doe,ACC-1001,+27821234567,jane.doe@example.com,Johannesburg,Gauteng,Example Retail Credit,4850,4850,2026-06-15
@@ -144,12 +145,16 @@ export function ImportForm({ campaigns }: { campaigns: { id: string; name: strin
 
       <div>
         <p className="mb-2 text-[0.71875rem] font-medium text-ink-2">3 · Assign to a campaign (optional)</p>
-        <select className="field min-w-[260px]" value={campaignId} onChange={(e) => setCampaignId(e.target.value)}>
-          <option value="">Leave unassigned</option>
-          {campaigns.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
+        <Select
+          className="min-w-[260px]"
+          value={campaignId}
+          onChange={setCampaignId}
+          aria-label="Campaign"
+          options={[
+            { value: "", label: "Leave unassigned" },
+            ...campaigns.map((c) => ({ value: c.id, label: c.name })),
+          ]}
+        />
       </div>
 
       {error && <p className="text-[0.78125rem] text-critical">{error}</p>}

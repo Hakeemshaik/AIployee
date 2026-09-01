@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Plus, X } from "lucide-react";
+import { Select } from "@/components/Select";
 import { label, PAYMENT_METHODS } from "@/lib/domain";
 
 export function RecordPaymentButton({
@@ -80,12 +81,18 @@ export function RecordPaymentButton({
                 ) : (
                   <div>
                     <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="debtorId">Debtor *</label>
-                    <select id="debtorId" name="debtorId" required className="field w-full" defaultValue="">
-                      <option value="" disabled>Select a debtor…</option>
-                      {debtors.map((d) => (
-                        <option key={d.id} value={d.id}>{d.name} — {d.accountNumber}</option>
-                      ))}
-                    </select>
+                    <Select
+                      id="debtorId"
+                      name="debtorId"
+                      required
+                      className="w-full"
+                      placeholder="Select a debtor\u2026"
+                      options={debtors.map((d) => ({
+                        value: d.id,
+                        label: d.name,
+                        hint: d.accountNumber,
+                      }))}
+                    />
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-3">
@@ -95,11 +102,13 @@ export function RecordPaymentButton({
                   </div>
                   <div>
                     <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="method">Method</label>
-                    <select id="method" name="method" className="field w-full" defaultValue="eft">
-                      {PAYMENT_METHODS.map((m) => (
-                        <option key={m} value={m}>{label(m)}</option>
-                      ))}
-                    </select>
+                    <Select
+                      id="method"
+                      name="method"
+                      className="w-full"
+                      defaultValue="eft"
+                      options={PAYMENT_METHODS.map((m) => ({ value: m, label: label(m) }))}
+                    />
                   </div>
                 </div>
                 <div>

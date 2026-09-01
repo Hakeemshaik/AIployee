@@ -16,6 +16,7 @@ import {
 import { label } from "@/lib/domain";
 import { money } from "@/lib/format";
 import { Badge, Card, StatCard } from "@/components/ui";
+import { useConfirm } from "@/components/Dialog";
 
 type LiveState = {
   status: string;
@@ -66,6 +67,7 @@ export function LiveCampaign({
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ kind: "ok" | "note" | "error"; text: string; csv?: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const confirm = useConfirm();
   const sourceRef = useRef<EventSource | null>(null);
 
   // Stream state changes instead of refreshing the page.
@@ -98,7 +100,15 @@ export function LiveCampaign({
   }, [campaignId]);
 
   async function control(action: "start" | "pause" | "stop") {
-    if (action === "stop" && !window.confirm("Stop this campaign? Dialling ends for all remaining contacts.")) return;
+    if (action === "stop") {
+      const ok = await confirm({
+        title: "Stop this campaign?",
+        body: "Dialling ends for every contact that has not been reached yet. Calls already in progress finish on their own.",
+        confirmLabel: "Stop dialling",
+        kind: "danger",
+      });
+      if (!ok) return;
+    }
     setBusy(action);
     setNotice(null);
     try {
@@ -131,7 +141,12 @@ export function LiveCampaign({
     // "Prepare", not "send": the batch becomes a list to paste, and saying so
     // in the question is the difference between an operator who pastes it and
     // one who thinks calls are already going out.
-    if (!window.confirm(`Prepare a ${label(filter)} redial list for ${count} contact${count === 1 ? "" : "s"}?`)) return;
+    const ok = await confirm({
+      title: `Prepare a ${label(filter)} redial list?`,
+      body: `${count} contact${count === 1 ? "" : "s"} go onto a new batch. Nothing is dialled by preparing it \u2014 the batch becomes a list you send.`,
+      confirmLabel: "Prepare the list",
+    });
+    if (!ok) return;
     setBusy(filter);
     setNotice(null);
     try {

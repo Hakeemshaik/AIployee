@@ -12,6 +12,7 @@ import {
   Zap,
 } from "lucide-react";
 import { count, formatDate, formatDateTime } from "@/lib/format";
+import { Select } from "@/components/Select";
 
 // ---------------------------------------------------------------------------
 // Ingestion control.
@@ -391,20 +392,14 @@ export function IngestionPanel({
                       : "Nothing imported yet. Choose how far back to pull, then press Import."}
           </p>
         </div>
-        <select
-          className="field w-auto min-w-[180px]"
+        <Select
+          className="w-auto min-w-[180px]"
           value={windowKey}
-          onChange={(event) => setWindowKey(event.target.value as WindowKey)}
+          onChange={(value) => setWindowKey(value as WindowKey)}
           disabled={running}
           aria-label="How far back to import"
-          title="Only calls from this date onward are pulled"
-        >
-          {WINDOWS.map((option) => (
-            <option key={option.key} value={option.key}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+          options={WINDOWS.map((option) => ({ value: option.key, label: option.label }))}
+        />
         <button
           className={`btn ${quick ? "border-accent/45 bg-accent-soft text-ink" : ""}`}
           onClick={() => setQuick((v) => !v)}
