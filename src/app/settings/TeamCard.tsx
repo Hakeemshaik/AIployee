@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AlertTriangle, Check, Copy, Loader2, UserPlus, X } from "lucide-react";
-import { Badge, GlassCard } from "@/components/ui";
+import { Badge, Card } from "@/components/ui";
 
 // ---------------------------------------------------------------------------
 // Team management (admin).
@@ -119,7 +119,7 @@ export function TeamCard({ selfId }: { selfId: string }) {
   }
 
   return (
-    <GlassCard
+    <Card
       title="Team"
       subtitle="Members, roles and invitations"
       actions={
@@ -130,14 +130,14 @@ export function TeamCard({ selfId }: { selfId: string }) {
       }
     >
       {error && (
-        <p className="mb-3 flex items-start gap-2 rounded-lg border border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)] px-3 py-2 text-[0.78125rem] text-[#e2714a]">
+        <p className="mb-3 flex items-start gap-2 rounded-lg border border-serious/35 bg-serious/8 px-3 py-2 text-[0.78125rem] text-serious">
           <AlertTriangle size={13} className="mt-0.5 shrink-0" />
           {error}
         </p>
       )}
 
       {inviteLink && (
-        <div className="mb-4 rounded-lg border border-[rgba(25,158,112,0.35)] bg-[rgba(25,158,112,0.08)] p-3">
+        <div className="mb-4 rounded-lg border border-good/35 bg-good/8 p-3">
           <p className="text-[0.78125rem] font-medium text-ink">
             Invite created for {inviteLink.email}
           </p>
@@ -271,6 +271,6 @@ export function TeamCard({ selfId }: { selfId: string }) {
           )}
         </>
       )}
-    </GlassCard>
+    </Card>
   );
 }

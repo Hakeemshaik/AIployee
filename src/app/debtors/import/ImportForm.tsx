@@ -56,8 +56,8 @@ export function ImportForm({ campaigns }: { campaigns: { id: string; name: strin
   if (result) {
     return (
       <div>
-        <div className="mb-4 flex items-center gap-3 rounded-lg border border-[rgba(12,163,12,0.3)] bg-[rgba(12,163,12,0.08)] p-4">
-          <CheckCircle2 size={18} className="shrink-0 text-[#5fc46a]" />
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-good/30 bg-good/8 p-4">
+          <CheckCircle2 size={18} className="shrink-0 text-good" />
           <p className="text-[0.875rem] text-ink">
             <span className="font-semibold">{result.created} debtor{result.created === 1 ? "" : "s"} imported</span>
             {campaignId ? " and assigned to the campaign" : ""}.
@@ -120,7 +120,7 @@ export function ImportForm({ campaigns }: { campaigns: { id: string; name: strin
           <button
             type="button"
             onClick={() => fileInput.current?.click()}
-            className="flex h-full min-h-[110px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-white/[0.02] p-4 text-ink-3 transition-colors hover:border-[rgba(57,135,229,0.5)] hover:text-ink-2"
+            className="flex h-full min-h-[110px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-white/[0.02] p-4 text-ink-3 transition-colors hover:border-accent/50 hover:text-ink-2"
           >
             <FileUp size={18} />
             <span className="text-[0.75rem]">{fileName ?? "Choose a .csv file"}</span>
@@ -152,7 +152,7 @@ export function ImportForm({ campaigns }: { campaigns: { id: string; name: strin
         </select>
       </div>
 
-      {error && <p className="text-[0.78125rem] text-[#ec8181]">{error}</p>}
+      {error && <p className="text-[0.78125rem] text-critical">{error}</p>}
       <button onClick={submit} disabled={busy || !csv.trim()} className="btn btn-primary">
         <Upload size={14} />
         {busy ? "Importing…" : rowCount > 0 ? `Import ${rowCount} row${rowCount === 1 ? "" : "s"}` : "Import"}

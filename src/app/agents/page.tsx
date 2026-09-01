@@ -4,7 +4,7 @@ import { getContext } from "@/lib/auth";
 import { label } from "@/lib/domain";
 import { money, percent } from "@/lib/format";
 import { listAgents } from "@/services/agents";
-import { Badge, EmptyState, GlassCard, PageHeader } from "@/components/ui";
+import { Badge, EmptyState, Card, PageHeader } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Agents" };
@@ -27,7 +27,7 @@ export default async function AgentsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {agents.map(({ agent, performance }) => (
-            <GlassCard key={agent.id} className="transition-transform duration-150 hover:-translate-y-0.5">
+            <Card key={agent.id} className="transition-transform duration-150 hover:-translate-y-0.5">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-accent-soft">
@@ -61,7 +61,7 @@ export default async function AgentsPage() {
                   </div>
                 ))}
               </div>
-            </GlassCard>
+            </Card>
           ))}
         </div>
       )}

@@ -4,7 +4,7 @@ import { getContext, hasRole } from "@/lib/auth";
 import { label } from "@/lib/domain";
 import { formatDate, money } from "@/lib/format";
 import { listCampaignOptions, listDebtors, type DebtorFilters as Filters } from "@/services/debtors";
-import { Badge, EmptyState, GlassCard, PageHeader } from "@/components/ui";
+import { Badge, EmptyState, Card, PageHeader } from "@/components/ui";
 import { DebtorFilters } from "./Filters";
 import { findDuplicates } from "@/services/duplicates";
 import { DuplicatesCard, type DuplicateReport } from "./DuplicatesCard";
@@ -69,7 +69,7 @@ export default async function DebtorsPage({
       )}
 
       <DebtorFilters campaigns={campaigns} />
-      <GlassCard pad={false}>
+      <Card pad={false}>
         {rows.length === 0 ? (
           <div className="p-5">
             <EmptyState
@@ -119,7 +119,7 @@ export default async function DebtorsPage({
             </table>
           </div>
         )}
-      </GlassCard>
+      </Card>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { getContext } from "@/lib/auth";
 import { listCampaignOptions } from "@/services/debtors";
-import { BackLink, GlassCard, PageHeader } from "@/components/ui";
+import { BackLink, Card, PageHeader } from "@/components/ui";
 import { ImportForm } from "./ImportForm";
 import { BookImporter } from "@/components/BookImporter";
 
@@ -19,12 +19,12 @@ export default async function ImportDebtorsPage() {
         description="Upload the book in whatever format the client provided. Every row is validated and reported before anything is imported."
       />
       <div className="space-y-4">
-        <GlassCard title="Upload a file" subtitle="Jobix workbook, platform template, or any client spreadsheet">
+        <Card title="Upload a file" subtitle="Jobix workbook, platform template, or any client spreadsheet">
           <BookImporter campaigns={campaigns} />
-        </GlassCard>
-        <GlassCard title="Paste CSV" subtitle="The platform template, pasted as text">
+        </Card>
+        <Card title="Paste CSV" subtitle="The platform template, pasted as text">
           <ImportForm campaigns={campaigns} />
-        </GlassCard>
+        </Card>
       </div>
     </div>
   );

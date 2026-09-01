@@ -1,50 +1,65 @@
 @import "tailwindcss";
 
 /*
- * AIployee — dark, glass-panel design system.
- * The product deliberately commits to a single dark look; every surface and
- * ink is painted explicitly. Chart series colors come from the validated
- * dark-mode data-viz palette.
+ * AIployee — the Mafadi house style, dark.
+ *
+ * Navy ground, teal accent, cream for the one thing on a screen worth reading
+ * first, amber for anything asking to be acted on. Every surface and ink is
+ * painted explicitly: the product commits to a single look rather than
+ * inheriting the viewer's.
+ *
+ * Chart series are the same three hues stepped down for the navy surface and
+ * validated against it (lightness band, chroma floor, colour-vision separation
+ * on every pair, contrast) — not the accent reused as data.
  */
 
 @theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  /* surfaces */
-  --color-base: #08090c;
-  --color-plane: #0d0f14;
-  --color-panel: #12151c;
-  --color-raised: #1a1e27;
+  /* surfaces — the brand navy, one step down for the ground and one up for
+     anything that has to lift off it */
+  --color-base: #0b1219;
+  --color-plane: #101a24;
+  --color-panel: #15202e;
+  --color-raised: #1d2b3c;
 
   /* ink */
-  --color-ink: #eef1f6;
-  --color-ink-2: #9aa3b2;
-  --color-ink-3: #667080;
+  --color-ink: #f2f6f9;
+  --color-ink-2: #97a3b0; /* Mafadi label grey */
+  --color-ink-3: #6a7787;
 
   /* hairlines */
-  --color-line: rgba(255, 255, 255, 0.08);
-  --color-line-2: rgba(255, 255, 255, 0.05);
+  --color-line: rgba(255, 255, 255, 0.09);
+  --color-line-2: rgba(255, 255, 255, 0.055);
 
-  /* accent */
-  --color-accent: #3987e5;
-  --color-accent-soft: rgba(57, 135, 229, 0.14);
+  /* accent — Mafadi teal */
+  --color-accent: #16b3a2;
+  --color-accent-lift: #1fc9b6;
+  --color-accent-ink: #4fd8c8;
+  --color-accent-soft: rgba(22, 179, 162, 0.13);
 
-  /* validated dark-mode chart series */
-  --color-series-1: #3987e5;
-  --color-series-2: #d95926;
-  --color-series-3: #199e70;
-  --color-series-4: #c98500;
-  --color-series-5: #d55181;
+  /* cream — the highlight. One per screen: the number the page is about. */
+  --color-cream: #fbf3d6;
 
-  /* status (reserved — never used as series colors) */
-  --color-good: #0ca30c;
-  --color-warning: #fab219;
-  --color-serious: #ec835a;
-  --color-critical: #d03b3b;
+  /* status. Reserved: never used as a chart series, and never carried alone —
+     every one of them ships beside a word. */
+  --color-good: #4fbf63;
+  --color-warning: #e0a93f;
+  --color-serious: #e5794a;
+  --color-critical: #e0555a;
+
+  /* chart series — validated on #15202e, all pairs:
+     lightness 0.48–0.67 · chroma ≥ 0.1 · CVD ΔE 12.6 worst · contrast ≥ 3:1 */
+  --color-series-1: #15a899; /* teal */
+  --color-series-2: #c98500; /* gold */
+  --color-series-3: #9085e9; /* violet */
 
   /* chart chrome */
-  --color-grid: #232630;
-  --color-axis: #3a3f4c;
+  --color-grid: #223142;
+  --color-axis: #33475c;
+
+  /* motion */
+  --ease-out-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 html {
@@ -53,51 +68,66 @@ html {
 
 body {
   background-color: var(--color-base);
-  background-image:
-    radial-gradient(1200px 500px at 15% -10%, rgba(57, 135, 229, 0.09), transparent 60%),
-    radial-gradient(900px 420px at 95% 0%, rgba(122, 92, 220, 0.06), transparent 55%);
+  /* One soft teal wash from the top-left. The old build had two coloured
+     glows fighting each other behind every page. */
+  background-image: radial-gradient(1100px 460px at 12% -12%, rgba(22, 179, 162, 0.07), transparent 62%);
   background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-sans);
-  font-feature-settings: "cv02", "cv11";
   -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: rgba(57, 135, 229, 0.35);
+  background: rgba(22, 179, 162, 0.32);
 }
 
-/* --- glass panels --- */
-.glass {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02));
+/* A visible focus ring on everything reachable by keyboard, in one place. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* --- surfaces --------------------------------------------------------------
+   Two of them, not four. A card, and a quieter card for things inside it. */
+
+.card {
+  background: var(--color-panel);
   border: 1px solid var(--color-line);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   border-radius: 14px;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.04) inset,
-    0 10px 30px -18px rgba(0, 0, 0, 0.8);
 }
 
-/* Opaque variant for floating dialogs — keeps the glass edge treatment but
-   stays readable over busy content. */
-.glass-solid {
-  background: linear-gradient(180deg, rgba(30, 34, 44, 0.97), rgba(19, 22, 30, 0.97));
-  border: 1px solid var(--color-line);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-radius: 14px;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.05) inset,
-    0 24px 60px -24px rgba(0, 0, 0, 0.9);
-}
-
-.glass-subtle {
-  background: rgba(255, 255, 255, 0.03);
+.card-2 {
+  background: rgba(255, 255, 255, 0.028);
   border: 1px solid var(--color-line-2);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   border-radius: 12px;
+}
+
+/* Floating dialogs: opaque, and lifted off the page by shadow alone. */
+.card-float {
+  background: var(--color-raised);
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.9);
+}
+
+/* The old glass names, pointing at the new surfaces. Screens still carrying
+   them get the redesign without each one having to be edited first. */
+.glass {
+  background: var(--color-panel);
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+}
+.glass-subtle {
+  background: rgba(255, 255, 255, 0.028);
+  border: 1px solid var(--color-line-2);
+  border-radius: 12px;
+}
+.glass-solid {
+  background: var(--color-raised);
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.9);
 }
 
 /* --- data tables --- */
@@ -124,10 +154,10 @@ body {
   white-space: nowrap;
 }
 .data-table tbody tr {
-  transition: background-color 120ms ease;
+  transition: background-color 140ms var(--ease-out-soft);
 }
 .data-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.025);
+  background: rgba(255, 255, 255, 0.03);
 }
 .data-table tbody tr:last-child td {
   border-bottom: none;
@@ -140,19 +170,22 @@ body {
 .field {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--color-line);
-  border-radius: 9px;
+  border-radius: 10px;
   color: var(--color-ink);
   font-size: 0.8125rem;
-  padding: 0.4375rem 0.625rem;
+  padding: 0.5rem 0.6875rem;
   outline: none;
-  transition: border-color 120ms ease, background-color 120ms ease;
+  transition: border-color 140ms var(--ease-out-soft), background-color 140ms var(--ease-out-soft);
 }
 .field:hover {
   background: rgba(255, 255, 255, 0.055);
 }
 .field:focus {
-  border-color: rgba(57, 135, 229, 0.55);
-  background: rgba(57, 135, 229, 0.07);
+  border-color: var(--color-accent);
+  background: rgba(22, 179, 162, 0.06);
+}
+.field:focus-visible {
+  outline: none;
 }
 select.field option {
   background: var(--color-raised);
@@ -165,56 +198,78 @@ input.field[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(0.7);
 }
 
-/* --- buttons --- */
+/* --- buttons ---------------------------------------------------------------
+   Four of them and no gradients: solid teal for the one action a screen is
+   for, a bordered one for everything else, a bare one for tertiary, and a
+   red-lettered one for anything destructive. Same height, same radius. */
+
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  border-radius: 9px;
+  justify-content: center;
+  gap: 0.4375rem;
+  border-radius: 10px;
   font-size: 0.8125rem;
   font-weight: 500;
-  padding: 0.4375rem 0.875rem;
+  line-height: 1;
+  padding: 0.5625rem 0.9375rem;
   border: 1px solid var(--color-line);
   color: var(--color-ink);
-  background: rgba(255, 255, 255, 0.05);
-  transition: background-color 130ms ease, border-color 130ms ease, transform 80ms ease;
+  background: rgba(255, 255, 255, 0.045);
+  transition: background-color 140ms var(--ease-out-soft), border-color 140ms var(--ease-out-soft),
+    color 140ms var(--ease-out-soft), transform 90ms var(--ease-out-soft);
   cursor: pointer;
   white-space: nowrap;
 }
 .btn:hover {
-  background: rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
 }
 .btn:active {
   transform: translateY(1px);
 }
 .btn:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
   cursor: default;
   transform: none;
 }
+
 .btn-primary {
-  background: linear-gradient(180deg, #3f8de9, #2d6fc4);
-  border-color: rgba(97, 160, 235, 0.6);
-  color: #fff;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #06251f;
+  font-weight: 600;
 }
 .btn-primary:hover {
-  background: linear-gradient(180deg, #4d97ee, #3579cf);
+  background: var(--color-accent-lift);
+  border-color: var(--color-accent-lift);
 }
+
 .btn-ghost {
   border-color: transparent;
   background: transparent;
   color: var(--color-ink-2);
 }
 .btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.055);
+  border-color: transparent;
   color: var(--color-ink);
 }
+
 .btn-danger {
-  border-color: rgba(208, 59, 59, 0.4);
-  color: #f0908f;
+  border-color: rgba(224, 85, 90, 0.4);
+  background: transparent;
+  color: var(--color-critical);
 }
 .btn-danger:hover {
-  background: rgba(208, 59, 59, 0.12);
+  background: rgba(224, 85, 90, 0.12);
+  border-color: rgba(224, 85, 90, 0.55);
+}
+
+.btn-sm {
+  padding: 0.375rem 0.6875rem;
+  font-size: 0.75rem;
+  border-radius: 8px;
 }
 
 /* --- misc --- */
@@ -223,24 +278,75 @@ input.field[type="date"]::-webkit-calendar-picker-indicator {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
 }
+
+/* --- motion ----------------------------------------------------------------
+   Short, one direction, and only on arrival. `--i` staggers a row of cards:
+   style={{ "--i": 2 }} delays that card by two steps. */
+
 .page-in {
-  animation: page-in 260ms ease both;
+  animation: rise-in 320ms var(--ease-out-soft) both;
 }
-@keyframes page-in {
+.rise-in {
+  animation: rise-in 380ms var(--ease-out-soft) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+@keyframes rise-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
     transform: none;
   }
 }
+
+/* A card that responds to the pointer without moving the layout. */
+.lift {
+  transition: border-color 160ms var(--ease-out-soft), background-color 160ms var(--ease-out-soft),
+    transform 160ms var(--ease-out-soft);
+}
+.lift:hover {
+  transform: translateY(-2px);
+  border-color: rgba(22, 179, 162, 0.4);
+}
+
+/* The teal rule that slides under the active nav item. */
+.nav-mark {
+  transition: opacity 180ms var(--ease-out-soft), transform 180ms var(--ease-out-soft);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .page-in {
+  .page-in,
+  .rise-in,
+  .skeleton {
     animation: none;
   }
+  .lift:hover {
+    transform: none;
+  }
+  * {
+    transition-duration: 1ms !important;
+  }
 }
+
+.skeleton {
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
 /* --- print (report export) --- */
 @media print {
   :root {
@@ -248,13 +354,13 @@ input.field[type="date"]::-webkit-calendar-picker-indicator {
     --color-plane: #ffffff;
     --color-panel: #ffffff;
     --color-raised: #f4f4f2;
-    --color-ink: #111111;
-    --color-ink-2: #333333;
-    --color-ink-3: #666666;
-    --color-line: rgba(0, 0, 0, 0.18);
-    --color-line-2: rgba(0, 0, 0, 0.09);
-    --color-accent: #1c5cab;
-    --color-accent-soft: rgba(28, 92, 171, 0.08);
+    --color-ink: #15202e;
+    --color-ink-2: #5a6472;
+    --color-ink-3: #97a3b0;
+    --color-line: rgba(21, 32, 46, 0.18);
+    --color-line-2: rgba(21, 32, 46, 0.09);
+    --color-accent: #0f8578;
+    --color-accent-soft: rgba(15, 133, 120, 0.08);
   }
   html {
     color-scheme: light;
@@ -262,7 +368,7 @@ input.field[type="date"]::-webkit-calendar-picker-indicator {
   body {
     background: #ffffff !important;
     background-image: none !important;
-    color: #111111 !important;
+    color: #15202e !important;
   }
   aside,
   header,
@@ -274,26 +380,16 @@ input.field[type="date"]::-webkit-calendar-picker-indicator {
     max-width: 100% !important;
     padding: 0 !important;
   }
+  .card,
+  .card-2,
   .glass,
   .glass-subtle {
     background: #ffffff !important;
     box-shadow: none !important;
-    backdrop-filter: none !important;
     break-inside: avoid;
   }
-  .page-in {
+  .page-in,
+  .rise-in {
     animation: none;
-  }
-}
-
-.skeleton {
-  border-radius: 8px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.04) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s infinite linear;
-}
-@keyframes shimmer {
-  to {
-    background-position: -200% 0;
   }
 }

@@ -4,7 +4,7 @@ import { CALL_OUTCOMES, CALL_STATUSES, label } from "@/lib/domain";
 import { duration, formatDateTime, money } from "@/lib/format";
 import { listCalls } from "@/services/calls";
 import { listCampaignOptions } from "@/services/debtors";
-import { Badge, EmptyState, GlassCard, PageHeader } from "@/components/ui";
+import { Badge, EmptyState, Card, PageHeader } from "@/components/ui";
 import { ParamSelect } from "@/components/actions/ParamSelect";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +32,7 @@ export default async function CallsPage({
         title="Calls"
         description={`${calls.length} most recent call attempts across all campaigns.`}
       />
-      <div className="glass-subtle mb-4 flex flex-wrap items-center gap-2 p-3">
+      <div className="card-2 mb-4 flex flex-wrap items-center gap-2 p-3">
         <ParamSelect
           param="status"
           placeholder="All call statuses"
@@ -49,7 +49,7 @@ export default async function CallsPage({
           options={campaigns.map((c) => ({ value: c.id, label: c.name }))}
         />
       </div>
-      <GlassCard pad={false}>
+      <Card pad={false}>
         {calls.length === 0 ? (
           <div className="p-5">
             <EmptyState
@@ -101,7 +101,7 @@ export default async function CallsPage({
             </table>
           </div>
         )}
-      </GlassCard>
+      </Card>
     </div>
   );
 }

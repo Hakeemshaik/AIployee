@@ -13,7 +13,7 @@ import {
   Plug,
   Trash2,
 } from "lucide-react";
-import { GlassCard } from "@/components/ui";
+import { Card } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
 import type { ConnectionStatus, VarState } from "@/services/connection-status";
 import type { CompanyKeyStatus, SignInStatus } from "@/services/jobix/credentials";
@@ -32,8 +32,8 @@ import type { WriteProbe } from "@/services/jobix/push";
 type TestResult = { ok: boolean; message: string; agents: string[] };
 
 const STATE_STYLE: Record<VarState, { label: string; className: string; Icon: typeof CheckCircle2 }> = {
-  set: { label: "Set", className: "text-[#3ecf9a]", Icon: CheckCircle2 },
-  empty: { label: "Blank", className: "text-[#f2c14e]", Icon: MinusCircle },
+  set: { label: "Set", className: "text-good", Icon: CheckCircle2 },
+  empty: { label: "Blank", className: "text-warning", Icon: MinusCircle },
   missing: { label: "Not set", className: "text-ink-3", Icon: Circle },
 };
 
@@ -147,7 +147,7 @@ export function ConnectionCard({
   }
 
   return (
-    <GlassCard
+    <Card
       title="Voice platform connection"
       subtitle="What this deployment can see, and whether the sign-in works"
       actions={
@@ -166,8 +166,8 @@ export function ConnectionCard({
         </p>
       )}
       {status.envEmailProblem && (
-        <p className="mb-3 flex items-start gap-2 rounded-lg border border-[rgba(242,193,78,0.35)] bg-[rgba(242,193,78,0.08)] px-3 py-2 text-[0.78125rem] text-ink">
-          <AlertTriangle size={13} className="mt-0.5 shrink-0 text-[#f2c14e]" />
+        <p className="mb-3 flex items-start gap-2 rounded-lg border border-warning/35 bg-warning/8 px-3 py-2 text-[0.78125rem] text-ink">
+          <AlertTriangle size={13} className="mt-0.5 shrink-0 text-warning" />
           {status.envEmailProblem}
         </p>
       )}
@@ -196,13 +196,13 @@ export function ConnectionCard({
         <div
           className={`mb-3 rounded-lg border px-3 py-2.5 ${
             result.ok
-              ? "border-[rgba(25,158,112,0.35)] bg-[rgba(25,158,112,0.08)]"
-              : "border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)]"
+              ? "border-good/35 bg-good/8"
+              : "border-serious/35 bg-serious/8"
           }`}
         >
           <p
             className={`flex items-start gap-2 text-[0.78125rem] font-medium ${
-              result.ok ? "text-[#3ecf9a]" : "text-[#e2714a]"
+              result.ok ? "text-good" : "text-serious"
             }`}
           >
             {result.ok ? (
@@ -234,7 +234,7 @@ export function ConnectionCard({
         {signIn.stored ? (
           <>
             <p className="mb-2.5 flex items-start gap-2 text-[0.75rem] leading-relaxed text-ink-2">
-              <CheckCircle2 size={13} className="mt-0.5 shrink-0 text-[#3ecf9a]" />
+              <CheckCircle2 size={13} className="mt-0.5 shrink-0 text-good" />
               {/* One text child. With the email as a second flex item the line
                   broke into columns instead of wrapping as a sentence. */}
               <span>
@@ -305,7 +305,7 @@ export function ConnectionCard({
           </>
         )}
         {signInError && (
-          <p className="mt-2 flex items-start gap-2 rounded-lg border border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)] px-3 py-2 text-[0.78125rem] text-[#e2714a]">
+          <p className="mt-2 flex items-start gap-2 rounded-lg border border-serious/35 bg-serious/8 px-3 py-2 text-[0.78125rem] text-serious">
             <AlertTriangle size={13} className="mt-0.5 shrink-0" />
             {signInError}
           </p>
@@ -366,7 +366,7 @@ export function ConnectionCard({
           )}
         </div>
         {keyError && (
-          <p className="mt-2 flex items-start gap-2 rounded-lg border border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)] px-3 py-2 text-[0.78125rem] text-[#e2714a]">
+          <p className="mt-2 flex items-start gap-2 rounded-lg border border-serious/35 bg-serious/8 px-3 py-2 text-[0.78125rem] text-serious">
             <AlertTriangle size={13} className="mt-0.5 shrink-0" />
             {keyError}
           </p>
@@ -391,15 +391,15 @@ export function ConnectionCard({
             <div
               className={`mt-2.5 rounded-lg border px-3 py-2.5 text-[0.78125rem] ${
                 probe.worked
-                  ? "border-[rgba(25,158,112,0.35)] bg-[rgba(25,158,112,0.08)]"
-                  : "border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)]"
+                  ? "border-good/35 bg-good/8"
+                  : "border-serious/35 bg-serious/8"
               }`}
             >
               <p className="flex items-start gap-2 text-ink">
                 {probe.worked ? (
-                  <CheckCircle2 size={13} className="mt-0.5 shrink-0 text-[#3ecf9a]" />
+                  <CheckCircle2 size={13} className="mt-0.5 shrink-0 text-good" />
                 ) : (
-                  <AlertTriangle size={13} className="mt-0.5 shrink-0 text-[#e2714a]" />
+                  <AlertTriangle size={13} className="mt-0.5 shrink-0 text-serious" />
                 )}
                 {probe.verdict}
               </p>
@@ -407,7 +407,7 @@ export function ConnectionCard({
               <ul className="mt-2 space-y-1.5">
                 {probe.attempts.map((attempt) => (
                   <li key={attempt.suid} className="text-[0.71875rem]">
-                    <span className={attempt.landed ? "text-[#3ecf9a]" : "text-ink-3"}>
+                    <span className={attempt.landed ? "text-good" : "text-ink-3"}>
                       {attempt.landed ? "landed" : "discarded"}
                     </span>{" "}
                     <span className="text-ink-2">{attempt.arrangement}</span>
@@ -439,6 +439,6 @@ export function ConnectionCard({
         {status.branch ? ` · branch ${status.branch}` : ""}
         {status.commit ? ` · build ${status.commit}` : ""}
       </p>
-    </GlassCard>
+    </Card>
   );
 }

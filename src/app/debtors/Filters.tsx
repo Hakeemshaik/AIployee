@@ -33,7 +33,7 @@ export function DebtorFilters({ campaigns }: { campaigns: { id: string; name: st
 
   const select = "field min-w-[130px]";
   return (
-    <div className="glass-subtle mb-4 flex flex-wrap items-center gap-2 p-3">
+    <div className="card-2 mb-4 flex flex-wrap items-center gap-2 p-3">
       <div className="relative">
         <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3" />
         <input

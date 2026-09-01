@@ -4,7 +4,7 @@ import { getContext } from "@/lib/auth";
 import { label } from "@/lib/domain";
 import { formatDate, formatDateTime, money, percent } from "@/lib/format";
 import { getReport } from "@/services/reports";
-import { BackLink, Badge, GlassCard, PageHeader, StatCard } from "@/components/ui";
+import { BackLink, Badge, Card, PageHeader, StatCard } from "@/components/ui";
 import { ReportActions } from "./ReportActions";
 
 export const dynamic = "force-dynamic";
@@ -33,19 +33,19 @@ export default async function ReportDetailPage({
       />
 
       {!content || !snap || !narrative ? (
-        <GlassCard>
+        <Card>
           <p className="text-[0.8125rem] text-ink-3">
             This report has no stored content — regenerate it to rebuild from current data.
           </p>
-        </GlassCard>
+        </Card>
       ) : (
         <>
-          <GlassCard className="mb-4" title="Executive summary">
+          <Card className="mb-4" title="Executive summary">
             <p className="flex max-w-4xl items-start gap-2 text-[0.875rem] leading-relaxed text-ink">
               <Sparkles size={15} className="mt-1 shrink-0 text-accent" />
               {narrative.executiveSummary}
             </p>
-          </GlassCard>
+          </Card>
 
           <h2 className="mb-3 text-[0.6875rem] font-medium uppercase tracking-[0.07em] text-ink-3">
             Performance metrics
@@ -60,7 +60,7 @@ export default async function ReportDetailPage({
           </div>
 
           <div className="mb-4 grid gap-4 lg:grid-cols-2">
-            <GlassCard title="Collection outcomes" subtitle="Connected-call outcomes in the period">
+            <Card title="Collection outcomes" subtitle="Connected-call outcomes in the period">
               {Object.keys(snap.outcomes).length === 0 ? (
                 <p className="text-[0.8125rem] text-ink-3">No analysed calls in this period.</p>
               ) : (
@@ -75,8 +75,8 @@ export default async function ReportDetailPage({
                     ))}
                 </ul>
               )}
-            </GlassCard>
-            <GlassCard title="Promise-to-pay performance">
+            </Card>
+            <Card title="Promise-to-pay performance">
               <dl className="grid grid-cols-2 gap-x-6">
                 {[
                   ["Promises created", String(snap.promises.total)],
@@ -103,11 +103,11 @@ export default async function ReportDetailPage({
                   </li>
                 ))}
               </ul>
-            </GlassCard>
+            </Card>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <GlassCard title="AI insights">
+            <Card title="AI insights">
               <ul className="space-y-3">
                 {narrative.insights.map((f, i) => (
                   <li key={i} className="text-[0.8125rem] leading-relaxed text-ink-2">
@@ -115,8 +115,8 @@ export default async function ReportDetailPage({
                   </li>
                 ))}
               </ul>
-            </GlassCard>
-            <GlassCard title="AI recommendations">
+            </Card>
+            <Card title="AI recommendations">
               <ul className="space-y-3">
                 {narrative.recommendations.map((a, i) => (
                   <li key={i} className="flex items-start gap-3">
@@ -127,11 +127,11 @@ export default async function ReportDetailPage({
                   </li>
                 ))}
               </ul>
-            </GlassCard>
+            </Card>
           </div>
 
           {snap.campaigns.length > 0 && (
-            <GlassCard className="mt-4" title="Campaign breakdown" pad={false}>
+            <Card className="mt-4" title="Campaign breakdown" pad={false}>
               <div className="scroll-x">
                 <table className="data-table">
                   <thead>
@@ -155,14 +155,14 @@ export default async function ReportDetailPage({
                         <td className="num text-right">{c.contacted}</td>
                         <td className="num text-right">{c.promises}</td>
                         <td className="num text-right">{money(c.promiseValue)}</td>
-                        <td className="num text-right text-[#5fc46a]">{money(c.recovered)}</td>
+                        <td className="num text-right text-good">{money(c.recovered)}</td>
                         <td className="num text-right">{percent(c.recoveryRate)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </GlassCard>
+            </Card>
           )}
         </>
       )}

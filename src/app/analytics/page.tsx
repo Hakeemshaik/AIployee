@@ -145,8 +145,8 @@ export default async function AnalyticsPage() {
   return (
     <div className="page-in">
       {payload.source === "demo" && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[rgba(250,178,25,0.3)] bg-[rgba(250,178,25,0.07)] px-4 py-2.5">
-          <p className="flex items-center gap-2 text-[0.8125rem] text-[#f2c14e]">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warning/30 bg-warning/7 px-4 py-2.5">
+          <p className="flex items-center gap-2 text-[0.8125rem] text-warning">
             <Eye size={14} /> Demo data — no live accounts. Calling is disabled.
           </p>
           <Link href="/login" className="btn btn-ghost text-[0.71875rem]">Leave demo</Link>

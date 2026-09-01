@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { MessageSquareText, Search } from "lucide-react";
 import { count, duration, formatDateTime } from "@/lib/format";
-import { GlassCard } from "@/components/ui";
+import { Card } from "@/components/ui";
 import { AccountDrawer } from "@/app/analytics/AccountDrawer";
 
 // ---------------------------------------------------------------------------
@@ -87,7 +87,7 @@ export function CampaignCalls({
 
   return (
     <>
-      <GlassCard
+      <Card
         title={`Calls in this campaign (${count(log.totalCalls)})`}
         subtitle={
           log.batchCode
@@ -105,7 +105,7 @@ export function CampaignCalls({
                 onClick={() => setFilter(chip.key)}
                 className={`rounded-full border px-2.5 py-1 text-[0.6875rem] transition-colors ${
                   filter === chip.key
-                    ? "border-[rgba(57,135,229,0.45)] bg-accent-soft text-ink"
+                    ? "border-accent/45 bg-accent-soft text-ink"
                     : "border-line bg-white/[0.03] text-ink-2 hover:text-ink"
                 }`}
               >
@@ -201,7 +201,7 @@ export function CampaignCalls({
                     <td className="num text-right">{duration(call.durationSeconds)}</td>
                     <td className="text-ink-3">{call.agentName ?? "—"}</td>
                     <td>
-                      <span className={call.reached ? "text-[#3ecf9a]" : "text-ink-3"} title={call.reason}>
+                      <span className={call.reached ? "text-good" : "text-ink-3"} title={call.reason}>
                         {call.reached ? "Reached" : "Not reached"}
                       </span>
                     </td>
@@ -225,7 +225,7 @@ export function CampaignCalls({
             {log.truncated > 0 ? " — the list is capped at the 500 most recent" : ""}.
           </p>
         )}
-      </GlassCard>
+      </Card>
 
       <AccountDrawer
         accountId={openAccount}

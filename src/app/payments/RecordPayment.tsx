@@ -56,7 +56,7 @@ export function RecordPaymentButton({
       {open && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[10vh]">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !busy && setOpen(false)} />
-          <div className="glass-solid relative w-full max-w-md p-5">
+          <div className="card-float relative w-full max-w-md p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-[0.9375rem] font-semibold text-ink">Record a payment</h2>
               <button className="btn-ghost btn p-1.5" onClick={() => setOpen(false)} aria-label="Close">
@@ -64,7 +64,7 @@ export function RecordPaymentButton({
               </button>
             </div>
             {done ? (
-              <p className="py-6 text-center text-[0.875rem] text-[#5fc46a]">
+              <p className="py-6 text-center text-[0.875rem] text-good">
                 Payment recorded — balances and promises updated.
               </p>
             ) : (
@@ -106,7 +106,7 @@ export function RecordPaymentButton({
                   <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="reference">Reference</label>
                   <input id="reference" name="reference" className="field w-full" placeholder="Bank / EFT reference" />
                 </div>
-                {error && <p className="text-[0.78125rem] text-[#ec8181]">{error}</p>}
+                {error && <p className="text-[0.78125rem] text-critical">{error}</p>}
                 <button type="submit" disabled={busy} className="btn btn-primary w-full justify-center">
                   {busy ? "Recording…" : "Record payment"}
                 </button>

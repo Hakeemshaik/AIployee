@@ -53,8 +53,8 @@ export function SetupForm() {
     const webhookUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/api/integrations/voice/call-completed`;
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-3 rounded-lg border border-[rgba(12,163,12,0.3)] bg-[rgba(12,163,12,0.08)] p-4">
-          <Check size={18} className="shrink-0 text-[#5fc46a]" />
+        <div className="flex items-center gap-3 rounded-lg border border-good/30 bg-good/8 p-4">
+          <Check size={18} className="shrink-0 text-good" />
           <p className="text-[0.875rem] text-ink">
             <span className="font-semibold">{result.orgName}</span> is set up
             {result.mode === "demo" ? " with the demo dataset loaded" : ""}.
@@ -112,7 +112,7 @@ export function SetupForm() {
           onClick={() => setMode("demo")}
           className={`rounded-xl border p-4 text-left transition-colors ${
             mode === "demo"
-              ? "border-[rgba(57,135,229,0.5)] bg-accent-soft"
+              ? "border-accent/50 bg-accent-soft"
               : "border-line bg-white/[0.02] hover:bg-white/[0.04]"
           }`}
         >
@@ -129,7 +129,7 @@ export function SetupForm() {
           onClick={() => setMode("clean")}
           className={`rounded-xl border p-4 text-left transition-colors ${
             mode === "clean"
-              ? "border-[rgba(57,135,229,0.5)] bg-accent-soft"
+              ? "border-accent/50 bg-accent-soft"
               : "border-line bg-white/[0.02] hover:bg-white/[0.04]"
           }`}
         >
@@ -191,7 +191,7 @@ export function SetupForm() {
         </div>
       </div>
 
-      {error && <p className="text-[0.78125rem] text-[#ec8181]">{error}</p>}
+      {error && <p className="text-[0.78125rem] text-critical">{error}</p>}
       <button type="submit" disabled={busy} className="btn btn-primary">
         {busy ? "Setting up…" : mode === "demo" ? "Set up with demo data" : "Set up empty platform"}
       </button>

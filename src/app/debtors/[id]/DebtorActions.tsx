@@ -84,12 +84,12 @@ export function DebtorActions({
       <button className="btn btn-danger" onClick={() => setEscalateOpen(true)}>
         <AlertTriangle size={13} /> Escalate
       </button>
-      {assignError && <span className="text-[0.6875rem] text-[#ec8181]">{assignError}</span>}
+      {assignError && <span className="text-[0.6875rem] text-critical">{assignError}</span>}
 
       {escalateOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[14vh]">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !busy && setEscalateOpen(false)} />
-          <div className="glass-solid relative w-full max-w-md p-5">
+          <div className="card-float relative w-full max-w-md p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-[0.9375rem] font-semibold text-ink">Escalate {debtor.name}</h2>
               <button className="btn btn-ghost p-1.5" onClick={() => setEscalateOpen(false)} aria-label="Close">
@@ -119,7 +119,7 @@ export function DebtorActions({
                 <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="esc-notes">Notes for the collector</label>
                 <textarea id="esc-notes" name="notes" rows={3} className="field w-full resize-y" placeholder="Context for the assigned collector" />
               </div>
-              {error && <p className="text-[0.78125rem] text-[#ec8181]">{error}</p>}
+              {error && <p className="text-[0.78125rem] text-critical">{error}</p>}
               <button type="submit" disabled={busy} className="btn btn-primary w-full justify-center">
                 {busy ? "Escalating…" : "Create escalation"}
               </button>

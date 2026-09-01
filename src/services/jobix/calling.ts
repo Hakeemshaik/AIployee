@@ -99,10 +99,21 @@ export type PreparedBatch = {
   window: WindowCheck;
 };
 
+/**
+ * Month names, written out rather than asked for.
+ *
+ * `toLocaleString(… { month: "short" })` returns "Sept" for September in
+ * en-GB — four letters where every other month gives three. The code is
+ * matched, sorted and read by eye against other codes, so its shape has to be
+ * the same in every month of the year, whatever a runtime's locale data says.
+ */
+const MONTHS = [
+  "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+  "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
+] as const;
+
 export function batchCode(now = new Date()): string {
-  const day = now.getUTCDate();
-  const month = now.toLocaleString("en-GB", { month: "short" }).toUpperCase();
-  const stamp = `${day}${month}`;
+  const stamp = `${now.getUTCDate()}${MONTHS[now.getUTCMonth()]}`;
   const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
   return `${stamp}-${suffix}`;
 }

@@ -366,7 +366,7 @@ export function IngestionPanel({
   const windowLabel = WINDOWS.find((w) => w.key === windowKey)?.label ?? "";
 
   return (
-    <section className="glass mb-4">
+    <section className="card mb-4">
       <div className="flex flex-wrap items-center gap-3 px-4 py-3">
         <ServerCog size={15} className="shrink-0 text-accent" />
         <div className="min-w-0 flex-1">
@@ -406,7 +406,7 @@ export function IngestionPanel({
           ))}
         </select>
         <button
-          className={`btn ${quick ? "border-[rgba(57,135,229,0.45)] bg-accent-soft text-ink" : ""}`}
+          className={`btn ${quick ? "border-accent/45 bg-accent-soft text-ink" : ""}`}
           onClick={() => setQuick((v) => !v)}
           disabled={running}
           aria-pressed={quick}
@@ -457,8 +457,8 @@ export function IngestionPanel({
           {/* A disabled button needs a reason on the page, not only in a
               tooltip — otherwise the panel reads as broken. */}
           {blocked && (
-            <div className="rounded-lg border border-[rgba(250,178,25,0.3)] bg-[rgba(250,178,25,0.07)] px-3 py-2.5">
-              <p className="flex items-start gap-2 text-[0.78125rem] font-medium text-[#f2c14e]">
+            <div className="rounded-lg border border-warning/30 bg-warning/7 px-3 py-2.5">
+              <p className="flex items-start gap-2 text-[0.78125rem] font-medium text-warning">
                 <AlertTriangle size={13} className="mt-0.5 shrink-0" />
                 Importing is unavailable
               </p>
@@ -487,9 +487,9 @@ export function IngestionPanel({
                   key={phase.key}
                   className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.6875rem] ${
                     done
-                      ? "border-[rgba(25,158,112,0.35)] bg-[rgba(25,158,112,0.1)] text-[#3ecf9a]"
+                      ? "border-good/35 bg-good/10 text-good"
                       : active
-                        ? "border-[rgba(57,135,229,0.45)] bg-accent-soft text-ink"
+                        ? "border-accent/45 bg-accent-soft text-ink"
                         : "border-line bg-white/[0.03] text-ink-3"
                   }`}
                 >
@@ -549,7 +549,7 @@ export function IngestionPanel({
           )}
 
           {paused && !running && (
-            <div className="rounded-lg border border-[rgba(57,135,229,0.35)] bg-accent-soft px-3 py-2.5">
+            <div className="rounded-lg border border-accent/35 bg-accent-soft px-3 py-2.5">
               <p className="text-[0.78125rem] font-medium text-ink">Paused, not failed</p>
               <p className="mt-1 text-[0.71875rem] leading-relaxed text-ink-2">
                 A single server request cannot hold a pull of this size open, so it stops itself before the
@@ -565,13 +565,13 @@ export function IngestionPanel({
             <div
               className={`rounded-lg border px-3 py-2.5 ${
                 failure.tone === "critical"
-                  ? "border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)]"
-                  : "border-[rgba(250,178,25,0.3)] bg-[rgba(250,178,25,0.07)]"
+                  ? "border-serious/35 bg-serious/8"
+                  : "border-warning/30 bg-warning/7"
               }`}
             >
               <p
                 className={`flex items-start gap-2 text-[0.78125rem] font-medium ${
-                  failure.tone === "critical" ? "text-[#e2714a]" : "text-[#f2c14e]"
+                  failure.tone === "critical" ? "text-serious" : "text-warning"
                 }`}
               >
                 <AlertTriangle size={13} className="mt-0.5 shrink-0" />
@@ -582,8 +582,8 @@ export function IngestionPanel({
           )}
 
           {failed && progress?.error && !failure && (
-            <div className="rounded-lg border border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)] px-3 py-2.5">
-              <p className="flex items-start gap-2 text-[0.78125rem] text-[#e2714a]">
+            <div className="rounded-lg border border-serious/35 bg-serious/8 px-3 py-2.5">
+              <p className="flex items-start gap-2 text-[0.78125rem] text-serious">
                 <AlertTriangle size={13} className="mt-0.5 shrink-0" />
                 {progress.error}
               </p>

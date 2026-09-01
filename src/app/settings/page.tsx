@@ -10,7 +10,7 @@ import { companyKeyStatus, signInStatus } from "@/services/jobix/credentials";
 import { SetupChecklist } from "@/components/SetupChecklist";
 import { ConnectionCard } from "./ConnectionCard";
 import { FlowCard } from "./FlowCard";
-import { Badge, GlassCard, Meta, PageHeader } from "@/components/ui";
+import { Badge, Card, Meta, PageHeader } from "@/components/ui";
 import { ComplianceForm } from "./ComplianceForm";
 import { ResetDataCard } from "./ResetDataCard";
 import { TeamCard } from "./TeamCard";
@@ -60,15 +60,15 @@ export default async function SettingsPage() {
       </div>
 
       <div className="mb-4 grid gap-4 xl:grid-cols-3">
-        <GlassCard title="Organization">
+        <Card title="Organization">
           <dl>
             <Meta label="Name">{org.name}</Meta>
             <Meta label="Currency">{org.currency}</Meta>
             <Meta label="Timezone">{org.timezone}</Meta>
             <Meta label="Data isolation">Per-organization (multi-tenant)</Meta>
           </dl>
-        </GlassCard>
-        <GlassCard title="AI provider" subtitle="Analysis, insights and reporting engine">
+        </Card>
+        <Card title="AI provider" subtitle="Analysis, insights and reporting engine">
           <dl>
             <Meta label="Active provider">
               <Badge value={aiLive ? "active" : "draft"} label={aiLive ? "Claude (Anthropic API)" : "Built-in engine"} />
@@ -81,11 +81,11 @@ export default async function SettingsPage() {
             the analysis engine to Claude. Keys never reach the browser, and only aggregated,
             anonymised data is sent for insight generation.
           </p>
-        </GlassCard>
+        </Card>
         {ctx.userRole === "admin" ? (
           <TeamCard selfId={ctx.userId} />
         ) : (
-          <GlassCard title="Team">
+          <Card title="Team">
             <ul className="space-y-2.5">
               {users.map((u) => (
                 <li key={u.id} className="flex items-center justify-between gap-3">
@@ -97,11 +97,11 @@ export default async function SettingsPage() {
                 </li>
               ))}
             </ul>
-          </GlassCard>
+          </Card>
         )}
       </div>
 
-      <GlassCard
+      <Card
         className="mb-4"
         title="Compliance & guardrails"
         subtitle="Configurable per organization — enforced on campaigns and passed to the voice platform"
@@ -128,14 +128,14 @@ export default async function SettingsPage() {
         ) : (
           <p className="text-[0.8125rem] text-ink-3">No compliance settings have been configured for this organization.</p>
         )}
-      </GlassCard>
+      </Card>
 
       <div className="grid gap-4 xl:grid-cols-2">
         {/* Named for what it is. Jobix results do NOT arrive here — they are
             pulled in by ingestion on the Call analytics page — and calling this
             "the voice platform integration" had a reader believing this was the
             live pipe. It is a working ingress for a provider that can post. */}
-        <GlassCard
+        <Card
           title="Inbound call webhook"
           subtitle="For a provider that can post results — Jobix results arrive through ingestion"
         >
@@ -182,9 +182,9 @@ export default async function SettingsPage() {
           <p className="mt-2 text-[0.65625rem] text-ink-3">
             Keys are stored as SHA-256 hashes; the full key is shown once at creation.
           </p>
-        </GlassCard>
+        </Card>
 
-        <GlassCard title="Event architecture" subtitle="Internal events, persisted and replayable">
+        <Card title="Event architecture" subtitle="Internal events, persisted and replayable">
           <p className="mb-3 text-[0.78125rem] leading-relaxed text-ink-2">
             Every domain action emits a persisted platform event. Outbound webhooks or a queue
             consumer can attach to this stream to integrate payment providers, CRMs or data
@@ -201,7 +201,7 @@ export default async function SettingsPage() {
             Audit logging is always on: ingestion, payments, status changes and settings edits are
             written to the audit log with actor attribution and no sensitive payload content.
           </p>
-        </GlassCard>
+        </Card>
       </div>
 
       {/* Destructive, so it sits last and behind a typed confirmation. */}

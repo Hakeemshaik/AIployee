@@ -43,11 +43,13 @@ export default async function CampaignsPage() {
             <Link
               key={c.id}
               href={`/campaigns/${c.id}`}
-              className="group relative block rounded-xl border border-line bg-white/[0.02] p-4 transition-colors hover:border-[rgba(57,135,229,0.45)] hover:bg-white/[0.04]"
+              className="lift group relative block rounded-xl border border-line bg-white/[0.02] p-4 hover:bg-white/[0.04]"
             >
               <div className="mb-2.5 flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate text-[0.9375rem] font-semibold text-ink group-hover:text-accent">
+                  {/* Wraps rather than truncates: the name is how a campaign
+                      is recognised, and half of it is not enough. */}
+                  <p className="text-[0.9375rem] font-semibold leading-snug text-ink group-hover:text-accent-ink">
                     {c.name}
                   </p>
                   <p className="mt-0.5 truncate text-[0.71875rem] text-ink-3">

@@ -3,7 +3,7 @@ import { getContext } from "@/lib/auth";
 import { label } from "@/lib/domain";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { getLatestInsight } from "@/services/insights";
-import { Badge, EmptyState, GlassCard, PageHeader } from "@/components/ui";
+import { Badge, EmptyState, Card, PageHeader } from "@/components/ui";
 import { RefreshInsightsButton } from "@/components/actions/RefreshInsights";
 import type { InsightFinding, RecommendedAction } from "@/services/ai";
 
@@ -42,7 +42,7 @@ export default async function InsightsPage() {
         />
       ) : (
         <>
-          <GlassCard
+          <Card
             className="mb-4"
             title="Collection summary"
             subtitle={`Generated ${formatDateTime(insight.generatedAt)} · ${insight.provider === "claude" ? "Claude" : "built-in engine"}`}
@@ -54,17 +54,17 @@ export default async function InsightsPage() {
             <p className="max-w-4xl text-[0.8125rem] leading-relaxed text-ink-2">
               {insight.content.collectionSummary}
             </p>
-          </GlassCard>
+          </Card>
 
           <div className="mb-4 grid gap-4 lg:grid-cols-2">
-            <GlassCard title="Key findings"><FindingList items={insight.content.keyFindings} /></GlassCard>
-            <GlassCard title="Risk trends"><FindingList items={insight.content.riskTrends} /></GlassCard>
-            <GlassCard title="Debtor behaviour"><FindingList items={insight.content.debtorBehaviour} /></GlassCard>
-            <GlassCard title="Campaign performance"><FindingList items={insight.content.campaignPerformance} /></GlassCard>
+            <Card title="Key findings"><FindingList items={insight.content.keyFindings} /></Card>
+            <Card title="Risk trends"><FindingList items={insight.content.riskTrends} /></Card>
+            <Card title="Debtor behaviour"><FindingList items={insight.content.debtorBehaviour} /></Card>
+            <Card title="Campaign performance"><FindingList items={insight.content.campaignPerformance} /></Card>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <GlassCard title="Recommended actions">
+            <Card title="Recommended actions">
               <ul className="space-y-3">
                 {insight.content.recommendedActions.map((a: RecommendedAction, i: number) => (
                   <li key={i} className="flex items-start gap-3">
@@ -75,8 +75,8 @@ export default async function InsightsPage() {
                   </li>
                 ))}
               </ul>
-            </GlassCard>
-            <GlassCard title="Anomalies"><FindingList items={insight.content.anomalies} /></GlassCard>
+            </Card>
+            <Card title="Anomalies"><FindingList items={insight.content.anomalies} /></Card>
           </div>
 
           <p className="mt-4 text-[0.71875rem] text-ink-3">

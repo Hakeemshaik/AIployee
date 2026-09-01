@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AlertTriangle, KeyRound, Loader2 } from "lucide-react";
+import { BrandMark } from "@/components/Brand";
 
 // ---------------------------------------------------------------------------
 // Invite acceptance.
@@ -76,10 +77,10 @@ export function AcceptInviteCard({ token }: { token: string }) {
   }
 
   return (
-    <div className="glass w-full max-w-md p-6">
+    <div className="card w-full max-w-md p-6">
       <div className="mb-6 text-center">
-        <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-[13px] bg-gradient-to-b from-[#3f8de9] to-[#2d6fc4] text-[17px] font-bold text-white shadow-[0_0_22px_rgba(57,135,229,0.35)]">
-          A
+        <span className="mx-auto mb-3 block w-fit">
+          <BrandMark size={44} />
         </span>
         <h1 className="text-[1.0625rem] font-semibold tracking-tight text-ink">
           {details ? `Join ${details.organizationName}` : "Join organization"}
@@ -98,8 +99,8 @@ export function AcceptInviteCard({ token }: { token: string }) {
       )}
 
       {state === "invalid" && (
-        <div className="rounded-xl border border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)] p-4">
-          <p className="flex items-start gap-2 text-[0.8125rem] text-[#e2714a]">
+        <div className="rounded-xl border border-serious/35 bg-serious/8 p-4">
+          <p className="flex items-start gap-2 text-[0.8125rem] text-serious">
             <AlertTriangle size={14} className="mt-0.5 shrink-0" />
             {error}
           </p>
@@ -126,7 +127,7 @@ export function AcceptInviteCard({ token }: { token: string }) {
             />
             <p className="mt-1 text-[0.6875rem] text-ink-3">At least 12 characters.</p>
           </div>
-          {error && <p className="text-[0.75rem] text-[#ec8181]">{error}</p>}
+          {error && <p className="text-[0.75rem] text-critical">{error}</p>}
           <button type="submit" disabled={state === "submitting"} className="btn btn-primary w-full justify-center">
             {state === "submitting" ? (
               <>

@@ -105,7 +105,7 @@ function CallTurns({ turns }: { turns: Turn[] }) {
             <div
               className={`max-w-[88%] rounded-xl px-3 py-2 text-[0.78125rem] leading-relaxed ${
                 isTenant
-                  ? "rounded-tr-sm border border-[rgba(57,135,229,0.28)] bg-[rgba(57,135,229,0.11)] text-ink"
+                  ? "rounded-tr-sm border border-accent/28 bg-accent/11 text-ink"
                   : "rounded-tl-sm border border-line bg-white/[0.035] text-ink-2"
               }`}
             >
@@ -137,7 +137,7 @@ function CallRow({ call, defaultOpen }: { call: JourneyCall; defaultOpen: boolea
         <span
           className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[0.625rem] font-semibold ${
             call.reached
-              ? "border-[rgba(25,158,112,0.4)] bg-[rgba(25,158,112,0.14)] text-[#3ecf9a]"
+              ? "border-good/40 bg-good/14 text-good"
               : "border-line bg-white/[0.04] text-ink-3"
           }`}
         >
@@ -203,7 +203,7 @@ function Messaging({ messaging }: { messaging: Journey["messaging"] }) {
       <p
         className={`mb-2.5 flex items-start gap-2 rounded-lg border px-3 py-2 text-[0.71875rem] leading-relaxed ${
           messaging.basis === "ambiguous_name"
-            ? "border-[rgba(250,178,25,0.3)] bg-[rgba(250,178,25,0.07)] text-[#f2c14e]"
+            ? "border-warning/30 bg-warning/7 text-warning"
             : "border-line bg-white/[0.03] text-ink-3"
         }`}
       >
@@ -220,9 +220,9 @@ function Messaging({ messaging }: { messaging: Journey["messaging"] }) {
               className="flex items-center gap-2.5 rounded-lg border border-line bg-white/[0.02] px-3 py-2"
             >
               {event.succeeded ? (
-                <CheckCircle2 size={14} className="shrink-0 text-[#3ecf9a]" />
+                <CheckCircle2 size={14} className="shrink-0 text-good" />
               ) : (
-                <XCircle size={14} className="shrink-0 text-[#e2714a]" />
+                <XCircle size={14} className="shrink-0 text-serious" />
               )}
               <span className="min-w-0 flex-1">
                 <span className="block text-[0.78125rem] text-ink">
@@ -326,8 +326,8 @@ function DrawerBody({ accountId, onClose, bucketLabels, bucketExplanations }: Dr
           )}
 
           {state === "error" && (
-            <div className="rounded-xl border border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)] p-4">
-              <p className="flex items-start gap-2 text-[0.8125rem] text-[#e2714a]">
+            <div className="rounded-xl border border-serious/35 bg-serious/8 p-4">
+              <p className="flex items-start gap-2 text-[0.8125rem] text-serious">
                 <AlertTriangle size={14} className="mt-0.5 shrink-0" />
                 {error}
               </p>

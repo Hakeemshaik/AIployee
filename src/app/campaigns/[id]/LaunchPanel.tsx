@@ -16,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { count, money, formatDateTime } from "@/lib/format";
-import { GlassCard } from "@/components/ui";
+import { Card } from "@/components/ui";
 
 // ---------------------------------------------------------------------------
 // Campaign launch, as one flow.
@@ -330,7 +330,7 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
             : `in ${(secondsAway / 3600).toFixed(1)} hours`;
 
   return (
-    <GlassCard
+    <Card
       title="Launch on Jobix"
       subtitle="Review the contacts, send the list, start the calls"
       actions={
@@ -340,7 +340,7 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
       }
     >
       {loadError && (
-        <p className="mb-3 flex items-start gap-2 rounded-lg border border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)] px-3 py-2 text-[0.78125rem] text-[#e2714a]">
+        <p className="mb-3 flex items-start gap-2 rounded-lg border border-serious/35 bg-serious/8 px-3 py-2 text-[0.78125rem] text-serious">
           <AlertTriangle size={13} className="mt-0.5 shrink-0" />
           {loadError}
         </p>
@@ -355,7 +355,7 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
       {state && (
         <div className="space-y-4">
           {state.scheduledFor && (
-            <div className="flex flex-wrap items-center gap-3 rounded-lg border border-[rgba(57,135,229,0.45)] bg-accent-soft px-3 py-2.5">
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border border-accent/45 bg-accent-soft px-3 py-2.5">
               <CalendarClock size={14} className="shrink-0 text-accent" />
               <div className="min-w-0 flex-1">
                 <p className="text-[0.78125rem] font-medium text-ink">
@@ -381,8 +381,8 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
           )}
 
           {state.scheduleError && !state.scheduledFor && (
-            <div className="rounded-lg border border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)] px-3 py-2.5">
-              <p className="flex items-start gap-2 text-[0.78125rem] font-medium text-[#e2714a]">
+            <div className="rounded-lg border border-serious/35 bg-serious/8 px-3 py-2.5">
+              <p className="flex items-start gap-2 text-[0.78125rem] font-medium text-serious">
                 <AlertTriangle size={13} className="mt-0.5 shrink-0" />
                 The last scheduled start did not go ahead
               </p>
@@ -398,7 +398,7 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
               <Users size={13} className="text-accent" /> 1. Contacts, categorised
             </p>
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="rounded-full border border-[rgba(25,158,112,0.35)] bg-[rgba(25,158,112,0.1)] px-2.5 py-1 text-[0.6875rem] text-[#3ecf9a]">
+              <span className="rounded-full border border-good/35 bg-good/10 px-2.5 py-1 text-[0.6875rem] text-good">
                 Will be dialled <span className="num">{count(state.eligible)}</span>
               </span>
               {state.excluded.map((entry) => (
@@ -499,7 +499,7 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                     <ul className="mt-2 space-y-1">
                       {rowProbe.variants.map((variant) => (
                         <li key={variant.suid} className="text-[0.71875rem]">
-                          <span className={variant.landed ? "text-[#3ecf9a]" : "text-[#e2714a]"}>
+                          <span className={variant.landed ? "text-good" : "text-serious"}>
                             {variant.landed ? "landed" : "rejected"}
                           </span>{" "}
                           <span className="text-ink-2">{variant.variant}</span>
@@ -519,15 +519,15 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                   <div
                     className={`rounded-lg border px-3 py-2.5 text-[0.78125rem] ${
                       sent.complete
-                        ? "border-[rgba(25,158,112,0.35)] bg-[rgba(25,158,112,0.08)] text-ink"
-                        : "border-[rgba(242,193,78,0.35)] bg-[rgba(242,193,78,0.08)] text-ink"
+                        ? "border-good/35 bg-good/8 text-ink"
+                        : "border-warning/35 bg-warning/8 text-ink"
                     }`}
                   >
                     <p className="flex items-start gap-2">
                       {sent.complete ? (
-                        <Check size={14} className="mt-0.5 shrink-0 text-[#3ecf9a]" />
+                        <Check size={14} className="mt-0.5 shrink-0 text-good" />
                       ) : (
-                        <AlertTriangle size={13} className="mt-0.5 shrink-0 text-[#f2c14e]" />
+                        <AlertTriangle size={13} className="mt-0.5 shrink-0 text-warning" />
                       )}
                       {sent.nextStep}
                     </p>
@@ -573,7 +573,7 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                         type="checkbox"
                         checked={pasted}
                         onChange={(event) => setPasted(event.target.checked)}
-                        className="mt-0.5 h-3.5 w-3.5 accent-[#3987e5]"
+                        className="mt-0.5 h-3.5 w-3.5 accent-[#16b3a2]"
                       />
                       I have pasted this list into Jobix and the import completed.
                     </label>
@@ -589,8 +589,8 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
               <PhoneOutgoing size={13} className="text-accent" /> 3. Start the calls
             </p>
             {started ? (
-              <p className="flex items-start gap-2 rounded-lg border border-[rgba(25,158,112,0.35)] bg-[rgba(25,158,112,0.08)] px-3 py-2.5 text-[0.78125rem] text-ink">
-                <Check size={14} className="mt-0.5 shrink-0 text-[#3ecf9a]" />
+              <p className="flex items-start gap-2 rounded-lg border border-good/35 bg-good/8 px-3 py-2.5 text-[0.78125rem] text-ink">
+                <Check size={14} className="mt-0.5 shrink-0 text-good" />
                 {started}
               </p>
             ) : (
@@ -598,19 +598,19 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                 <div className="flex flex-wrap gap-x-5 gap-y-1 text-[0.71875rem] text-ink-3">
                   <span>
                     Calling window:{" "}
-                    <span className={state.window.allowed ? "text-[#3ecf9a]" : "text-[#e2714a]"}>
+                    <span className={state.window.allowed ? "text-good" : "text-serious"}>
                       {state.window.allowed ? `open (${state.window.sastTime})` : state.window.reason}
                     </span>
                   </span>
                   <span>
                     Calling enabled:{" "}
-                    <span className={state.callingEnabled ? "text-[#3ecf9a]" : "text-[#e2714a]"}>
+                    <span className={state.callingEnabled ? "text-good" : "text-serious"}>
                       {state.callingEnabled ? "yes" : "no"}
                     </span>
                   </span>
                   <span>
                     Trigger configured:{" "}
-                    <span className={state.triggerConfigured ? "text-[#3ecf9a]" : "text-[#e2714a]"}>
+                    <span className={state.triggerConfigured ? "text-good" : "text-serious"}>
                       {state.triggerConfigured ? "yes" : "no"}
                     </span>
                   </span>
@@ -658,8 +658,8 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                   <div
                     className={`rounded-lg border px-3 py-2.5 ${
                       armed.armedForOtherBatch > 0 || !armed.complete
-                        ? "border-[rgba(250,178,25,0.3)] bg-[rgba(250,178,25,0.07)]"
-                        : "border-[rgba(25,158,112,0.35)] bg-[rgba(25,158,112,0.08)]"
+                        ? "border-warning/30 bg-warning/7"
+                        : "border-good/35 bg-good/8"
                     }`}
                   >
                     <p className="text-[0.78125rem] font-medium text-ink">
@@ -762,13 +762,13 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
           </div>
 
           {actionError && (
-            <p className="flex items-start gap-2 rounded-lg border border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)] px-3 py-2 text-[0.78125rem] text-[#e2714a]">
+            <p className="flex items-start gap-2 rounded-lg border border-serious/35 bg-serious/8 px-3 py-2 text-[0.78125rem] text-serious">
               <AlertTriangle size={13} className="mt-0.5 shrink-0" />
               {actionError}
             </p>
           )}
         </div>
       )}
-    </GlassCard>
+    </Card>
   );
 }

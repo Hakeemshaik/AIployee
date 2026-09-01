@@ -75,11 +75,11 @@ const CONCEPT_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLE: Record<RowStatus, { label: string; className: string }> = {
-  create: { label: "New", className: "text-[#3ecf9a]" },
+  create: { label: "New", className: "text-good" },
   update: { label: "Update", className: "text-accent" },
   unchanged: { label: "No change", className: "text-ink-3" },
   duplicate: { label: "Duplicate", className: "text-ink-3" },
-  invalid: { label: "Excluded", className: "text-[#f2c14e]" },
+  invalid: { label: "Excluded", className: "text-warning" },
 };
 
 /** The money column is rendered as money; everything else as text. */
@@ -148,8 +148,8 @@ export function BookImporter({
   if (result) {
     return (
       <div className="space-y-3">
-        <p className="flex items-start gap-2 rounded-lg border border-[rgba(25,158,112,0.35)] bg-[rgba(25,158,112,0.08)] px-3 py-2.5 text-[0.8125rem] text-ink">
-          <Check size={14} className="mt-0.5 shrink-0 text-[#3ecf9a]" />
+        <p className="flex items-start gap-2 rounded-lg border border-good/35 bg-good/8 px-3 py-2.5 text-[0.8125rem] text-ink">
+          <Check size={14} className="mt-0.5 shrink-0 text-good" />
           Imported: <span className="num font-medium">{count(result.created)}</span> created,{" "}
           <span className="num font-medium">{count(result.updated)}</span> updated
           {result.unchanged > 0 && (
@@ -249,7 +249,7 @@ export function BookImporter({
       </p>
 
       {error && (
-        <p className="flex items-start gap-2 rounded-lg border border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)] px-3 py-2 text-[0.78125rem] text-[#e2714a]">
+        <p className="flex items-start gap-2 rounded-lg border border-serious/35 bg-serious/8 px-3 py-2 text-[0.78125rem] text-serious">
           <AlertTriangle size={13} className="mt-0.5 shrink-0" />
           {error}
         </p>
@@ -269,12 +269,12 @@ export function BookImporter({
           </p>
 
           <div className="flex flex-wrap gap-1.5">
-            <span className="rounded-full border border-[rgba(25,158,112,0.35)] bg-[rgba(25,158,112,0.1)] px-2.5 py-1 text-[0.6875rem] text-[#3ecf9a]">
+            <span className="rounded-full border border-good/35 bg-good/10 px-2.5 py-1 text-[0.6875rem] text-good">
               Will be created <span className="num">{count(preview.creatable)}</span> ·{" "}
               {money(preview.creatableValue)}
             </span>
             {preview.updatable > 0 && (
-              <span className="rounded-full border border-[rgba(57,135,229,0.45)] bg-accent-soft px-2.5 py-1 text-[0.6875rem] text-ink">
+              <span className="rounded-full border border-accent/45 bg-accent-soft px-2.5 py-1 text-[0.6875rem] text-ink">
                 Will be updated <span className="num">{count(preview.updatable)}</span>
               </span>
             )}
@@ -289,7 +289,7 @@ export function BookImporter({
               </span>
             )}
             {preview.invalid.length > 0 && (
-              <span className="rounded-full border border-[rgba(250,178,25,0.3)] bg-[rgba(250,178,25,0.07)] px-2.5 py-1 text-[0.6875rem] text-[#f2c14e]">
+              <span className="rounded-full border border-warning/30 bg-warning/7 px-2.5 py-1 text-[0.6875rem] text-warning">
                 Excluded rows <span className="num">{count(preview.invalid.length)}</span>
               </span>
             )}

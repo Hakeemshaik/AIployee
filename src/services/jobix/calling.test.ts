@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CALLING_WINDOWS, checkCallingWindow } from "./calling";
+import { batchCode, CALLING_WINDOWS, checkCallingWindow } from "./calling";
 
 // Times are given in UTC; SAST is UTC+2.
 const utc = (iso: string) => new Date(iso);
@@ -86,5 +86,24 @@ describe("flow trigger contract (captured from the flow builder)", () => {
     expect(stamp).toContain("call: armWith");
     expect(stamp).not.toContain("call: batch.batchCode");
     expect(source).toContain("callColumnValue(flow, batch.batchCode)");
+  });
+});
+
+describe("batch codes", () => {
+  it("is the same shape in every month of the year", () => {
+    // September is the trap: en-GB's short month is "Sept", four letters where
+    // every other month gives three, so the code silently changed shape on
+    // 1 September. Codes are matched and read against each other.
+    for (let month = 0; month < 12; month += 1) {
+      const code = batchCode(new Date(Date.UTC(2026, month, 15)));
+      expect(code).toMatch(/^\d{1,2}[A-Z]{3}-[A-Z0-9]{4}$/);
+    }
+    expect(batchCode(new Date(Date.UTC(2026, 8, 1)))).toMatch(/^1SEP-/);
+  });
+
+  it("does not repeat itself, so two runs on a day stay apart", () => {
+    const day = new Date(Date.UTC(2026, 7, 28));
+    const codes = new Set(Array.from({ length: 50 }, () => batchCode(day)));
+    expect(codes.size).toBeGreaterThan(45);
   });
 });

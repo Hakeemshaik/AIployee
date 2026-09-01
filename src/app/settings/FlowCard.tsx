@@ -11,7 +11,7 @@ import {
   Save,
   Search,
 } from "lucide-react";
-import { GlassCard } from "@/components/ui";
+import { Card } from "@/components/ui";
 import type { FlowConfig, FlowInspection, FlowSettingSource } from "@/services/flow-config";
 
 // ---------------------------------------------------------------------------
@@ -37,7 +37,7 @@ function SourceTag({ source }: { source: FlowSettingSource }) {
   return (
     <span
       className={`text-[0.625rem] ${
-        source === "saved" ? "text-[#3ecf9a]" : source === "environment" ? "text-ink-3" : "text-[#f2c14e]"
+        source === "saved" ? "text-good" : source === "environment" ? "text-ink-3" : "text-warning"
       }`}
     >
       {SOURCE_NOTE[source]}
@@ -99,7 +99,7 @@ export function FlowCard({ initial, canEdit }: { initial: FlowConfig; canEdit: b
   }
 
   return (
-    <GlassCard
+    <Card
       title="Dialling flow"
       subtitle="Which flow the platform starts, and what arms an account for it"
       actions={
@@ -113,11 +113,11 @@ export function FlowCard({ initial, canEdit }: { initial: FlowConfig; canEdit: b
     >
       <p
         className={`mb-3 flex items-start gap-2 text-[0.78125rem] leading-relaxed ${
-          start === "insert" || config.triggerReady ? "text-ink-2" : "text-[#f2c14e]"
+          start === "insert" || config.triggerReady ? "text-ink-2" : "text-warning"
         }`}
       >
         {start === "insert" || config.triggerReady ? (
-          <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-[#3ecf9a]" />
+          <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-good" />
         ) : (
           <AlertTriangle size={14} className="mt-0.5 shrink-0" />
         )}
@@ -175,7 +175,7 @@ export function FlowCard({ initial, canEdit }: { initial: FlowConfig; canEdit: b
                 disabled={!canEdit}
                 className={`rounded-full border px-2.5 py-1 text-[0.6875rem] transition-colors ${
                   start === option.value
-                    ? "border-[rgba(57,135,229,0.45)] bg-accent-soft text-ink"
+                    ? "border-accent/45 bg-accent-soft text-ink"
                     : "border-line bg-white/[0.03] text-ink-2 hover:text-ink"
                 }`}
               >
@@ -245,7 +245,7 @@ export function FlowCard({ initial, canEdit }: { initial: FlowConfig; canEdit: b
                       <td className="text-ink">
                         {node.name}
                         {node.suggested && (
-                          <span className="ml-2 rounded-full border border-[rgba(57,135,229,0.45)] bg-accent-soft px-1.5 py-0.5 text-[0.5625rem] text-ink">
+                          <span className="ml-2 rounded-full border border-accent/45 bg-accent-soft px-1.5 py-0.5 text-[0.5625rem] text-ink">
                             likely the entry
                           </span>
                         )}
@@ -278,13 +278,13 @@ export function FlowCard({ initial, canEdit }: { initial: FlowConfig; canEdit: b
       )}
 
       {saved && (
-        <p className="mt-3 flex items-center gap-2 text-[0.78125rem] text-[#3ecf9a]">
+        <p className="mt-3 flex items-center gap-2 text-[0.78125rem] text-good">
           <Check size={13} className="shrink-0" />
           Saved. No redeploy needed — the next run uses these settings.
         </p>
       )}
       {error && (
-        <p className="mt-3 flex items-start gap-2 rounded-lg border border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)] px-3 py-2 text-[0.78125rem] text-[#e2714a]">
+        <p className="mt-3 flex items-start gap-2 rounded-lg border border-serious/35 bg-serious/8 px-3 py-2 text-[0.78125rem] text-serious">
           <AlertTriangle size={13} className="mt-0.5 shrink-0" />
           {error}
         </p>
@@ -292,6 +292,6 @@ export function FlowCard({ initial, canEdit }: { initial: FlowConfig; canEdit: b
       {!canEdit && (
         <p className="mt-3 text-[0.6875rem] text-ink-3">Only an admin can change these.</p>
       )}
-    </GlassCard>
+    </Card>
   );
 }

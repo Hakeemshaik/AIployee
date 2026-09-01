@@ -72,7 +72,7 @@ export function StatusControls({ campaignId, status }: { campaignId: string; sta
   if (!options.length) return null;
   return (
     <div className="flex items-center gap-2">
-      {error && <span className="text-[0.6875rem] text-[#ec8181]">The status could not be updated.</span>}
+      {error && <span className="text-[0.6875rem] text-critical">The status could not be updated.</span>}
       {options.map((opt) => {
         const Icon = ICONS[opt.icon];
         return (

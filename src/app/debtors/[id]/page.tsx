@@ -6,7 +6,7 @@ import { label } from "@/lib/domain";
 import { formatDate, formatDateTime, money, relativeDays } from "@/lib/format";
 import { getDebtorProfile, listCampaignOptions } from "@/services/debtors";
 import { promiseDisplayStatus } from "@/services/promises";
-import { BackLink, Badge, GlassCard, Meta, PageHeader } from "@/components/ui";
+import { BackLink, Badge, Card, Meta, PageHeader } from "@/components/ui";
 import { DebtorActions } from "./DebtorActions";
 
 export const dynamic = "force-dynamic";
@@ -61,7 +61,7 @@ export default async function DebtorProfilePage({
       />
 
       <div className="mb-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <GlassCard title="Identity">
+        <Card title="Identity">
           <dl>
             <Meta label="Full name">{debtor.firstName} {debtor.lastName}</Meta>
             <Meta label="Account number"><span className="num">{debtor.accountNumber}</span></Meta>
@@ -69,17 +69,17 @@ export default async function DebtorProfilePage({
             <Meta label="Email">{debtor.email ?? "—"}</Meta>
             <Meta label="Location">{debtor.city ? `${debtor.city}, ${debtor.province}` : "—"}</Meta>
           </dl>
-        </GlassCard>
-        <GlassCard title="Debt">
+        </Card>
+        <Card title="Debt">
           <dl>
             <Meta label="Original balance"><span className="num">{money(stats.originalBalance)}</span></Meta>
             <Meta label="Current balance"><span className="num font-semibold">{money(stats.outstanding)}</span></Meta>
-            <Meta label="Amount paid"><span className="num text-[#5fc46a]">{money(stats.amountPaid)}</span></Meta>
+            <Meta label="Amount paid"><span className="num text-good">{money(stats.amountPaid)}</span></Meta>
             <Meta label="Days overdue"><span className="num">{stats.daysOverdue}</span></Meta>
             <Meta label="Original due date">{formatDate(stats.dueDate)}</Meta>
           </dl>
-        </GlassCard>
-        <GlassCard title="Collection status">
+        </Card>
+        <Card title="Collection status">
           <dl>
             <Meta label="Contact attempts"><span className="num">{stats.contactAttempts}</span></Meta>
             <Meta label="Successful contacts"><span className="num">{stats.successfulContacts}</span></Meta>
@@ -97,8 +97,8 @@ export default async function DebtorProfilePage({
               )}
             </Meta>
           </dl>
-        </GlassCard>
-        <GlassCard title="Promise to pay">
+        </Card>
+        <Card title="Promise to pay">
           {openPromise ? (
             <dl>
               <Meta label="Promised amount"><span className="num font-semibold">{money(openPromise.amount)}</span></Meta>
@@ -130,10 +130,10 @@ export default async function DebtorProfilePage({
               No open promise. {debtor.promises.length > 0 ? `${debtor.promises.length} historical promise${debtor.promises.length === 1 ? "" : "s"} in the timeline.` : ""}
             </p>
           )}
-        </GlassCard>
+        </Card>
       </div>
 
-      <GlassCard title="Timeline" subtitle="Every interaction on this account, most recent first">
+      <Card title="Timeline" subtitle="Every interaction on this account, most recent first">
         {timeline.length === 0 ? (
           <p className="py-6 text-center text-[0.8125rem] text-ink-3">No interactions recorded yet.</p>
         ) : (
@@ -173,7 +173,7 @@ export default async function DebtorProfilePage({
             })}
           </ol>
         )}
-      </GlassCard>
+      </Card>
     </div>
   );
 }

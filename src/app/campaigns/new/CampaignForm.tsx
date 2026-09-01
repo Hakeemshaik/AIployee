@@ -99,7 +99,7 @@ export function CampaignForm({ agents }: { agents: { id: string; name: string }[
           </select>
         </div>
       </div>
-      {error && <p className="text-[0.78125rem] text-[#ec8181]">{error}</p>}
+      {error && <p className="text-[0.78125rem] text-critical">{error}</p>}
       <div className="flex items-center gap-2">
         <button type="submit" disabled={busy} className="btn btn-primary">
           {busy ? "Creating…" : "Create campaign"}

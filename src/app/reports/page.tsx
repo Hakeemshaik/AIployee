@@ -4,7 +4,7 @@ import { label } from "@/lib/domain";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { listCampaignOptions } from "@/services/debtors";
 import { listReports } from "@/services/reports";
-import { Badge, EmptyState, GlassCard, PageHeader } from "@/components/ui";
+import { Badge, EmptyState, Card, PageHeader } from "@/components/ui";
 import { GenerateReportControl } from "./GenerateReport";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +24,7 @@ export default async function ReportsPage() {
         description="AI-written collection reports built from a frozen data snapshot, so past reports never drift."
         actions={<GenerateReportControl campaigns={campaigns} />}
       />
-      <GlassCard pad={false}>
+      <Card pad={false}>
         {reports.length === 0 ? (
           <div className="p-5">
             <EmptyState title="No reports yet" hint="Generate your first report using the control above." />
@@ -63,7 +63,7 @@ export default async function ReportsPage() {
             </table>
           </div>
         )}
-      </GlassCard>
+      </Card>
     </div>
   );
 }

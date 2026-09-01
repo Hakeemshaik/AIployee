@@ -4,7 +4,7 @@ import { label, PROMISE_DISPLAY_STATUSES } from "@/lib/domain";
 import { formatDate, money, percent } from "@/lib/format";
 import { listCampaignOptions } from "@/services/debtors";
 import { getPromiseStats, listPromises } from "@/services/promises";
-import { Badge, EmptyState, GlassCard, PageHeader, StatCard } from "@/components/ui";
+import { Badge, EmptyState, Card, PageHeader, StatCard } from "@/components/ui";
 import { ParamSelect } from "@/components/actions/ParamSelect";
 import { CancelPromiseButton, SweepButton } from "./Actions";
 
@@ -40,7 +40,7 @@ export default async function PromisesPage({
         <StatCard label="Fulfilment rate" value={percent(stats.fulfilmentRate, 0)} sub="of resolved promises" />
       </div>
 
-      <div className="glass-subtle mb-4 flex flex-wrap items-center gap-2 p-3">
+      <div className="card-2 mb-4 flex flex-wrap items-center gap-2 p-3">
         <ParamSelect
           param="status"
           placeholder="All statuses"
@@ -53,7 +53,7 @@ export default async function PromisesPage({
         />
       </div>
 
-      <GlassCard pad={false}>
+      <Card pad={false}>
         {rows.length === 0 ? (
           <div className="p-5">
             <EmptyState
@@ -104,7 +104,7 @@ export default async function PromisesPage({
             </table>
           </div>
         )}
-      </GlassCard>
+      </Card>
     </div>
   );
 }

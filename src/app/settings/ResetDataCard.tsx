@@ -80,9 +80,9 @@ export function ResetDataCard() {
 
   if (result) {
     return (
-      <section className="glass p-5">
+      <section className="card p-5">
         <h2 className="flex items-center gap-2 text-[0.9375rem] font-semibold tracking-tight text-ink">
-          <Check size={15} className="text-[#3ecf9a]" /> Demo data cleared
+          <Check size={15} className="text-good" /> Demo data cleared
         </h2>
         <p className="mt-2 text-[0.8125rem] leading-relaxed text-ink-2">
           Removed <span className="num font-medium text-ink">{count(result.totalDeleted)}</span>{" "}
@@ -101,9 +101,9 @@ export function ResetDataCard() {
   }
 
   return (
-    <section className="glass border-[rgba(217,89,38,0.28)] p-5">
+    <section className="card border-serious/28 p-5">
       <h2 className="flex items-center gap-2 text-[0.9375rem] font-semibold tracking-tight text-ink">
-        <Trash2 size={15} className="text-[#e2714a]" /> Clear demo data
+        <Trash2 size={15} className="text-serious" /> Clear demo data
       </h2>
       <p className="mt-1 text-[0.75rem] leading-relaxed text-ink-3">
         Removes the seeded fictional book — debtors, campaigns, calls, promises, payments and the
@@ -119,7 +119,7 @@ export function ResetDataCard() {
       )}
 
       {error && (
-        <p className="mt-3 flex items-start gap-2 rounded-lg border border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)] px-3 py-2.5 text-[0.78125rem] text-[#e2714a]">
+        <p className="mt-3 flex items-start gap-2 rounded-lg border border-serious/35 bg-serious/8 px-3 py-2.5 text-[0.78125rem] text-serious">
           <AlertTriangle size={13} className="mt-0.5 shrink-0" />
           {error}
         </p>
@@ -129,7 +129,7 @@ export function ResetDataCard() {
         <div className="mt-4 space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <p className="mb-1.5 text-[0.6875rem] font-medium uppercase tracking-[0.07em] text-[#e2714a]">
+              <p className="mb-1.5 text-[0.6875rem] font-medium uppercase tracking-[0.07em] text-serious">
                 Will be deleted
               </p>
               <ul className="space-y-1">
@@ -145,7 +145,7 @@ export function ResetDataCard() {
               </ul>
             </div>
             <div>
-              <p className="mb-1.5 text-[0.6875rem] font-medium uppercase tracking-[0.07em] text-[#3ecf9a]">
+              <p className="mb-1.5 text-[0.6875rem] font-medium uppercase tracking-[0.07em] text-good">
                 Will be kept
               </p>
               <ul className="space-y-1">
@@ -167,7 +167,7 @@ export function ResetDataCard() {
           )}
 
           {preview.revokingKeys.length > 0 && (
-            <p className="flex items-start gap-2 rounded-lg border border-[rgba(250,178,25,0.3)] bg-[rgba(250,178,25,0.07)] px-3 py-2.5 text-[0.71875rem] leading-relaxed text-[#f2c14e]">
+            <p className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/7 px-3 py-2.5 text-[0.71875rem] leading-relaxed text-warning">
               <AlertTriangle size={13} className="mt-0.5 shrink-0" />
               Revoking {preview.revokingKeys.length} API{" "}
               {preview.revokingKeys.length === 1 ? "key" : "keys"} — anything currently posting to the
@@ -210,7 +210,7 @@ export function ResetDataCard() {
               type="checkbox"
               checked={includeIngested}
               onChange={(e) => setIncludeIngested(e.target.checked)}
-              className="mt-0.5 h-3.5 w-3.5 accent-[#3987e5]"
+              className="mt-0.5 h-3.5 w-3.5 accent-[#16b3a2]"
             />
             Also delete calls and transcripts ingested from the voice provider. Leave this off unless
             you want to re-ingest from scratch — this data is not part of the demo seed.

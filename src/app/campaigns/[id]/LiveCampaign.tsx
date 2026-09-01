@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { label } from "@/lib/domain";
 import { money } from "@/lib/format";
-import { Badge, GlassCard, StatCard } from "@/components/ui";
+import { Badge, Card, StatCard } from "@/components/ui";
 
 type LiveState = {
   status: string;
@@ -167,13 +167,13 @@ export function LiveCampaign({
   return (
     <div className="space-y-4">
       {/* control bar */}
-      <GlassCard>
+      <Card>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-2">
               <span
                 className={`h-2 w-2 rounded-full ${
-                  isLive ? "animate-pulse bg-[#35c06f]" : state.status === "failed" ? "bg-[#e57373]" : "bg-ink-3"
+                  isLive ? "animate-pulse bg-good" : state.status === "failed" ? "bg-critical" : "bg-ink-3"
                 }`}
               />
               <Badge value={state.status} label={label(state.status)} />
@@ -202,7 +202,7 @@ export function LiveCampaign({
         </div>
 
         {state.providerError && (
-          <p className="mt-3 rounded-lg border border-[rgba(208,59,59,0.35)] bg-[rgba(208,59,59,0.08)] px-3 py-2 text-[0.78125rem] text-[#ec8181]">
+          <p className="mt-3 rounded-lg border border-critical/35 bg-critical/8 px-3 py-2 text-[0.78125rem] text-critical">
             Integration error: {state.providerError}
           </p>
         )}
@@ -210,11 +210,11 @@ export function LiveCampaign({
           <p
             className={`mt-3 rounded-lg border px-3 py-2 text-[0.78125rem] ${
               notice.kind === "ok"
-                ? "border-[rgba(12,163,12,0.3)] bg-[rgba(12,163,12,0.08)] text-[#5fc46a]"
+                ? "border-good/30 bg-good/8 text-good"
                 : notice.kind === "note"
                   ? // Something the operator has to go and do, not a failure.
                     "border-line bg-white/[0.03] text-ink-2"
-                  : "border-[rgba(208,59,59,0.35)] bg-[rgba(208,59,59,0.08)] text-[#ec8181]"
+                  : "border-critical/35 bg-critical/8 text-critical"
             }`}
           >
             {notice.text}
@@ -230,22 +230,31 @@ export function LiveCampaign({
             )}
           </p>
         )}
-      </GlassCard>
+      </Card>
 
-      {/* live KPIs */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
-        <StatCard label="Total contacts" value={String(t.contacts)} />
-        <StatCard label="Calls attempted" value={String(t.attempted)} />
-        <StatCard label="Currently calling" value={String(t.inFlight)} tone={t.inFlight > 0 ? "accent" : undefined} />
-        <StatCard label="Answered" value={String(t.answered)} tone="good" />
-        <StatCard label="No answer" value={String(t.noAnswer)} />
-        <StatCard label="Promises to pay" value={String(state.promises.count)} />
-        <StatCard label="PTP value" value={money(state.promises.value)} tone="good" sub={`${state.promises.kept} kept · ${state.promises.pending} pending · ${state.promises.broken} broken`} />
+      {/* What is happening right now, and only that.
+          Seven counters sat here, four of them repeating the campaign's own
+          totals a few hundred pixels below — the same figure twice, under two
+          names, and one of them stale. These three are the ones that move
+          while somebody is watching. */}
+      <div className="grid grid-cols-3 gap-3">
+        <StatCard
+          label="Currently calling"
+          value={String(t.inFlight)}
+          tone={t.inFlight > 0 ? "accent" : undefined}
+        />
+        <StatCard label="Calls attempted" value={String(t.attempted)} sub={`of ${t.contacts} accounts`} />
+        <StatCard
+          label="Answered"
+          value={String(t.answered)}
+          tone="good"
+          sub={`${t.noAnswer} no answer`}
+        />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
         {/* activity feed */}
-        <GlassCard className="xl:col-span-2" title="Live activity" subtitle="Most recent call events, newest first">
+        <Card className="xl:col-span-2" title="Live activity" subtitle="Most recent call events, newest first">
           {state.activity.length === 0 ? (
             <p className="py-8 text-center text-[0.8125rem] text-ink-3">
               No calls yet. Start the campaign and events will appear here as they happen.
@@ -261,7 +270,7 @@ export function LiveCampaign({
                   <span className="num text-[0.71875rem] text-ink-3">{maskPhone(item.phone)}</span>
                   <Badge value={item.outcome ?? item.status} label={label(item.outcome ?? item.status)} />
                   {item.promisedAmount != null && (
-                    <span className="num text-[0.78125rem] text-[#5fc46a]">{money(item.promisedAmount)}</span>
+                    <span className="num text-[0.78125rem] text-good">{money(item.promisedAmount)}</span>
                   )}
                   <Link href={`/calls/${item.id}`} className="ml-auto text-[0.6875rem] text-accent hover:underline">
                     open call
@@ -270,11 +279,11 @@ export function LiveCampaign({
               ))}
             </ul>
           )}
-        </GlassCard>
+        </Card>
 
         {/* redial actions */}
         <div className="space-y-4">
-          <GlassCard title="Redial actions" subtitle="Each button prepares a list of only its filtered contacts">
+          <Card title="Redial actions" subtitle="Each button prepares a list of only its filtered contacts">
             <ul className="space-y-2.5">
               {REDIAL_BUTTONS.map(({ filter, title, icon: Icon }) => {
                 const count = state.redial[filter] ?? 0;
@@ -301,9 +310,9 @@ export function LiveCampaign({
               into Jobix and start the run there, the same as a first dial. Contacts at the attempt
               limit, settled accounts, disputes and opt-outs are excluded automatically.
             </p>
-          </GlassCard>
+          </Card>
 
-          <GlassCard title="Outcome breakdown" subtitle="Connected calls only">
+          <Card title="Outcome breakdown" subtitle="Connected calls only">
             {state.outcomes.length === 0 ? (
               <p className="text-[0.8125rem] text-ink-3">No connected calls yet.</p>
             ) : (
@@ -316,10 +325,10 @@ export function LiveCampaign({
                 ))}
               </ul>
             )}
-          </GlassCard>
+          </Card>
 
           {state.batches.length > 0 && (
-            <GlassCard title="Redial batches">
+            <Card title="Redial batches">
               <ul className="space-y-2">
                 {state.batches.map((b) => (
                   <li key={b.id} className="text-[0.78125rem]">
@@ -330,12 +339,12 @@ export function LiveCampaign({
                       <Badge value={b.status} label={label(b.status)} />
                     </div>
                     {b.providerError && (
-                      <p className="mt-0.5 text-[0.6875rem] text-[#ec8181]">{b.providerError}</p>
+                      <p className="mt-0.5 text-[0.6875rem] text-critical">{b.providerError}</p>
                     )}
                   </li>
                 ))}
               </ul>
-            </GlassCard>
+            </Card>
           )}
         </div>
       </div>

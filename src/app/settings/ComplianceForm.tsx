@@ -46,7 +46,7 @@ function Toggle({
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="mt-1 h-4 w-4 accent-[#3987e5]"
+        className="mt-1 h-4 w-4 accent-[#16b3a2]"
       />
     </label>
   );
@@ -112,7 +112,7 @@ export function ComplianceForm({ initial }: { initial: Compliance }) {
                 onClick={() => toggleDay(d)}
                 className={`rounded-md border px-2 py-1 text-[0.6875rem] transition-colors ${
                   days.includes(d)
-                    ? "border-[rgba(57,135,229,0.4)] bg-accent-soft text-ink"
+                    ? "border-accent/40 bg-accent-soft text-ink"
                     : "border-line bg-white/[0.03] text-ink-3 hover:text-ink-2"
                 }`}
               >
@@ -157,8 +157,8 @@ export function ComplianceForm({ initial }: { initial: Compliance }) {
         <button onClick={save} disabled={busy} className="btn btn-primary">
           {busy ? "Saving…" : "Save guardrails"}
         </button>
-        {saved && <span className="text-[0.75rem] text-[#5fc46a]">Changes saved</span>}
-        {error && <span className="text-[0.75rem] text-[#ec8181]">Changes could not be saved.</span>}
+        {saved && <span className="text-[0.75rem] text-good">Changes saved</span>}
+        {error && <span className="text-[0.75rem] text-critical">Changes could not be saved.</span>}
       </div>
       <p className="text-[0.6875rem] leading-relaxed text-ink-3">
         These guardrails are configuration, not legal advice — set them to match your organization&apos;s

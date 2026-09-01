@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { AlertTriangle, Download, PhoneOff, Search } from "lucide-react";
 import { count, money, percent } from "@/lib/format";
-import { Badge, GlassCard } from "@/components/ui";
+import { Badge, Card } from "@/components/ui";
 import { FunnelStep, Metric } from "@/components/Metric";
 import { CumulativeReachChart, ReachByHourChart } from "@/components/charts";
 import { AccountDrawer } from "./AccountDrawer";
@@ -164,8 +164,8 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
           PTP figures below are a floor, not a result — say so on the screen
           rather than letting an understated number pass as final. */}
       {missingTranscripts > 0 && (
-        <div className="rounded-lg border border-[rgba(250,178,25,0.3)] bg-[rgba(250,178,25,0.07)] px-3.5 py-2.5">
-          <p className="text-[0.78125rem] font-medium text-[#f2c14e]">
+        <div className="rounded-lg border border-warning/30 bg-warning/7 px-3.5 py-2.5">
+          <p className="text-[0.78125rem] font-medium text-warning">
             {count(missingTranscripts)} of {count(payload.transcripts!.total)} calls have no transcript yet
           </p>
           <p className="mt-1 text-[0.71875rem] leading-relaxed text-ink-2">
@@ -207,7 +207,7 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
       </div>
 
       <div className="grid items-start gap-4 xl:grid-cols-3">
-        <GlassCard title="Funnel" subtitle="Book → attempted → connected → conversation → promise">
+        <Card title="Funnel" subtitle="Book → attempted → connected → conversation → promise">
           <div className="space-y-3.5">
             <FunnelStep label="Book" count={a.accounts} total={a.accounts} />
             <FunnelStep label="Attempted" count={a.attempted} previous={a.accounts} total={a.accounts} dropReason="never called" />
@@ -237,9 +237,9 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
             Arrears under commitment {money(a.commitments.arrearsUnderCommitment)} — this is what committed
             accounts owe, not cash committed. Conflating the two overstates the pipeline.
           </p>
-        </GlassCard>
+        </Card>
 
-        <GlassCard
+        <Card
           className="xl:col-span-2"
           title="Reach rate by hour"
           subtitle="South African time (UTC+2) — reached calls ÷ attempted calls"
@@ -249,11 +249,11 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
           ) : (
             <ReachByHourChart data={a.reachByHour} />
           )}
-        </GlassCard>
+        </Card>
       </div>
 
       <div className="grid items-start gap-4 xl:grid-cols-3">
-        <GlassCard
+        <Card
           className="xl:col-span-2"
           title="Cumulative reach by attempt"
           subtitle="Unique accounts counted at their first reach — never summed per round"
@@ -263,8 +263,8 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
           ) : (
             <CumulativeReachChart data={a.reachByAttempt} />
           )}
-        </GlassCard>
-        <GlassCard title="Efficiency">
+        </Card>
+        <Card title="Efficiency">
           <dl className="space-y-2.5">
             <div className="flex items-baseline justify-between gap-3" title={payload.formulas.penetration}>
               <dt className="text-[0.75rem] text-ink-3">Book worked</dt>
@@ -293,12 +293,12 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
             Reach is decided from transcript content, never from the platform&apos;s voicemail flag —
             that flag misfires badly.
           </p>
-        </GlassCard>
+        </Card>
       </div>
 
       {/* Dead numbers — these need new phone numbers, not more attempts */}
       {deadRows.length > 0 && (
-        <GlassCard
+        <Card
           title="Dead numbers"
           subtitle={`${deadRows.length} accounts where every attempt had zero talk time`}
           actions={
@@ -307,7 +307,7 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
             </button>
           }
         >
-          <p className="mb-3 flex items-start gap-2 rounded-lg border border-[rgba(250,178,25,0.3)] bg-[rgba(250,178,25,0.07)] px-3 py-2 text-[0.78125rem] text-[#f2c14e]">
+          <p className="mb-3 flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/7 px-3 py-2 text-[0.78125rem] text-warning">
             <AlertTriangle size={14} className="mt-0.5 shrink-0" />
             These accounts need new phone numbers, not more attempts. Re-dialling them will not
             improve recovery — send the export to whoever maintains the contact data.
@@ -338,11 +338,11 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
               </tbody>
             </table>
           </div>
-        </GlassCard>
+        </Card>
       )}
 
       {/* Account table */}
-      <GlassCard pad={false}>
+      <Card pad={false}>
         <div className="flex flex-wrap items-center gap-2 p-4 pb-3">
           <div className="relative">
             <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3" />
@@ -362,7 +362,7 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
                 title={chip.title}
                 className={`rounded-full border px-2.5 py-1 text-[0.6875rem] transition-colors ${
                   filter === chip.key
-                    ? "border-[rgba(57,135,229,0.45)] bg-accent-soft text-ink"
+                    ? "border-accent/45 bg-accent-soft text-ink"
                     : "border-line bg-white/[0.03] text-ink-2 hover:text-ink"
                 }`}
               >
@@ -394,7 +394,7 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
                       type="checkbox"
                       checked={selected.has(r.accountId)}
                       onChange={() => toggle(r.accountId)}
-                      className="h-3.5 w-3.5 accent-[#3987e5]"
+                      className="h-3.5 w-3.5 accent-[#16b3a2]"
                       aria-label={`Select ${r.name}`}
                     />
                   </td>
@@ -467,7 +467,7 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
             Showing the 200 largest balances of {visible.length} matching accounts.
           </p>
         )}
-      </GlassCard>
+      </Card>
 
       <AccountDrawer
         accountId={openAccount}
@@ -479,7 +479,7 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
       {/* sticky bulk action bar */}
       {selectedRows.length > 0 && (
         <div className="fixed bottom-4 left-1/2 z-40 -translate-x-1/2">
-          <div className="glass-solid flex items-center gap-4 px-4 py-3">
+          <div className="card-float flex items-center gap-4 px-4 py-3">
             <span className="text-[0.8125rem] text-ink">
               <span className="num font-semibold">{selectedRows.length}</span> selected ·{" "}
               <span className="num">{money(selectedValue)}</span>

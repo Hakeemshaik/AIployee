@@ -29,7 +29,7 @@ export function CancelPromiseButton({ promiseId }: { promiseId: string }) {
 
   return (
     <span className="inline-flex items-center gap-2">
-      {error && <span className="text-[0.6875rem] text-[#ec8181]">{error}</span>}
+      {error && <span className="text-[0.6875rem] text-critical">{error}</span>}
       <button onClick={cancel} disabled={busy} className="btn btn-ghost text-[0.71875rem] text-ink-3">
         {busy ? "Cancelling…" : "Cancel"}
       </button>
@@ -62,7 +62,7 @@ export function SweepButton() {
 
   return (
     <div className="flex items-center gap-2">
-      {error && <span className="text-[0.71875rem] text-[#ec8181]">{error}</span>}
+      {error && <span className="text-[0.71875rem] text-critical">{error}</span>}
       {result != null && (
         <span className="text-[0.71875rem] text-ink-3">
           {result === 0 ? "No promises are past the grace period" : `${result} marked broken`}

@@ -5,7 +5,7 @@ import { label, PAYMENT_METHODS } from "@/lib/domain";
 import { formatDate, money, moneyExact, percent } from "@/lib/format";
 import { listCampaignOptions } from "@/services/debtors";
 import { getPaymentStats, listPayments } from "@/services/payments";
-import { Badge, EmptyState, GlassCard, PageHeader, StatCard } from "@/components/ui";
+import { Badge, EmptyState, Card, PageHeader, StatCard } from "@/components/ui";
 import { ParamSelect } from "@/components/actions/ParamSelect";
 import { RecordPaymentButton } from "./RecordPayment";
 
@@ -53,7 +53,7 @@ export default async function PaymentsPage({
         <StatCard label="Recovery rate" value={percent(stats.recoveryRate)} sub="recovered vs total book" />
       </div>
 
-      <div className="glass-subtle mb-4 flex flex-wrap items-center gap-2 p-3">
+      <div className="card-2 mb-4 flex flex-wrap items-center gap-2 p-3">
         <ParamSelect
           param="method"
           placeholder="All methods"
@@ -66,7 +66,7 @@ export default async function PaymentsPage({
         />
       </div>
 
-      <GlassCard pad={false}>
+      <Card pad={false}>
         {payments.length === 0 ? (
           <div className="p-5">
             <EmptyState
@@ -98,7 +98,7 @@ export default async function PaymentsPage({
                       </Link>
                       <span className="num ml-2 text-[0.6875rem] text-ink-3">{p.debtor.accountNumber}</span>
                     </td>
-                    <td className="num text-right font-medium text-[#5fc46a]">{moneyExact(p.amount)}</td>
+                    <td className="num text-right font-medium text-good">{moneyExact(p.amount)}</td>
                     <td>{formatDate(p.paidAt)}</td>
                     <td>{label(p.method)}</td>
                     <td className="num text-ink-3">{p.reference ?? "—"}</td>
@@ -117,7 +117,7 @@ export default async function PaymentsPage({
             </table>
           </div>
         )}
-      </GlassCard>
+      </Card>
     </div>
   );
 }

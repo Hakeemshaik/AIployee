@@ -60,7 +60,10 @@ export function DeleteCampaignButton({
   return (
     <>
       <button
-        className="btn text-ink-3 hover:text-[#e2714a]"
+        // Recessive on purpose: it sits beside the campaign's status, and a
+        // bordered button there read as an equal action. Still always visible
+        // — hiding it until hover would put it out of reach on a touch screen.
+        className="btn btn-sm border-transparent bg-transparent text-ink-3 opacity-70 hover:text-serious hover:opacity-100"
         onClick={(event) => {
           // The whole card is a link; deleting must not follow it.
           event.preventDefault();
@@ -74,7 +77,7 @@ export function DeleteCampaignButton({
         {busy ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
       </button>
       {error && (
-        <span className="absolute inset-x-3 bottom-2 rounded-lg border border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.12)] px-2.5 py-1.5 text-[0.6875rem] leading-relaxed text-[#e2714a]">
+        <span className="absolute inset-x-3 bottom-2 rounded-lg border border-serious/35 bg-serious/12 px-2.5 py-1.5 text-[0.6875rem] leading-relaxed text-serious">
           {error}
         </span>
       )}

@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   PhoneCall,
   Radar,
+  ScanSearch,
   Search,
   Settings,
   Sparkles,
@@ -33,6 +34,7 @@ const PAGES: Result[] = [
   { kind: "page", href: "/campaigns", title: "Campaigns", subtitle: "Go to page" },
   { kind: "page", href: "/campaigns/new", title: "New campaign", subtitle: "Action" },
   { kind: "page", href: "/calls", title: "Calls", subtitle: "Go to page" },
+  { kind: "page", href: "/analytics", title: "Call analytics", subtitle: "Go to page" },
   { kind: "page", href: "/promises", title: "Promises to pay", subtitle: "Go to page" },
   { kind: "page", href: "/payments", title: "Payments", subtitle: "Go to page" },
   { kind: "page", href: "/insights", title: "AI insights", subtitle: "Go to page" },
@@ -49,6 +51,7 @@ const PAGE_ICONS: Record<string, typeof Users> = {
   "/campaigns": Radar,
   "/campaigns/new": Radar,
   "/calls": PhoneCall,
+  "/analytics": ScanSearch,
   "/promises": CalendarClock,
   "/payments": Banknote,
   "/insights": Sparkles,
@@ -169,7 +172,7 @@ export function CommandPalette() {
       {open && (
         <div className="fixed inset-0 z-[60] flex items-start justify-center p-4 pt-[12vh]">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
-          <div className="glass-solid relative w-full max-w-lg overflow-hidden p-0">
+          <div className="card-float relative w-full max-w-lg overflow-hidden p-0">
             <div className="flex items-center gap-2.5 border-b border-line px-4">
               <Search size={15} className="shrink-0 text-ink-3" />
               <input

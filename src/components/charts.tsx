@@ -22,15 +22,18 @@ import { count, moneyCompact } from "@/lib/format";
 // carries more than one series.
 // ---------------------------------------------------------------------------
 
+// The three series are the Mafadi hues stepped for the navy chart surface and
+// validated on it as a set — lightness band, chroma floor, colour-vision
+// separation on every pair, contrast — not the interface accent reused as data.
 const C = {
-  s1: "#3987e5",
-  s2: "#d95926",
-  s3: "#199e70",
-  grid: "#232630",
-  axis: "#3a3f4c",
-  muted: "#898781",
-  ink: "#eef1f6",
-  notReached: "#3c4250",
+  s1: "#15a899", // teal
+  s2: "#c98500", // gold
+  s3: "#9085e9", // violet
+  grid: "#223142",
+  axis: "#33475c",
+  muted: "#97a3b0",
+  ink: "#f2f6f9",
+  notReached: "#39485c",
 };
 
 const axisProps = {
@@ -59,7 +62,7 @@ function GlassTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-white/10 bg-[#161923]/95 px-3 py-2 text-[0.71875rem] shadow-xl backdrop-blur">
+    <div className="rounded-lg border border-white/10 bg-raised/95 px-3 py-2 text-[0.71875rem] shadow-xl backdrop-blur">
       <p className="mb-1 text-ink-3">{label}</p>
       {payload.map((row, i) => (
         <p key={i} className="flex items-center gap-1.5 text-ink">

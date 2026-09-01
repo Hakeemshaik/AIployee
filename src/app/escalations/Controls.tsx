@@ -39,7 +39,7 @@ export function EscalationControls({
 
   return (
     <div className="flex items-center justify-end gap-1.5">
-      {error && <span className="text-[0.6875rem] text-[#ec8181]">{error}</span>}
+      {error && <span className="text-[0.6875rem] text-critical">{error}</span>}
       <select
         className="field py-1 text-[0.71875rem]"
         value={assignedToUserId ?? ""}

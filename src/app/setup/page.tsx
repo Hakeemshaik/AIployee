@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getSetupStatus } from "@/services/bootstrap";
-import { GlassCard } from "@/components/ui";
+import { Card } from "@/components/ui";
 import { SetupForm } from "./SetupForm";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +26,7 @@ export default async function SetupPage() {
             ? "Choose how to initialise this deployment."
             : "This deployment is already configured."}
       </p>
-      <GlassCard>
+      <Card>
         {status === null ? (
           <p className="text-[0.8125rem] leading-relaxed text-ink-2">
             The database is not reachable. Connect a PostgreSQL database (on Vercel: Project →
@@ -43,7 +43,7 @@ export default async function SetupPage() {
             <Link href="/" className="btn btn-primary mt-4 inline-flex">Open the dashboard</Link>
           </div>
         )}
-      </GlassCard>
+      </Card>
     </div>
   );
 }

@@ -10,7 +10,7 @@ export default function Error({
   const needsSeed = error.message?.includes("No organization found");
   return (
     <div className="mx-auto mt-20 max-w-md">
-      <div className="glass p-6 text-center">
+      <div className="card p-6 text-center">
         <p className="text-[0.9375rem] font-semibold text-ink">
           {needsSeed ? "Database not seeded yet" : "This page could not be loaded"}
         </p>

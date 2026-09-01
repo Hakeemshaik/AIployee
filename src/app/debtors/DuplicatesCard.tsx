@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Check, CheckCircle2, Copy, Loader2, Merge } from "lucide-react";
 import { count, formatDate, money } from "@/lib/format";
-import { GlassCard } from "@/components/ui";
+import { Card } from "@/components/ui";
 
 // ---------------------------------------------------------------------------
 // Duplicate accounts.
@@ -105,9 +105,9 @@ export function DuplicatesCard({ initial, canMerge }: { initial: DuplicateReport
 
   if (report.groups.length === 0) {
     return (
-      <GlassCard title="Duplicate check" subtitle={`${count(report.scanned)} accounts checked`} className="mb-4">
+      <Card title="Duplicate check" subtitle={`${count(report.scanned)} accounts checked`} className="mb-4">
         <p className="flex items-center gap-2 text-[0.8125rem] text-ink-2">
-          <CheckCircle2 size={14} className="shrink-0 text-[#3ecf9a]" />
+          <CheckCircle2 size={14} className="shrink-0 text-good" />
           No duplicates. Every account has its own phone number and its own record on the voice platform.
         </p>
         {result && (
@@ -116,12 +116,12 @@ export function DuplicatesCard({ initial, canMerge }: { initial: DuplicateReport
             {count(result.recordsRemoved)} duplicate record{result.recordsRemoved === 1 ? "" : "s"}.
           </p>
         )}
-      </GlassCard>
+      </Card>
     );
   }
 
   return (
-    <GlassCard
+    <Card
       title={`Duplicate accounts (${count(report.groups.length)})`}
       subtitle={`${count(report.extraRecords)} records too many · the book is overstated by ${money(report.overstatedValue)}`}
       className="mb-4"
@@ -151,8 +151,8 @@ export function DuplicatesCard({ initial, canMerge }: { initial: DuplicateReport
       </p>
 
       {result && (
-        <p className="mb-3 flex items-start gap-2 rounded-lg border border-[rgba(25,158,112,0.35)] bg-[rgba(25,158,112,0.08)] px-3 py-2.5 text-[0.78125rem] text-ink">
-          <Check size={14} className="mt-0.5 shrink-0 text-[#3ecf9a]" />
+        <p className="mb-3 flex items-start gap-2 rounded-lg border border-good/35 bg-good/8 px-3 py-2.5 text-[0.78125rem] text-ink">
+          <Check size={14} className="mt-0.5 shrink-0 text-good" />
           Merged {count(result.groupsMerged)} group{result.groupsMerged === 1 ? "" : "s"}: removed{" "}
           {count(result.recordsRemoved)} record{result.recordsRemoved === 1 ? "" : "s"} and moved{" "}
           {count(result.accountsMoved)} accounts, {count(result.callsMoved)} calls,{" "}
@@ -161,7 +161,7 @@ export function DuplicatesCard({ initial, canMerge }: { initial: DuplicateReport
       )}
 
       {error && (
-        <p className="mb-3 flex items-start gap-2 rounded-lg border border-[rgba(217,89,38,0.35)] bg-[rgba(217,89,38,0.08)] px-3 py-2 text-[0.78125rem] text-[#e2714a]">
+        <p className="mb-3 flex items-start gap-2 rounded-lg border border-serious/35 bg-serious/8 px-3 py-2 text-[0.78125rem] text-serious">
           <AlertTriangle size={13} className="mt-0.5 shrink-0" />
           {error}
         </p>
@@ -174,7 +174,7 @@ export function DuplicatesCard({ initial, canMerge }: { initial: DuplicateReport
               {canMerge && (
                 <input
                   type="checkbox"
-                  className="h-3.5 w-3.5 accent-[#3987e5]"
+                  className="h-3.5 w-3.5 accent-[#16b3a2]"
                   checked={chosen.has(group.key)}
                   onChange={() => toggle(group.key)}
                   aria-label={`Merge ${group.members[0]?.name}`}
@@ -218,7 +218,7 @@ export function DuplicatesCard({ initial, canMerge }: { initial: DuplicateReport
                       <td className="num text-right">{member.promises}</td>
                       <td className="num text-ink-3">{formatDate(member.createdAt)}</td>
                       <td
-                        className={`text-[0.6875rem] ${member.keeper ? "text-[#3ecf9a]" : "text-ink-3"}`}
+                        className={`text-[0.6875rem] ${member.keeper ? "text-good" : "text-ink-3"}`}
                         title={
                           member.keeper
                             ? "This record survives; everything else moves onto it."
@@ -241,6 +241,6 @@ export function DuplicatesCard({ initial, canMerge }: { initial: DuplicateReport
           Only an admin can merge records.
         </p>
       )}
-    </GlassCard>
+    </Card>
   );
 }

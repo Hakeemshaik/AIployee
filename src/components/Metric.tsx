@@ -20,9 +20,9 @@ export function Metric({
   tone?: "good" | "critical" | "accent";
 }) {
   const valueColor =
-    tone === "good" ? "text-[#35c06f]" : tone === "critical" ? "text-[#e57373]" : "text-ink";
+    tone === "good" ? "text-good" : tone === "critical" ? "text-critical" : "text-ink";
   return (
-    <div className="glass-subtle px-4 py-3.5" title={`Formula: ${formula}`}>
+    <div className="card-2 px-4 py-3.5" title={`Formula: ${formula}`}>
       <p className="flex items-center gap-1 text-[0.6875rem] font-medium uppercase tracking-[0.07em] text-ink-3">
         {label}
         <Info size={10} className="opacity-60" aria-hidden />
@@ -70,7 +70,7 @@ export function FunnelStep({
         </span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-white/[0.05]">
-        <div className="h-full rounded-full bg-[#3987e5]" style={{ width: `${width}%` }} />
+        <div className="h-full rounded-full bg-accent" style={{ width: `${width}%` }} />
       </div>
       {dropped !== null && dropped > 0 && (
         <p className="mt-1 text-[0.6875rem] text-ink-3">
