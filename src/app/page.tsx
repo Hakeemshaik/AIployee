@@ -120,7 +120,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* 2 — what needs a person, and what the analysis makes of it */}
-      <div className="mb-4 grid gap-4 xl:grid-cols-3">
+      <div className="mb-4 grid items-start gap-4 xl:grid-cols-3">
         <Card
           i={0}
           className="xl:col-span-2"
@@ -151,7 +151,7 @@ export default async function DashboardPage() {
                 <li key={item.key}>
                   <Link
                     href={item.href}
-                    className="group flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-white/[0.035]"
+                    className="row-hover group flex items-center gap-3 px-2 py-2"
                   >
                     <item.icon size={14} className="shrink-0 text-ink-3" />
                     <span className="min-w-0 flex-1 truncate text-[0.8125rem] text-ink group-hover:text-accent-ink">
@@ -182,7 +182,7 @@ export default async function DashboardPage() {
 
         <Card
           i={1}
-          title="What the analysis sees"
+          title="Latest analysis"
           subtitle={
             insight
               ? `${formatDateTime(insight.generatedAt)} · ${insight.provider === "claude" ? "Claude" : "built-in engine"}`

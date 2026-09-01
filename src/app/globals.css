@@ -60,6 +60,9 @@
 
   /* motion */
   --ease-out-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* A touch of overshoot. Used only where something arrives or is pressed —
+     never on a colour, and never on anything that repeats. */
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
 html {
@@ -68,9 +71,15 @@ html {
 
 body {
   background-color: var(--color-base);
-  /* One soft teal wash from the top-left. The old build had two coloured
-     glows fighting each other behind every page. */
-  background-image: radial-gradient(1100px 460px at 12% -12%, rgba(22, 179, 162, 0.07), transparent 62%);
+  /* Glass has nothing to do without something behind it. Three very soft
+     washes — teal, a deeper navy, a warm trace of the cream — give every
+     translucent surface something to bend, and they are fixed so scrolling
+     moves the content across the light rather than dragging the light along.
+     Each is under 8% opacity: this is a backdrop, not a pattern. */
+  background-image:
+    radial-gradient(1200px 520px at 8% -12%, rgba(22, 179, 162, 0.16), transparent 62%),
+    radial-gradient(1000px 760px at 98% 2%, rgba(36, 76, 112, 0.6), transparent 60%),
+    radial-gradient(760px 520px at 58% 112%, rgba(251, 243, 214, 0.05), transparent 60%);
   background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-sans);
@@ -88,46 +97,91 @@ body {
   border-radius: 8px;
 }
 
-/* --- surfaces --------------------------------------------------------------
-   Two of them, not four. A card, and a quieter card for things inside it. */
+/* --- surfaces: glass ------------------------------------------------------
+   Three layers and nothing else: a card, a quieter card for things inside it,
+   and a floating one for dialogs.
+
+   Each is translucent over a blurred, slightly saturated backdrop, with a
+   bright hairline along the top edge where light would catch and a soft dark
+   one along the bottom. That top edge is what separates glass from "a panel
+   with some transparency" — it reads as a physical edge rather than a border.
+   The blur is what makes the washes behind the page bend as content scrolls
+   over them.
+
+   Every layer still paints a real colour underneath the transparency, so a
+   browser without backdrop-filter shows a solid navy card rather than text on
+   the page background. */
 
 .card {
-  background: var(--color-panel);
-  border: 1px solid var(--color-line);
-  border-radius: 14px;
+  position: relative;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--color-panel) 74%, transparent),
+    color-mix(in oklab, var(--color-panel) 88%, transparent)
+  );
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 18px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    0 14px 40px -22px rgba(0, 0, 0, 0.7);
 }
 
 .card-2 {
-  background: rgba(255, 255, 255, 0.028);
-  border: 1px solid var(--color-line-2);
-  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.022));
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 15px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
-/* Floating dialogs: opaque, and lifted off the page by shadow alone. */
+/* Dialogs sit over live content, so they are the least transparent of the
+   three: readable first, glass second. */
 .card-float {
-  background: var(--color-raised);
-  border: 1px solid var(--color-line);
-  border-radius: 14px;
-  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.9);
+  background: color-mix(in oklab, var(--color-raised) 92%, transparent);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.11),
+    0 30px 70px -28px rgba(0, 0, 0, 0.92);
 }
 
-/* The old glass names, pointing at the new surfaces. Screens still carrying
-   them get the redesign without each one having to be edited first. */
+/* The old glass names, pointing at the new surfaces, so a screen that still
+   carries one is not left unstyled. */
 .glass {
-  background: var(--color-panel);
-  border: 1px solid var(--color-line);
-  border-radius: 14px;
+  position: relative;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--color-panel) 74%, transparent),
+    color-mix(in oklab, var(--color-panel) 88%, transparent)
+  );
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 18px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    0 14px 40px -22px rgba(0, 0, 0, 0.7);
 }
 .glass-subtle {
-  background: rgba(255, 255, 255, 0.028);
-  border: 1px solid var(--color-line-2);
-  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.022));
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 15px;
 }
 .glass-solid {
-  background: var(--color-raised);
-  border: 1px solid var(--color-line);
-  border-radius: 14px;
-  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.9);
+  background: color-mix(in oklab, var(--color-raised) 92%, transparent);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  box-shadow: 0 30px 70px -28px rgba(0, 0, 0, 0.92);
 }
 
 /* --- data tables --- */
@@ -168,9 +222,12 @@ body {
 
 /* --- form controls --- */
 .field {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--color-line);
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 11px;
   color: var(--color-ink);
   font-size: 0.8125rem;
   padding: 0.5rem 0.6875rem;
@@ -208,25 +265,32 @@ input.field[type="date"]::-webkit-calendar-picker-indicator {
   align-items: center;
   justify-content: center;
   gap: 0.4375rem;
-  border-radius: 10px;
+  border-radius: 11px;
   font-size: 0.8125rem;
   font-weight: 500;
   line-height: 1;
   padding: 0.5625rem 0.9375rem;
-  border: 1px solid var(--color-line);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   color: var(--color-ink);
-  background: rgba(255, 255, 255, 0.045);
-  transition: background-color 140ms var(--ease-out-soft), border-color 140ms var(--ease-out-soft),
-    color 140ms var(--ease-out-soft), transform 90ms var(--ease-out-soft);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: background-color 160ms var(--ease-out-soft), border-color 160ms var(--ease-out-soft),
+    color 160ms var(--ease-out-soft), transform 140ms var(--ease-spring), box-shadow 160ms var(--ease-out-soft);
   cursor: pointer;
   white-space: nowrap;
 }
 .btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
 }
+/* The press: down and very slightly in, which is what makes a glass control
+   feel like it took the tap. */
 .btn:active {
-  transform: translateY(1px);
+  transform: translateY(0) scale(0.975);
+  transition-duration: 60ms;
 }
 .btn:disabled {
   opacity: 0.4;
@@ -235,14 +299,24 @@ input.field[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .btn-primary {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: #06251f;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--color-accent-lift) 92%, transparent),
+    var(--color-accent)
+  );
+  border-color: color-mix(in oklab, var(--color-accent-lift) 70%, transparent);
+  color: #04231e;
   font-weight: 600;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 6px 20px -10px rgba(22, 179, 162, 0.7);
 }
 .btn-primary:hover {
   background: var(--color-accent-lift);
   border-color: var(--color-accent-lift);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    0 10px 26px -10px rgba(22, 179, 162, 0.8);
 }
 
 .btn-ghost {
@@ -280,20 +354,23 @@ input.field[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* --- motion ----------------------------------------------------------------
-   Short, one direction, and only on arrival. `--i` staggers a row of cards:
-   style={{ "--i": 2 }} delays that card by two steps. */
+   Everything here is short, one-directional, and happens on arrival or under
+   the pointer. Nothing loops, nothing moves on its own, and nothing shifts the
+   layout — a page that keeps moving is a page you cannot read.
+
+   `--i` staggers a row: style={{ "--i": 2 }} delays that card by two steps. */
 
 .page-in {
-  animation: rise-in 320ms var(--ease-out-soft) both;
+  animation: rise-in 340ms var(--ease-out-soft) both;
 }
 .rise-in {
-  animation: rise-in 380ms var(--ease-out-soft) both;
-  animation-delay: calc(var(--i, 0) * 45ms);
+  animation: rise-in 420ms var(--ease-spring) both;
+  animation-delay: calc(var(--i, 0) * 50ms);
 }
 @keyframes rise-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px) scale(0.994);
   }
   to {
     opacity: 1;
@@ -301,32 +378,92 @@ input.field[type="date"]::-webkit-calendar-picker-indicator {
   }
 }
 
-/* A card that responds to the pointer without moving the layout. */
+/* A number arriving: it fades up from under its own label rather than being
+   there before the eye reaches it. Used on the figures a page opens with. */
+.value-in {
+  animation: value-in 520ms var(--ease-out-soft) both;
+  animation-delay: calc(120ms + var(--i, 0) * 60ms);
+}
+@keyframes value-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* A card that responds to the pointer without moving the layout: it rises,
+   its edge catches the accent, and the light along its top gets brighter. */
 .lift {
-  transition: border-color 160ms var(--ease-out-soft), background-color 160ms var(--ease-out-soft),
-    transform 160ms var(--ease-out-soft);
+  transition: border-color 200ms var(--ease-out-soft), background-color 200ms var(--ease-out-soft),
+    transform 220ms var(--ease-spring), box-shadow 220ms var(--ease-out-soft);
 }
 .lift:hover {
-  transform: translateY(-2px);
-  border-color: rgba(22, 179, 162, 0.4);
+  transform: translateY(-3px);
+  border-color: rgba(22, 179, 162, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 20px 44px -22px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(22, 179, 162, 0.12);
 }
 
-/* The teal rule that slides under the active nav item. */
+/* A row in a list: the pointer lights the glass under it and nudges it along
+   the reading direction. */
+.row-hover {
+  transition: background-color 160ms var(--ease-out-soft), padding-left 200ms var(--ease-out-soft);
+  border-radius: 10px;
+}
+.row-hover:hover {
+  background: rgba(255, 255, 255, 0.045);
+  padding-left: 0.75rem;
+}
+
+/* The teal rule marking the active nav item, and the sheen that sweeps a
+   primary button once when it appears. */
 .nav-mark {
-  transition: opacity 180ms var(--ease-out-soft), transform 180ms var(--ease-out-soft);
+  transition: opacity 220ms var(--ease-out-soft), transform 220ms var(--ease-spring);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .page-in,
-  .rise-in,
-  .skeleton {
-    animation: none;
+/* A live indicator: one slow pulse, only where something is genuinely
+   happening right now. */
+.pulse-live {
+  animation: pulse-live 2.4s var(--ease-out-soft) infinite;
+}
+@keyframes pulse-live {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(22, 179, 162, 0.5);
   }
-  .lift:hover {
+  50% {
+    opacity: 0.75;
+    box-shadow: 0 0 0 5px rgba(22, 179, 162, 0);
+  }
+}
+
+/* Nothing above survives this. A single query, so a new animation cannot be
+   added without being covered by it. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+  .lift:hover,
+  .btn:hover,
+  .btn:active {
     transform: none;
   }
-  * {
-    transition-duration: 1ms !important;
+  .row-hover:hover {
+    padding-left: 0;
   }
 }
 

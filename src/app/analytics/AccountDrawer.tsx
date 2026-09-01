@@ -128,7 +128,7 @@ function CallTurns({ turns }: { turns: Turn[] }) {
 function CallRow({ call, defaultOpen }: { call: JourneyCall; defaultOpen: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="rounded-xl border border-line bg-white/[0.02]">
+    <div className="card-2">
       <button
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-start gap-3 px-3.5 py-3 text-left"
@@ -406,7 +406,7 @@ function DrawerBody({ accountId, onClose, bucketLabels, bucketExplanations }: Dr
                   <span className="num font-normal text-ink-3">{journey.calls.length}</span>
                 </h3>
                 {journey.calls.length === 0 ? (
-                  <p className="rounded-xl border border-line bg-white/[0.02] px-3.5 py-3 text-[0.78125rem] text-ink-3">
+                  <p className="card-2 px-3.5 py-3 text-[0.78125rem] text-ink-3">
                     This account has never been called.
                   </p>
                 ) : (

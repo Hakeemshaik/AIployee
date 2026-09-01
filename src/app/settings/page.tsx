@@ -10,6 +10,7 @@ import { companyKeyStatus, signInStatus } from "@/services/jobix/credentials";
 import { SetupChecklist } from "@/components/SetupChecklist";
 import { ConnectionCard } from "./ConnectionCard";
 import { FlowCard } from "./FlowCard";
+import { PlaceCallCard } from "./PlaceCallCard";
 import { Badge, Card, Meta, PageHeader } from "@/components/ui";
 import { ComplianceForm } from "./ComplianceForm";
 import { ResetDataCard } from "./ResetDataCard";
@@ -51,11 +52,17 @@ export default async function SettingsPage() {
         description={`Organization, compliance guardrails and integrations for ${org.name}.`}
       />
 
-      <div className="mb-4 grid items-start gap-4 xl:grid-cols-2">
+      {/* The setup list is short and the integration cards are tall, so a
+          two-column split left a column of nothing beside them. Setup runs
+          across the top; the integration follows underneath it. */}
+      <div className="mb-4 grid items-start gap-4">
         <SetupChecklist status={setup} />
-        <div className="grid gap-4">
+        <div className="grid items-start gap-4 xl:grid-cols-2">
           <ConnectionCard status={connectionStatus()} signIn={jobixSignIn} companyKey={jobixKey} />
-          <FlowCard initial={flow} canEdit={hasRole(ctx, ["admin"])} />
+          <div className="grid items-start gap-4">
+            <FlowCard initial={flow} canEdit={hasRole(ctx, ["admin"])} />
+            {hasRole(ctx, ["admin", "manager"]) && <PlaceCallCard />}
+          </div>
         </div>
       </div>
 

@@ -173,7 +173,7 @@ export function LiveCampaign({
             <span className="flex items-center gap-2">
               <span
                 className={`h-2 w-2 rounded-full ${
-                  isLive ? "animate-pulse bg-good" : state.status === "failed" ? "bg-critical" : "bg-ink-3"
+                  isLive ? "pulse-live bg-good" : state.status === "failed" ? "bg-critical" : "bg-ink-3"
                 }`}
               />
               <Badge value={state.status} label={label(state.status)} />

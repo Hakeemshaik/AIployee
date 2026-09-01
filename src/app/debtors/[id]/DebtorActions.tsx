@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { AlertTriangle, X } from "lucide-react";
+import { AlertTriangle, Loader2, PhoneOutgoing, X } from "lucide-react";
 import { ESCALATION_PRIORITIES, ESCALATION_REASONS, label } from "@/lib/domain";
 import { RecordPaymentButton } from "@/app/payments/RecordPayment";
 
@@ -20,6 +20,44 @@ export function DebtorActions({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [assignError, setAssignError] = useState<string | null>(null);
+  const [callNote, setCallNote] = useState<{ ok: boolean; text: string } | null>(null);
+
+  /**
+   * Call this one account, now.
+   *
+   * One customer written with the configured flag, which is what the flow's
+   * Insert Customer event fires on — the same mechanism as a form submit, and
+   * the same guardrails as a campaign send: calling hours, the deny list, and
+   * every status that is never dialled are all checked on the server.
+   */
+  async function callNow() {
+    if (
+      !window.confirm(
+        `Call ${debtor.name} now?\n\nOne customer is written to the voice platform and the flow dials it as it lands. This is a real call.`,
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    setCallNote(null);
+    try {
+      const res = await fetch("/api/calling/one", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ debtorId: debtor.id }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.message ?? "The call could not be placed.");
+      setCallNote({ ok: true, text: body.nextStep as string });
+    } catch (err) {
+      setCallNote({
+        ok: false,
+        text: err instanceof Error ? err.message : "The call could not be placed.",
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function assignCampaign(campaignId: string) {
     setBusy(true);
@@ -80,11 +118,23 @@ export function DebtorActions({
           <option key={c.id} value={c.id}>{c.name}</option>
         ))}
       </select>
+      <button className="btn" onClick={callNow} disabled={busy} title="Write this account and let the flow dial it">
+        {busy ? <Loader2 size={13} className="animate-spin" /> : <PhoneOutgoing size={13} />} Call now
+      </button>
       <RecordPaymentButton fixedDebtor={debtor} buttonClass="btn" />
       <button className="btn btn-danger" onClick={() => setEscalateOpen(true)}>
         <AlertTriangle size={13} /> Escalate
       </button>
       {assignError && <span className="text-[0.6875rem] text-critical">{assignError}</span>}
+      {callNote && (
+        <p
+          className={`w-full rounded-lg border px-3 py-2 text-[0.75rem] leading-relaxed ${
+            callNote.ok ? "border-good/35 bg-good/8 text-ink" : "border-serious/35 bg-serious/8 text-ink"
+          }`}
+        >
+          {callNote.text}
+        </p>
+      )}
 
       {escalateOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[14vh]">

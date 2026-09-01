@@ -46,18 +46,20 @@ export async function Topbar() {
     .slice(0, 2)
     .join("");
 
+  // The bar is glass, but opaque enough to read against: at 45% the content
+  // scrolling beneath it showed through the blur and collided with the text.
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-base/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-base/80 backdrop-blur-2xl">
       <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center justify-between gap-4 px-4 pl-14 sm:px-6 lg:pl-8 lg:pr-8">
         <p className="flex min-w-0 items-center gap-2 text-[0.8125rem]">
-          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
+          <span className="pulse-live h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
           <span className="truncate font-medium text-ink">{orgName}</span>
         </p>
         <div className="flex items-center gap-3">
           {!guest && <CommandPalette />}
           {userName && (
             <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-white/[0.05] text-[0.6875rem] font-semibold text-ink">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.09] bg-white/[0.06] text-[0.6875rem] font-semibold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.09)]">
                 {initials}
               </span>
               <div className="hidden leading-tight md:block">

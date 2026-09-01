@@ -94,7 +94,9 @@ function NavLinks({ onNavigate, guest }: { onNavigate?: () => void; guest: boole
                   onClick={onNavigate}
                   aria-current={active ? "page" : undefined}
                   className={`group relative flex items-center gap-2.5 rounded-lg py-2 pl-3 pr-3 text-[0.8125rem] transition-colors ${
-                    active ? "bg-accent-soft text-ink" : "text-ink-2 hover:bg-white/[0.04] hover:text-ink"
+                    active
+                      ? "bg-accent/12 text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
+                      : "text-ink-2 hover:bg-white/[0.045] hover:text-ink"
                   }`}
                 >
                   {/* The teal rule marking where you are. It is the only thing
@@ -125,7 +127,7 @@ export function Sidebar({ guest = false }: { guest?: boolean }) {
   return (
     <>
       {/* Desktop */}
-      <aside className="sticky top-0 hidden h-screen w-[236px] shrink-0 flex-col gap-6 border-r border-line bg-plane py-5 lg:flex">
+      <aside className="sticky top-0 hidden h-screen w-[236px] shrink-0 flex-col gap-6 border-r border-white/[0.06] bg-plane/55 py-5 backdrop-blur-2xl lg:flex">
         <Link href="/" className="px-3">
           <BrandLockup />
         </Link>
@@ -143,14 +145,14 @@ export function Sidebar({ guest = false }: { guest?: boolean }) {
       <button
         aria-label="Open navigation"
         onClick={() => setOpen(true)}
-        className="fixed left-4 top-3.5 z-40 rounded-lg border border-line bg-panel p-2 text-ink-2 lg:hidden"
+        className="fixed left-4 top-3.5 z-40 rounded-xl border border-white/[0.09] bg-panel/70 p-2 text-ink-2 backdrop-blur-xl lg:hidden"
       >
         <Menu size={18} />
       </button>
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} />
-          <div className="page-in absolute inset-y-0 left-0 flex w-[264px] flex-col gap-6 border-r border-line bg-plane py-5">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <div className="page-in absolute inset-y-0 left-0 flex w-[264px] flex-col gap-6 border-r border-white/[0.08] bg-plane/85 py-5 backdrop-blur-2xl">
             <div className="flex items-center justify-between pl-3 pr-3">
               <Link href="/" onClick={() => setOpen(false)}>
                 <BrandLockup />

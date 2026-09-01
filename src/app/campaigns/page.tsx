@@ -43,7 +43,7 @@ export default async function CampaignsPage() {
             <Link
               key={c.id}
               href={`/campaigns/${c.id}`}
-              className="lift group relative block rounded-xl border border-line bg-white/[0.02] p-4 hover:bg-white/[0.04]"
+              className="card lift group relative block p-[1.125rem]"
             >
               <div className="mb-2.5 flex items-start justify-between gap-2">
                 <div className="min-w-0">

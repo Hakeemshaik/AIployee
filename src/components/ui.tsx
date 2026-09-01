@@ -57,7 +57,7 @@ export function Card({
 }) {
   return (
     <section
-      className={`card ${i === undefined ? "" : "rise-in"} ${pad ? "p-5" : ""} ${className}`}
+      className={`card ${i === undefined ? "" : "rise-in"} ${pad ? "p-5 sm:p-[1.375rem]" : ""} ${className}`}
       style={i === undefined ? undefined : ({ "--i": i } as CSSProperties)}
     >
       {(title || actions) && (
@@ -109,10 +109,10 @@ export function StatCard({
       className={`card-2 ${i === undefined ? "" : "rise-in"} ${hero ? "px-5 py-4" : "px-4 py-3.5"}`}
       style={i === undefined ? undefined : ({ "--i": i } as CSSProperties)}
     >
-      <p className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-ink-3">{label}</p>
+      <p className="text-[0.6875rem] font-medium uppercase tracking-[0.09em] text-ink-3">{label}</p>
       <p
-        className={`mt-2 font-semibold leading-none tracking-tight ${valueColor} ${
-          hero ? "num text-[1.75rem]" : "num text-[1.3125rem]"
+        className={`value-in mt-2.5 font-semibold leading-none tracking-tight ${valueColor} ${
+          hero ? "num text-[1.875rem]" : "num text-[1.375rem]"
         }`}
       >
         {value}
@@ -142,7 +142,7 @@ export function Disclosure({
 }) {
   return (
     <details className={`card group ${className}`}>
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-3.5">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-[18px] px-5 py-4 transition-colors hover:bg-white/[0.03]">
         <span>
           <span className="text-[0.875rem] font-medium text-ink">{summary}</span>
           {hint && <span className="ml-2 text-[0.75rem] text-ink-3">{hint}</span>}
@@ -158,7 +158,7 @@ export function Disclosure({
           <path d="M3 5.5L7 9.5L11 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       </summary>
-      <div className="page-in border-t border-line-2 p-5">{children}</div>
+      <div className="page-in border-t border-white/[0.055] p-5 sm:p-[1.375rem]">{children}</div>
     </details>
   );
 }
