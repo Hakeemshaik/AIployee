@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AlertTriangle, Loader2, PhoneOutgoing } from "lucide-react";
 import { Card } from "@/components/ui";
+import { CallResult } from "@/components/CallResult";
 
 // ---------------------------------------------------------------------------
 // Place one call.
@@ -18,6 +19,7 @@ import { Card } from "@/components/ui";
 
 type Result = {
   suid: string;
+  attemptId: string;
   name: string;
   phone: string;
   callFlag: string;
@@ -103,9 +105,11 @@ export function PlaceCallCard() {
       )}
 
       {result && (
-        <div className="mt-3 rounded-lg border border-good/35 bg-good/8 px-3 py-2.5">
-          <p className="text-[0.78125rem] leading-relaxed text-ink">{result.nextStep}</p>
-          <p className="num mt-1.5 text-[0.6875rem] text-ink-3">
+        <div className="mt-3">
+          {/* The call itself, live: ringing, then answered, then what was said
+              and what they committed to. */}
+          <CallResult attemptId={result.attemptId} />
+          <p className="num mt-2 text-[0.6875rem] text-ink-3">
             {result.build} · reference {result.suid}
           </p>
           <details className="mt-2 text-[0.6875rem] text-ink-3">

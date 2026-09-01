@@ -19,6 +19,24 @@ import { TeamCard } from "./TeamCard";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Settings" };
 
+const DIAL_OUTCOME_PAYLOAD = `POST /api/integrations/voice/dial-outcome
+Authorization: Bearer <api key>
+Content-Type: application/json
+
+{
+  "suid": "the reference sent as customer_data.main.suid",
+  "status": "answered",          // or no_answer | voicemail | busy | failed
+  "event_id": "jobix-call-123",  // the platform's own id, if it has one
+  "started_at": "2026-09-01T09:15:02Z",
+  "ended_at": "2026-09-01T09:17:41Z",
+  "duration_seconds": 159,
+  "recording_url": "https://recordings.example.com/call-123.mp3",
+  "transcript": [
+    { "role": "assistant", "text": "Good morning, is this Thabo?" },
+    { "role": "user", "text": "Speaking." }
+  ]
+}`;
+
 const EXAMPLE_PAYLOAD = `POST /api/integrations/voice/call-completed
 Authorization: Bearer <api key>
 Content-Type: application/json
@@ -143,30 +161,45 @@ export default async function SettingsPage() {
             "the voice platform integration" had a reader believing this was the
             live pipe. It is a working ingress for a provider that can post. */}
         <Card
-          title="Inbound call webhook"
-          subtitle="For a provider that can post results — Jobix results arrive through ingestion"
+          title="Call results, coming back"
+          subtitle="Point the flow's call webhook here and every dial fills itself in"
         >
-          <div className="mb-3 flex items-start gap-3 rounded-lg border border-line bg-ink/[0.03] p-3">
+          {/* The one to wire up. A dial placed from here carries a reference,
+              and this is where the platform hands it back with what happened. */}
+          <div className="mb-3 flex items-start gap-3 rounded-xl border border-accent/30 bg-accent/[0.06] p-3">
             <Webhook size={15} className="mt-0.5 shrink-0 text-accent" />
             <div className="min-w-0">
               <p className="text-[0.78125rem] font-medium text-ink">
-                POST <span className="num">/api/integrations/voice/call-completed</span>
+                POST <span className="num">/api/integrations/voice/dial-outcome</span>
               </p>
-              <p className="mt-1 text-[0.6875rem] leading-relaxed text-ink-3">
-                Authenticated with a Bearer API key scoped to <code>voice:ingest</code>. The call is
-                stored, the transcript analysed, promises and escalations created, and campaign
-                metrics updated — one request drives the whole workflow.
-              </p>
-              <p className="mt-1.5 text-[0.6875rem] leading-relaxed text-ink-3">
-                Nothing posts here today. Jobix has no outbound webhook for call results, so results
-                come from the import on the Call analytics page. This endpoint is for a provider that
-                can push, and for your own systems.
+              <p className="mt-1 text-[0.6875rem] leading-relaxed text-ink-2">
+                Keyed on the <code>suid</code> this platform minted for the write that placed the
+                call — send it back and the result finds its own account. The transcript is analysed,
+                a promise to pay becomes a promise, an escalation becomes an escalation, and the
+                dial stops saying &ldquo;ringing&rdquo;. Bearer API key, scope{" "}
+                <code>voice:ingest</code>. A retry is safe: the same reference never makes a second
+                call.
               </p>
             </div>
           </div>
-          <pre className="scroll-x rounded-lg border border-line bg-ink/[0.05] p-3 text-[0.65625rem] leading-relaxed text-ink-2">
-            {EXAMPLE_PAYLOAD}
+          <pre className="scroll-x rounded-xl border border-line bg-ink/[0.05] p-3 text-[0.65625rem] leading-relaxed text-ink-2">
+            {DIAL_OUTCOME_PAYLOAD}
           </pre>
+          <details className="mt-3">
+            <summary className="cursor-pointer text-[0.71875rem] text-ink-3">
+              The other endpoint: a call the platform already has an id for
+            </summary>
+            <div className="page-in mt-2">
+              <p className="mb-2 text-[0.6875rem] leading-relaxed text-ink-3">
+                <span className="num">POST /api/integrations/voice/call-completed</span> takes a call
+                that is matched to an account by number or account reference rather than by a
+                reference this platform issued. Same key, same scope, same pipeline behind it.
+              </p>
+              <pre className="scroll-x rounded-xl border border-line bg-ink/[0.05] p-3 text-[0.65625rem] leading-relaxed text-ink-2">
+                {EXAMPLE_PAYLOAD}
+              </pre>
+            </div>
+          </details>
           <h3 className="mb-2 mt-4 text-[0.6875rem] font-medium uppercase tracking-[0.07em] text-ink-3">
             API keys
           </h3>

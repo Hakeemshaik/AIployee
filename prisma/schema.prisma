@@ -28,31 +28,32 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users              User[]
-  debtors            Debtor[]
-  debtAccounts       DebtAccount[]
-  campaigns          Campaign[]
-  agents             AIAgent[]
-  calls              Call[]
-  callAnalyses       CallAnalysis[]
-  promises           PromiseToPay[]
-  payments           Payment[]
-  escalations        Escalation[]
-  reports            Report[]
-  insights           AIInsight[]
-  auditLogs          AuditLog[]
-  platformEvents     PlatformEvent[]
-  apiKeys            ApiKey[]
-  complianceSettings ComplianceSettings?
-  campaignContacts   CampaignContact[]
-  redialBatches      RedialBatch[]
-  providerEvents     ProviderEvent[]
+  users               User[]
+  debtors             Debtor[]
+  debtAccounts        DebtAccount[]
+  campaigns           Campaign[]
+  agents              AIAgent[]
+  calls               Call[]
+  callAnalyses        CallAnalysis[]
+  promises            PromiseToPay[]
+  payments            Payment[]
+  escalations         Escalation[]
+  reports             Report[]
+  insights            AIInsight[]
+  auditLogs           AuditLog[]
+  platformEvents      PlatformEvent[]
+  apiKeys             ApiKey[]
+  complianceSettings  ComplianceSettings?
+  campaignContacts    CampaignContact[]
+  redialBatches       RedialBatch[]
+  providerEvents      ProviderEvent[]
   integrationSettings IntegrationSettings?
-  jobixConversations JobixConversation[]
-  jobixTranscripts   JobixTranscript[]
-  ingestionRuns      IngestionRun[]
-  jobixNodeEvents    JobixNodeEvent[]
-  invites            Invite[]
+  jobixConversations  JobixConversation[]
+  jobixTranscripts    JobixTranscript[]
+  ingestionRuns       IngestionRun[]
+  jobixNodeEvents     JobixNodeEvent[]
+  invites             Invite[]
+  dialAttempts        DialAttempt[]
 }
 
 model User {
@@ -97,43 +98,50 @@ model ComplianceSettings {
 }
 
 model Debtor {
-  id             String    @id @default(cuid())
-  organizationId String
-  firstName      String
-  lastName       String
-  accountNumber  String
-  phone          String
-  altPhone       String?
-  email          String?
-  city           String?
-  province       String?
-  status         String    @default("active") // active | arrangement | promise | paid | dispute | hardship | escalated | uncontactable | opted_out | legal
-  riskScore      Int       @default(50) // 0 (safe) – 100 (unlikely to recover)
-  doNotContact   Boolean   @default(false)
-  campaignId     String?
-  /** The voice platform's own customer uuid. Conversations carry a contact
-   *  uuid, so this gives calls a real identifier join instead of a phone
-   *  guess. */
+  id                  String    @id @default(cuid())
+  organizationId      String
+  firstName           String
+  lastName            String
+  accountNumber       String
+  phone               String
+  altPhone            String?
+  email               String?
+  city                String?
+  province            String?
+  status              String    @default("active") // active | arrangement | promise | paid | dispute | hardship | escalated | uncontactable | opted_out | legal
+  riskScore           Int       @default(50) // 0 (safe) – 100 (unlikely to recover)
+  doNotContact        Boolean   @default(false)
+  campaignId          String?
+  /**
+   * The voice platform's own customer uuid. Conversations carry a contact
+   * uuid, so this gives calls a real identifier join instead of a phone
+   * guess.
+   */
   providerContactUuid String?
-  /** Batch code the voice platform last held in this record's `call` field —
-   *  how a campaign's dialling batch is recognised on the record itself. */
-  callBatch      String?
-  /** The agent reached a person, but not this account holder. A contact, but
-   *  never a right-party contact — the distinction RPC rate turns on. */
-  wrongPerson    Boolean  @default(false)
-  lastContactAt  DateTime?
-  lastOutcome    String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  /**
+   * Batch code the voice platform last held in this record's `call` field —
+   * how a campaign's dialling batch is recognised on the record itself.
+   */
+  callBatch           String?
+  /**
+   * The agent reached a person, but not this account holder. A contact, but
+   * never a right-party contact — the distinction RPC rate turns on.
+   */
+  wrongPerson         Boolean   @default(false)
+  lastContactAt       DateTime?
+  lastOutcome         String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  campaign     Campaign?      @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  accounts     DebtAccount[]
-  calls        Call[]
-  promises     PromiseToPay[]
-  payments     Payment[]
-  escalations  Escalation[]
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaign         Campaign?         @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  accounts         DebtAccount[]
+  calls            Call[]
+  promises         PromiseToPay[]
+  payments         Payment[]
+  escalations      Escalation[]
   campaignContacts CampaignContact[]
+  dialAttempts     DialAttempt[]
 
   @@unique([organizationId, accountNumber])
   @@index([organizationId, status])
@@ -144,18 +152,18 @@ model Debtor {
 }
 
 model DebtAccount {
-  id              String    @id @default(cuid())
+  id              String   @id @default(cuid())
   organizationId  String
   debtorId        String
   reference       String
   creditorName    String
   originalBalance Float
   currentBalance  Float
-  amountPaid      Float     @default(0)
+  amountPaid      Float    @default(0)
   dueDate         DateTime
-  daysOverdue     Int       @default(0)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  daysOverdue     Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   debtor       Debtor       @relation(fields: [debtorId], references: [id], onDelete: Cascade)
@@ -186,25 +194,31 @@ model Campaign {
   providerCampaignId String? // id of the campaign/batch on the voice platform
   providerStartedAt  DateTime?
   providerError      String? // last integration error surfaced to the operator
-  /** When this campaign should start dialling by itself. Cleared once it has
-   *  fired, so a schedule never runs twice. */
+  /**
+   * When this campaign should start dialling by itself. Cleared once it has
+   * fired, so a schedule never runs twice.
+   */
   scheduledFor       DateTime?
-  /** Who set the schedule — a schedule is the human confirmation to dial. */
+  /**
+   * Who set the schedule — a schedule is the human confirmation to dial.
+   */
   scheduledBy        String?
-  /** Why a scheduled start did not go ahead. */
+  /**
+   * Why a scheduled start did not go ahead.
+   */
   scheduleError      String?
   idempotencyKey     String? // unused since starting a run became a batch code; kept so no migration is needed to drop a column nothing reads
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  agent        AIAgent?          @relation(fields: [agentId], references: [id], onDelete: SetNull)
-  debtors      Debtor[]
-  calls        Call[]
-  promises     PromiseToPay[]
-  payments     Payment[]
-  escalations  Escalation[]
-  contacts     CampaignContact[]
+  organization  Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agent         AIAgent?          @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  debtors       Debtor[]
+  calls         Call[]
+  promises      PromiseToPay[]
+  payments      Payment[]
+  escalations   Escalation[]
+  contacts      CampaignContact[]
   redialBatches RedialBatch[]
 
   @@index([organizationId, status])
@@ -291,28 +305,32 @@ model ProviderEvent {
 // Cached Jobix conversation. Conversations are cheap to page but transcripts
 // are one request each, so both are cached locally and never re-fetched.
 model JobixConversation {
-  id             String   @id @default(cuid())
-  organizationId String
-  uuid           String
-  externalId     Int?
-  phone          String
-  contactName    String?
-  /** The provider's customer uuid for this call, when the record carries one.
-   *  Lets a call be tied to a debtor by identifier rather than by number. */
-  contactUuid    String?
-  agentUuid      String?
-  agentName      String?
-  flowName       String?
-  durationSeconds Int     @default(0)
-  status         Int?
-  conversion     Boolean  @default(false)
-  voicemailFlag  Boolean  @default(false)
-  startedAt      DateTime
-  /** SAST hour of day, precomputed for the hour-of-day analysis. */
-  sastHour       Int
-  ingestedAt     DateTime @default(now())
+  id              String   @id @default(cuid())
+  organizationId  String
+  uuid            String
+  externalId      Int?
+  phone           String
+  contactName     String?
+  /**
+   * The provider's customer uuid for this call, when the record carries one.
+   * Lets a call be tied to a debtor by identifier rather than by number.
+   */
+  contactUuid     String?
+  agentUuid       String?
+  agentName       String?
+  flowName        String?
+  durationSeconds Int      @default(0)
+  status          Int?
+  conversion      Boolean  @default(false)
+  voicemailFlag   Boolean  @default(false)
+  startedAt       DateTime
+  /**
+   * SAST hour of day, precomputed for the hour-of-day analysis.
+   */
+  sastHour        Int
+  ingestedAt      DateTime @default(now())
 
-  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   transcript   JobixTranscript?
 
   @@unique([organizationId, uuid])
@@ -324,18 +342,22 @@ model JobixConversation {
 // Cached transcript plus the derived reach signals. Keyed by conversation
 // uuid so a completed fetch is never repeated.
 model JobixTranscript {
-  id             String   @id @default(cuid())
-  organizationId String
-  conversationId String   @unique
+  id               String   @id @default(cuid())
+  organizationId   String
+  conversationId   String   @unique
   conversationUuid String
-  /** JSON array of { role, text }. */
-  turns          String
-  userTurns      Int      @default(0)
-  userWords      Int      @default(0)
-  userText       String   @default("")
-  /** Transcript-derived right-party contact, never a platform flag. */
-  reached        Boolean  @default(false)
-  fetchedAt      DateTime @default(now())
+  /**
+   * JSON array of { role, text }.
+   */
+  turns            String
+  userTurns        Int      @default(0)
+  userWords        Int      @default(0)
+  userText         String   @default("")
+  /**
+   * Transcript-derived right-party contact, never a platform flag.
+   */
+  reached          Boolean  @default(false)
+  fetchedAt        DateTime @default(now())
 
   organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   conversation JobixConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
@@ -346,32 +368,40 @@ model JobixTranscript {
 
 // One ingestion run: resumable, checkpointed, with progress for the UI.
 model IngestionRun {
-  id             String    @id @default(cuid())
-  organizationId String
-  campaignId     String?
-  /** interrupted = stopped at the request-duration ceiling, resumable. */
-  status         String    @default("running") // running | completed | interrupted | failed | cancelled
-  phase          String    @default("conversations") // conversations | transcripts | customers | done
-  conversationsFound Int   @default(0)
-  transcriptsFetched Int   @default(0)
-  transcriptsCached  Int   @default(0)
-  transcriptsFailed  Int   @default(0)
-  /** Transcripts still to fetch when a run stops early. */
-  transcriptsPending Int   @default(0)
-  customersFound     Int   @default(0)
-  customersCreated   Int   @default(0)
-  customersUpdated   Int   @default(0)
-  droppedStale       Int   @default(0)
-  droppedDuplicate   Int   @default(0)
-  messagingEvents    Int   @default(0)
-  /** Newest conversation already ingested — the resume point. */
-  cursor         String?
-  workspaceNote  String?
-  error          String?
-  startedAt      DateTime  @default(now())
-  /** Touched by every checkpoint — a stalled run is detected from this. */
-  updatedAt      DateTime  @updatedAt
-  finishedAt     DateTime?
+  id                 String    @id @default(cuid())
+  organizationId     String
+  campaignId         String?
+  /**
+   * interrupted = stopped at the request-duration ceiling, resumable.
+   */
+  status             String    @default("running") // running | completed | interrupted | failed | cancelled
+  phase              String    @default("conversations") // conversations | transcripts | customers | done
+  conversationsFound Int       @default(0)
+  transcriptsFetched Int       @default(0)
+  transcriptsCached  Int       @default(0)
+  transcriptsFailed  Int       @default(0)
+  /**
+   * Transcripts still to fetch when a run stops early.
+   */
+  transcriptsPending Int       @default(0)
+  customersFound     Int       @default(0)
+  customersCreated   Int       @default(0)
+  customersUpdated   Int       @default(0)
+  droppedStale       Int       @default(0)
+  droppedDuplicate   Int       @default(0)
+  messagingEvents    Int       @default(0)
+  /**
+   * Newest conversation already ingested — the resume point.
+   */
+  cursor             String?
+  workspaceNote      String?
+  error              String?
+  startedAt          DateTime  @default(now())
+  /**
+   * Touched by every checkpoint — a stalled run is detected from this.
+   */
+  updatedAt          DateTime  @updatedAt
+  finishedAt         DateTime?
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -382,15 +412,15 @@ model IngestionRun {
 // rather than hard-coded so the integration matches what the provider
 // actually exposes; secrets stay in environment variables.
 model IntegrationSettings {
-  id             String  @id @default(cuid())
-  organizationId String  @unique
-  provider       String  @default("manual") // manual | jobix
-  baseUrl        String? // e.g. https://dashboard.jobix.ai/api
+  id              String    @id @default(cuid())
+  organizationId  String    @unique
+  provider        String    @default("manual") // manual | jobix
+  baseUrl         String? // e.g. https://dashboard.jobix.ai/api
   // JSON map of capability -> path, e.g.
   // {"listAgents":"/agents","listConversations":"/conversations"}
-  endpoints      String?
+  endpoints       String?
   // JSON map of provider status/result -> canonical internal outcome
-  outcomeMap     String?
+  outcomeMap      String?
   // The dialling flow. None of these three is a secret — they are ids visible
   // in the flow builder's own URL — and keeping them in environment variables
   // meant a redeploy for every change, so they live here and env is only the
@@ -401,12 +431,12 @@ model IntegrationSettings {
   // How the flow begins: "insert" (its event is Insert Customer, so writing an
   // armed customer dials immediately) or "trigger" (its Run node is fired).
   flowStart       String?
-  pollEnabled    Boolean @default(false)
-  pollCursor     String? // newest provider record already ingested
-  lastSyncAt     DateTime?
-  lastSyncError  String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  pollEnabled     Boolean   @default(false)
+  pollCursor      String? // newest provider record already ingested
+  lastSyncAt      DateTime?
+  lastSyncError   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
@@ -465,23 +495,23 @@ model Call {
 
 // Structured information extracted from a call transcript by the AI layer.
 model CallAnalysis {
-  id                  String   @id @default(cuid())
+  id                  String    @id @default(cuid())
   organizationId      String
-  callId              String   @unique
+  callId              String    @unique
   outcome             String
   promisedAmount      Float?
   promisedDate        DateTime?
   paymentPlan         String? // JSON: { installments, amountPerInstallment, frequency }
   reasonForNonpayment String?
-  sentiment           String   @default("neutral") // positive | neutral | negative
+  sentiment           String    @default("neutral") // positive | neutral | negative
   sentimentScore      Float? // -1 .. 1
-  requiresHuman       Boolean  @default(false)
+  requiresHuman       Boolean   @default(false)
   escalationReason    String?
   nextAction          String?
   summary             String?
   keyPoints           String? // JSON string[]
-  provider            String   @default("mock") // mock | claude
-  createdAt           DateTime @default(now())
+  provider            String    @default("mock") // mock | claude
+  createdAt           DateTime  @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   call         Call         @relation(fields: [callId], references: [id], onDelete: Cascade)
@@ -564,19 +594,19 @@ model Escalation {
 }
 
 model Report {
-  id          String    @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
-  type        String // daily | weekly | campaign | agent_performance | ptp | recovery | executive_summary
-  title       String
-  periodStart DateTime
-  periodEnd   DateTime
-  campaignId  String?
-  agentId     String?
-  status      String    @default("ready") // generating | ready | failed
-  content     String? // JSON: structured report sections (metrics, outcomes, AI insights, recommendations)
-  provider    String    @default("mock")
-  generatedAt DateTime?
-  createdAt   DateTime  @default(now())
+  type           String // daily | weekly | campaign | agent_performance | ptp | recovery | executive_summary
+  title          String
+  periodStart    DateTime
+  periodEnd      DateTime
+  campaignId     String?
+  agentId        String?
+  status         String    @default("ready") // generating | ready | failed
+  content        String? // JSON: structured report sections (metrics, outcomes, AI insights, recommendations)
+  provider       String    @default("mock")
+  generatedAt    DateTime?
+  createdAt      DateTime  @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -585,15 +615,15 @@ model Report {
 }
 
 model AIInsight {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   organizationId  String
-  scope           String   @default("insights") // dashboard | insights | campaign
+  scope           String    @default("insights") // dashboard | insights | campaign
   refId           String? // e.g. campaignId when scope=campaign
   content         String // JSON: structured insight payload
-  provider        String   @default("mock") // mock | claude
+  provider        String    @default("mock") // mock | claude
   dataWindowStart DateTime?
   dataWindowEnd   DateTime?
-  generatedAt     DateTime @default(now())
+  generatedAt     DateTime  @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -723,4 +753,53 @@ model Invite {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, createdAt])
+}
+
+/// One dial, from the moment it is placed to whatever came back.
+///
+/// A write to the voice platform IS the call — the flow fires on the customer
+/// being inserted — so between pressing the button and a result arriving there
+/// was previously nothing at all: no record that anybody had been rung, and no
+/// way to tell "the call is still going" from "nothing ever happened". This is
+/// that record, created at the moment of the write.
+///
+/// `suid` is the reference minted for the write and sent as
+/// customer_data.main.suid. It is how a result finds its way back: the platform
+/// returns it on the outcome webhook, and everything else — the transcript, the
+/// promise, the recording — hangs off that one join.
+model DialAttempt {
+  id             String  @id @default(cuid())
+  organizationId String
+  suid           String
+  /// Null for a number dialled by hand, which has no account behind it.
+  debtorId       String?
+  campaignId     String?
+  name           String
+  phone          String
+  /// The value written to the call column, which is what armed the record.
+  callFlag       String
+  requestedById  String?
+
+  /// placed | reached | no_answer | failed
+  state           String    @default("placed")
+  requestedAt     DateTime  @default(now())
+  answeredAt      DateTime?
+  endedAt         DateTime?
+  durationSeconds Int?
+  /// The classified outcome, once a transcript has been read.
+  outcome         String?
+  transcript      String?
+  recordingUrl    String?
+  /// The call row this became, when the attempt belonged to an account.
+  callId          String?
+  /// What the platform posted, verbatim, for when a mapping turns out wrong.
+  raw             String?
+  updatedAt       DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  debtor       Debtor?      @relation(fields: [debtorId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, suid])
+  @@index([organizationId, requestedAt])
+  @@index([organizationId, debtorId])
 }

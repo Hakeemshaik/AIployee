@@ -7,6 +7,8 @@ import { formatDate, formatDateTime, money, relativeDays } from "@/lib/format";
 import { getDebtorProfile, listCampaignOptions } from "@/services/debtors";
 import { promiseDisplayStatus } from "@/services/promises";
 import { BackLink, Badge, Card, Meta, PageHeader } from "@/components/ui";
+import { CallResult } from "@/components/CallResult";
+import { listDialAttempts } from "@/services/dial-attempts";
 import { DebtorActions } from "./DebtorActions";
 
 export const dynamic = "force-dynamic";
@@ -27,9 +29,10 @@ export default async function DebtorProfilePage({
 }) {
   const { id } = await params;
   const ctx = await getContext();
-  const [profile, campaigns] = await Promise.all([
+  const [profile, campaigns, dials] = await Promise.all([
     getDebtorProfile(ctx.organizationId, id),
     listCampaignOptions(ctx.organizationId),
+    listDialAttempts(ctx.organizationId, { debtorId: id, limit: 5 }),
   ]);
   if (!profile) notFound();
   const { debtor, stats, timeline } = profile;
@@ -132,6 +135,20 @@ export default async function DebtorProfilePage({
           )}
         </Card>
       </div>
+
+      {dials.length > 0 && (
+        <Card
+          className="mb-4"
+          title="Dials from here"
+          subtitle="Calls placed from this platform, and what came back"
+        >
+          <div className="space-y-2.5">
+            {dials.map((dial) => (
+              <CallResult key={dial.id} attemptId={dial.id} initial={dial} />
+            ))}
+          </div>
+        </Card>
+      )}
 
       <Card title="Timeline" subtitle="Every interaction on this account, most recent first">
         {timeline.length === 0 ? (

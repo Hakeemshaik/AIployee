@@ -33,6 +33,8 @@ import { plainWireName } from "@/services/jobix-export";
 export type DialOneResult = {
   /** The reference this submit minted, which is how the record is found. */
   suid: string;
+  /** The attempt row this created, which is what the result panel watches. */
+  attemptId: string;
   name: string;
   phone: string;
   /** The value written to the call column — what the flow's filter must match. */
@@ -122,6 +124,7 @@ export async function dialOne(
   let phone: string;
   let email: string | undefined;
   let debtorId: string | undefined;
+  let campaignId: string | undefined;
 
   if (input.debtorId) {
     const debtor = await db.debtor.findFirst({
@@ -133,11 +136,13 @@ export async function dialOne(
         phone: true,
         email: true,
         status: true,
+        campaignId: true,
         doNotContact: true,
         promises: { where: { status: "pending" }, select: { id: true } },
       },
     });
     if (!debtor) throw new JobixError("That account is not in this organization's book.", "rejected");
+    campaignId = debtor.campaignId ?? undefined;
     // The book's rules, one account at a time. A single-account path that
     // skipped them would be the way every guardrail gets bypassed.
     if (debtor.doNotContact) {
@@ -185,6 +190,26 @@ export async function dialOne(
     customer_data: { main, values },
   });
 
+  // The write IS the call, so the attempt is recorded the moment it lands.
+  // Without this there is nothing between pressing the button and a result
+  // arriving — no evidence anybody was rung, and no way to tell a call still
+  // running from one that never happened. The suid is the join: the platform
+  // hands it back on the outcome, and the transcript, the promise and the
+  // recording all find their way here through it.
+  const attempt = await db.dialAttempt.create({
+    data: {
+      organizationId,
+      suid,
+      debtorId: debtorId ?? null,
+      campaignId: campaignId ?? null,
+      name,
+      phone,
+      callFlag,
+      requestedById: userId,
+      state: "placed",
+    },
+  });
+
   await audit({
     organizationId,
     actorType: "user",
@@ -192,11 +217,12 @@ export async function dialOne(
     action: "jobix.dialled_one",
     entityType: debtorId ? "debtor" : "call_batch",
     entityId: debtorId ?? suid,
-    detail: { suid, phone, callFlag, response: received },
+    detail: { suid, attemptId: attempt.id, phone, callFlag, response: received },
   });
 
   return {
     suid,
+    attemptId: attempt.id,
     name,
     phone,
     callFlag,

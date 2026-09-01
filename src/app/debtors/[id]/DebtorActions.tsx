@@ -5,6 +5,7 @@ import { useState } from "react";
 import { AlertTriangle, Loader2, PhoneOutgoing, X } from "lucide-react";
 import { ESCALATION_PRIORITIES, ESCALATION_REASONS, label } from "@/lib/domain";
 import { RecordPaymentButton } from "@/app/payments/RecordPayment";
+import { CallResult } from "@/components/CallResult";
 
 export function DebtorActions({
   debtor,
@@ -21,6 +22,7 @@ export function DebtorActions({
   const [error, setError] = useState<string | null>(null);
   const [assignError, setAssignError] = useState<string | null>(null);
   const [callNote, setCallNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const [attemptId, setAttemptId] = useState<string | null>(null);
 
   /**
    * Call this one account, now.
@@ -40,6 +42,7 @@ export function DebtorActions({
     }
     setBusy(true);
     setCallNote(null);
+    setAttemptId(null);
     try {
       const res = await fetch("/api/calling/one", {
         method: "POST",
@@ -48,7 +51,8 @@ export function DebtorActions({
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.message ?? "The call could not be placed.");
-      setCallNote({ ok: true, text: body.nextStep as string });
+      // The panel takes it from here: ringing, answered, and what came of it.
+      setAttemptId(body.attemptId as string);
     } catch (err) {
       setCallNote({
         ok: false,
@@ -126,6 +130,11 @@ export function DebtorActions({
         <AlertTriangle size={13} /> Escalate
       </button>
       {assignError && <span className="text-[0.6875rem] text-critical">{assignError}</span>}
+      {attemptId && (
+        <div className="w-full">
+          <CallResult attemptId={attemptId} />
+        </div>
+      )}
       {callNote && (
         <p
           className={`w-full rounded-lg border px-3 py-2 text-[0.75rem] leading-relaxed ${
