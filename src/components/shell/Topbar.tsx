@@ -1,7 +1,10 @@
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { CommandPalette } from "./CommandPalette";
 import { SignOutButton } from "./SignOutButton";
+import { TopNav } from "./TopNav";
+import { BrandLockup } from "@/components/Brand";
 
 // ---------------------------------------------------------------------------
 // The bar carries three things: which organisation's data is on screen, the
@@ -46,16 +49,28 @@ export async function Topbar() {
     .slice(0, 2)
     .join("");
 
-  // The bar is glass, but opaque enough to read against: at 45% the content
-  // scrolling beneath it showed through the blur and collided with the text.
+  // Two rows on a laptop and one on a wide screen: brand, who you are and
+  // where you are up top, and the navigation as a pill row beneath it. The bar
+  // is glass, but opaque enough to read against — at 45% the content scrolling
+  // beneath showed through the blur and collided with the text.
   return (
     <header className="sticky top-0 z-30 border-b border-ink/[0.08] bg-base/80 backdrop-blur-2xl">
-      <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center justify-between gap-4 px-4 pl-14 sm:px-6 lg:pl-8 lg:pr-8">
-        <p className="flex min-w-0 items-center gap-2 text-[0.8125rem]">
-          <span className="pulse-live h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
-          <span className="truncate font-medium text-ink">{orgName}</span>
-        </p>
-        <div className="flex items-center gap-3">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2.5 sm:px-6 lg:px-8">
+        <Link href="/" className="shrink-0" aria-label="AIployee Command Centre">
+          <BrandLockup />
+        </Link>
+
+        {/* Its own row, always. Sharing one with the account cluster was tight
+            at 1440 and the More button ended up under the organisation name. */}
+        <div className="scroll-x order-last w-full min-w-0 pb-0.5">
+          <TopNav guest={guest} />
+        </div>
+
+        <div className="ml-auto flex shrink-0 items-center gap-3">
+          <p className="hidden min-w-0 items-center gap-2 text-[0.8125rem] sm:flex">
+            <span className="pulse-live h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
+            <span className="max-w-[14rem] truncate font-medium text-ink">{orgName}</span>
+          </p>
           {!guest && <CommandPalette />}
           {userName && (
             <div className="flex items-center gap-2.5">

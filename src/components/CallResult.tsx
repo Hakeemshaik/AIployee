@@ -10,6 +10,7 @@ import {
   PhoneOutgoing,
   Play,
   Radio,
+  Search,
 } from "lucide-react";
 import { label } from "@/lib/domain";
 import { money } from "@/lib/format";
@@ -110,12 +111,15 @@ export function CallResult({
 }) {
   const [attempt, setAttempt] = useState<DialAttemptView | null>(initial ?? null);
   const [failed, setFailed] = useState(false);
+  const [looking, setLooking] = useState(false);
+  const [lookNote, setLookNote] = useState<string | null>(null);
+
+  const open = !attempt || (attempt.state === "placed" && attempt.waitingSeconds <= GRACE_SECONDS);
 
   useEffect(() => {
     // Only while the call is open. A finished dial never changes again, so
     // polling it would be asking a question that has already been answered.
-    if (attempt && attempt.state !== "placed") return;
-    if (attempt && attempt.waitingSeconds > GRACE_SECONDS) return;
+    if (!open) return;
 
     let live = true;
     const tick = async () => {
@@ -134,7 +138,48 @@ export function CallResult({
       live = false;
       clearInterval(timer);
     };
-  }, [attemptId, attempt]);
+  }, [attemptId, open]);
+
+  // The platform is asked for the result every twenty seconds while the call is
+  // open, which is what makes this work on a deployment whose flow does not
+  // post outcomes back. It is a read, and it stops the moment a result lands.
+  useEffect(() => {
+    if (!open) return;
+    let live = true;
+    const look = async () => {
+      if (!live) return;
+      try {
+        const response = await fetch(`/api/calling/one/${attemptId}/fetch`, { method: "POST" });
+        const body = await response.json();
+        if (!live) return;
+        if (body.attempt) setAttempt(body.attempt as DialAttemptView);
+        if (body.found === false && typeof body.reason === "string") setLookNote(body.reason);
+      } catch {
+        // The poll above is still running; one failed read is not worth saying.
+      }
+    };
+    const timer = setInterval(look, 20_000);
+    return () => {
+      live = false;
+      clearInterval(timer);
+    };
+  }, [attemptId, open]);
+
+  async function lookNow() {
+    setLooking(true);
+    setLookNote(null);
+    try {
+      const response = await fetch(`/api/calling/one/${attemptId}/fetch`, { method: "POST" });
+      const body = await response.json();
+      if (body.attempt) setAttempt(body.attempt as DialAttemptView);
+      if (body.found === false) setLookNote(body.reason ?? "Nothing yet.");
+      if (body.message) setLookNote(body.message as string);
+    } catch {
+      setLookNote("The platform could not be reached just now.");
+    } finally {
+      setLooking(false);
+    }
+  }
 
   if (!attempt) {
     return (
@@ -257,10 +302,21 @@ export function CallResult({
       {stale && (
         <p className="mt-2 text-[0.71875rem] leading-relaxed text-ink-2">
           The record was written and the flow accepted it, so either the call has not run yet or the
-          platform is not posting outcomes back. Point its call webhook at{" "}
+          platform is not posting outcomes back. Look for it now, or point the flow&rsquo;s call
+          webhook at{" "}
           <code className="rounded bg-ink/[0.06] px-1 py-0.5">/api/integrations/voice/dial-outcome</code>{" "}
           and it will fill in by itself.
         </p>
+      )}
+
+      {attempt.state === "placed" && (
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
+          <button className="btn btn-sm" onClick={lookNow} disabled={looking}>
+            {looking ? <Clock size={12} className="animate-spin" /> : <Search size={12} />}
+            {looking ? "Looking on the platform…" : "Look for the result now"}
+          </button>
+          {lookNote && <span className="text-[0.6875rem] leading-relaxed text-ink-3">{lookNote}</span>}
+        </div>
       )}
 
       {/* --- what was actually said --- */}
