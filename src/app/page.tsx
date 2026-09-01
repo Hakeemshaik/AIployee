@@ -111,14 +111,15 @@ export default async function DashboardPage() {
       {setup.done < setup.total && <SetupChecklist status={setup} compact />}
 
       {/* 1 — where the book stands.
-          A bento rather than four identical boxes: the tile you want is found
-          by its wash before a word of it is read, and each figure carries the
-          shape of how it got there. */}
+          Four identical tiles, deliberately. They were four different washes
+          with the first one a size larger, which made the row read as four
+          unrelated things and put nothing on a common line — labels at two
+          heights, figures at two sizes. One surface, one size, each figure
+          carrying the shape of how it got there. The only difference between
+          the tiles is the number, which is the only difference there is. */}
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          hero
           i={0}
-          tint="sky"
           label="Outstanding"
           value={money(m.totalOutstanding)}
           sub="across the full book"
@@ -126,7 +127,6 @@ export default async function DashboardPage() {
         />
         <StatCard
           i={1}
-          tint="mint"
           label="Recovered"
           value={money(m.totalRecovered)}
           tone="good"
@@ -136,7 +136,6 @@ export default async function DashboardPage() {
         />
         <StatCard
           i={2}
-          tint="lilac"
           label="Promised, unpaid"
           value={money(m.promiseValue)}
           meter={m.totalOutstanding > 0 ? m.promiseValue / m.totalOutstanding : 0}
@@ -145,7 +144,6 @@ export default async function DashboardPage() {
         />
         <StatCard
           i={3}
-          tint="peach"
           label="Reached"
           value={attempts > 0 ? percent(connected / attempts) : "—"}
           spark={reachSpark}
@@ -192,14 +190,20 @@ export default async function DashboardPage() {
                     <span className="min-w-0 flex-1 truncate text-[0.8125rem] text-ink group-hover:text-accent-ink">
                       {item.who}
                     </span>
-                    <span className="hidden shrink-0 text-[0.75rem] text-ink-2 sm:block">{item.what}</span>
-                    {item.badge ? (
-                      <Badge value={item.badge.value} label={item.badge.label} />
-                    ) : (
-                      <span className="w-[5.5rem] shrink-0 text-right text-[0.71875rem] text-ink-3">
-                        {item.when}
-                      </span>
-                    )}
+                    {/* Two fixed columns on the right, so the reasons start on
+                        one line and the badges end on one line. Sized to the
+                        content and right-aligned, they were ragged on both
+                        edges — the eye had nothing to run down. */}
+                    <span className="hidden w-[9.5rem] shrink-0 truncate text-right text-[0.75rem] text-ink-2 sm:block">
+                      {item.what}
+                    </span>
+                    <span className="flex w-[7.5rem] shrink-0 justify-end">
+                      {item.badge ? (
+                        <Badge value={item.badge.value} label={item.badge.label} />
+                      ) : (
+                        <span className="text-[0.71875rem] text-ink-3">{item.when}</span>
+                      )}
+                    </span>
                   </Link>
                 </li>
               ))}
@@ -281,7 +285,7 @@ export default async function DashboardPage() {
         >
           <RecoveryTrendChart data={data.recoverySeries} />
         </Card>
-        <Card i={1} tint="mint" title="Reach" subtitle="Connected calls as a share of attempts">
+        <Card i={1} title="Reach" subtitle="Connected calls as a share of attempts">
           <div className="pt-2">
             <Gauge
               value={attempts > 0 ? connected / attempts : 0}
@@ -298,7 +302,7 @@ export default async function DashboardPage() {
         >
           <ContactActivityChart data={data.contactSeries} />
         </Card>
-        <Card i={3} tint="cream" title="Payments in" subtitle="Day by day, last 30 days">
+        <Card i={3} title="Payments in" subtitle="Day by day, last 30 days">
           <p className="num text-[1.5rem] font-semibold leading-none tracking-tight text-ink">
             {money(m.paymentsValue)}
           </p>

@@ -81,15 +81,16 @@ html {
 body {
   position: relative;
   background-color: var(--color-base);
-  /* The washes glass has to bend. Four of them, all pastel and all under 60%,
-     placed so no two meet at full strength: mint top-left, lilac top-right,
-     cream low-centre, sky far right. Fixed, so scrolling moves the content
-     across the light rather than dragging the light along. */
+  /* Two washes, not four. Glass needs something behind it to bend or it reads
+     as grey plastic, but four coloured lights plus five card tints turned the
+     page into a swatch book — you cannot tell which colour on the screen means
+     something. So: teal at the top left, one cool counterweight at the top
+     right, both weak enough that no text ever sits on a tint you can name.
+     Everything with a colour you can name is now a fact: a status, a figure
+     that is good or bad, the page you are on. */
   background-image:
-    radial-gradient(1100px 520px at 6% -10%, rgba(14, 158, 144, 0.16), transparent 62%),
-    radial-gradient(900px 620px at 92% -6%, rgba(108, 92, 224, 0.14), transparent 62%),
-    radial-gradient(1000px 560px at 40% 106%, rgba(201, 122, 15, 0.1), transparent 60%),
-    radial-gradient(700px 520px at 100% 58%, rgba(56, 132, 214, 0.1), transparent 62%);
+    radial-gradient(1200px 560px at 4% -12%, rgba(14, 158, 144, 0.1), transparent 64%),
+    radial-gradient(1000px 640px at 96% -8%, rgba(108, 92, 224, 0.07), transparent 64%);
   background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-sans);
@@ -108,9 +109,9 @@ body::before {
   inset: -25%;
   z-index: -1;
   pointer-events: none;
-  background:
-    radial-gradient(38% 42% at 22% 32%, rgba(14, 158, 144, 0.14), transparent 70%),
-    radial-gradient(34% 38% at 74% 24%, rgba(108, 92, 224, 0.12), transparent 70%);
+  /* One slow light, at a strength you notice only if you sit and look. It is
+     what stops the background being a flat fill; it is not a colour. */
+  background: radial-gradient(40% 44% at 26% 34%, rgba(14, 158, 144, 0.07), transparent 70%);
   animation: drift 90s linear infinite;
 }
 @keyframes drift {
@@ -267,22 +268,29 @@ body::before {
   border-collapse: collapse;
   font-size: 0.8125rem;
 }
-.data-table thead th {
-  text-align: left;
-  font-weight: 500;
-  font-size: 0.6875rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-ink-3);
-  padding: 0.625rem 0.875rem;
-  border-bottom: 1px solid var(--color-line);
-  white-space: nowrap;
-}
-.data-table tbody td {
-  padding: 0.6875rem 0.875rem;
-  border-bottom: 1px solid var(--color-line-2);
-  color: var(--color-ink-2);
-  white-space: nowrap;
+/* These two are in @layer components on purpose, and it is the same Tailwind v4
+   trap the focus ring hit: unlayered CSS beats layered utilities. An unlayered
+   `text-align: left` here silently overrode every `className="text-right"` on a
+   column header, so every right-aligned column in the app had its heading on
+   the left, sitting above numbers that ended on the right. */
+@layer components {
+  .data-table thead th {
+    text-align: left;
+    font-weight: 500;
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-ink-3);
+    padding: 0.625rem 0.875rem;
+    border-bottom: 1px solid var(--color-line);
+    white-space: nowrap;
+  }
+  .data-table tbody td {
+    padding: 0.6875rem 0.875rem;
+    border-bottom: 1px solid var(--color-line-2);
+    color: var(--color-ink-2);
+    white-space: nowrap;
+  }
 }
 .data-table tbody tr {
   transition: background-color 140ms var(--ease-out-soft);

@@ -200,7 +200,15 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
         <Metric label="PTP rate" value={percent(a.ptpRate)} formula={payload.formulas.ptpRate} />
         <Metric
           label="Cash committed"
-          value={`${money(a.commitments.floor)}–${money(a.commitments.ceiling)}`}
+          // A range only when there is one. With every commitment carrying a
+          // stated amount the floor and the ceiling are the same number, and
+          // "R 266 600–R 266 600" is that number said twice, wrapped onto two
+          // lines, looking like a rendering fault.
+          value={
+            a.commitments.floor === a.commitments.ceiling
+              ? money(a.commitments.floor)
+              : `${money(a.commitments.floor)}\u2013${money(a.commitments.ceiling)}`
+          }
           formula={`floor: ${payload.formulas.cashCommittedFloor} · ceiling: ${payload.formulas.cashCommittedCeiling}`}
           sub={`${a.commitments.withoutStatedAmount} with no stated amount`}
         />

@@ -135,11 +135,21 @@ export function StatCard({
         : tone === "accent"
           ? "text-accent-ink"
           : "text-ink";
+  // Three bands, always in this order and always present: the label, the
+  // figure, and everything under it. A tile with a sparkline and one without
+  // used to be two different shapes, so a row of them had its labels on one
+  // line, its figures on another, and its footnotes wherever they landed. The
+  // middle band grows and the footnote is pinned to the bottom, so across a
+  // row every label, every figure and every footnote sits on one line.
+  //
+  // The horizontal padding matches a Card's, so a tile's label starts on the
+  // same vertical line as the title of the card beneath it. They were 16px and
+  // 22px — close enough to read as a mistake rather than a choice.
   return (
     <div
-      className={`card ${tint ? TINTS[tint] : ""} ${i === undefined ? "" : "rise-in"} ${
-        hero ? "p-5" : "px-4 py-4"
-      }`}
+      className={`card flex flex-col ${tint ? TINTS[tint] : ""} ${
+        i === undefined ? "" : "rise-in"
+      } ${hero ? "p-5 sm:p-[1.375rem]" : "px-5 py-4 sm:px-[1.375rem]"}`}
       style={i === undefined ? undefined : ({ "--i": i } as CSSProperties)}
     >
       <p className="flex items-center gap-1.5 text-[0.6875rem] font-medium uppercase tracking-[0.09em] text-ink-3">
@@ -153,15 +163,17 @@ export function StatCard({
       >
         {value}
       </p>
-      {meter !== undefined && (
-        <span className="mt-3 block h-1.5 w-full overflow-hidden rounded-full bg-ink/[0.08]">
-          <span
-            className="block h-full rounded-full bg-accent transition-[width] duration-700"
-            style={{ width: `${Math.round(Math.min(1, Math.max(0, meter)) * 100)}%` }}
-          />
-        </span>
-      )}
-      {spark && spark.length > 1 && <Sparkline values={spark} className="mt-3" />}
+      <div className="flex-1">
+        {meter !== undefined && (
+          <span className="mt-3 block h-1.5 w-full overflow-hidden rounded-full bg-ink/[0.08]">
+            <span
+              className="block h-full rounded-full bg-accent transition-[width] duration-700"
+              style={{ width: `${Math.round(Math.min(1, Math.max(0, meter)) * 100)}%` }}
+            />
+          </span>
+        )}
+        {spark && spark.length > 1 && <Sparkline values={spark} className="mt-3" />}
+      </div>
       {sub && <p className="mt-2.5 text-[0.71875rem] leading-relaxed text-ink-3">{sub}</p>}
     </div>
   );
@@ -338,7 +350,7 @@ const TONE_CLASSES: Record<Tone, string> = {
 
 const STATUS_TONES: Record<string, Tone> = {
   // debtor / general
-  active: "info",
+  active: "neutral",
   promise: "violet",
   arrangement: "violet",
   paid: "good",
@@ -352,7 +364,7 @@ const STATUS_TONES: Record<string, Tone> = {
   draft: "neutral",
   scheduled: "info",
   paused: "warning",
-  completed: "good",
+  completed: "neutral",
   // calls
   no_answer: "neutral",
   busy: "neutral",
@@ -384,24 +396,44 @@ const STATUS_TONES: Record<string, Tone> = {
   open: "warning",
   in_review: "info",
   assigned: "violet",
-  resolved: "good",
+  resolved: "neutral",
   low: "neutral",
   medium: "info",
   high: "serious",
   urgent: "critical",
   // risk bands
-  risk_low: "good",
+  risk_low: "neutral",
   risk_medium: "warning",
   risk_high: "critical",
   // reports
   generating: "warning",
-  ready: "good",
+  ready: "neutral",
   // agents
   offline: "neutral",
 };
 
+/**
+ * A state, as a word.
+ *
+ * The ordinary states are grey text with no pill at all, and this is the whole
+ * point of the component. A calls table gave every row three bordered chips —
+ * outcome, sentiment, status — so "Completed · Neutral · No answer", which is
+ * the most boring row possible, arrived carrying as much colour as a dispute.
+ * Colour that appears on every row is not information.
+ *
+ * So: a pill, in colour, means something happened. Everything routine — active,
+ * completed, neutral, no answer, low risk — is a word. On a screen of fifty
+ * rows the four that need a person are the four with colour on them.
+ */
 export function Badge({ value, label: text }: { value: string; label: string }) {
   const tone = STATUS_TONES[value] ?? "neutral";
+  if (tone === "neutral") {
+    return (
+      <span className="inline-flex items-center py-[0.1875rem] text-[0.6875rem] font-medium leading-none text-ink-3">
+        {text}
+      </span>
+    );
+  }
   return (
     <span
       className={`inline-flex items-center rounded-full border px-2 py-[0.1875rem] text-[0.6875rem] font-medium leading-none ${TONE_CLASSES[tone]}`}

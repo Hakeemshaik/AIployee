@@ -21,11 +21,15 @@ export function Metric({
 }) {
   const valueColor =
     tone === "good" ? "text-good" : tone === "critical" ? "text-critical" : "text-ink";
+  // Same three bands as a StatCard, for the same reason: a row of eight of
+  // these, some with a sub-line and some without, had its figures on four
+  // different lines. The figure sits directly under the label, the sub-line is
+  // pinned to the bottom, and the space between them stretches.
   return (
-    <div className="card-2 px-4 py-3.5" title={`Formula: ${formula}`}>
+    <div className="card-2 flex flex-col px-4 py-3.5" title={`Formula: ${formula}`}>
       <p className="flex items-center gap-1 text-[0.6875rem] font-medium uppercase tracking-[0.07em] text-ink-3">
-        {label}
-        <Info size={10} className="opacity-60" aria-hidden />
+        <span className="truncate">{label}</span>
+        <Info size={10} className="shrink-0 opacity-60" aria-hidden />
         <span className="sr-only">Formula: {formula}</span>
       </p>
       <p
@@ -35,7 +39,8 @@ export function Metric({
       >
         {value}
       </p>
-      {sub && <p className="mt-1.5 text-[0.71875rem] text-ink-3">{sub}</p>}
+      <span className="flex-1" />
+      {sub && <p className="mt-1.5 text-[0.71875rem] leading-snug text-ink-3">{sub}</p>}
     </div>
   );
 }
