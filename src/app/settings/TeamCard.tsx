@@ -145,7 +145,7 @@ export function TeamCard({ selfId }: { selfId: string }) {
             This link is shown once and expires in seven days. Send it to them directly.
           </p>
           <div className="mt-2 flex items-center gap-2">
-            <code className="num flex-1 truncate rounded-lg border border-line bg-black/30 px-3 py-2 text-[0.71875rem] text-ink">
+            <code className="num flex-1 truncate rounded-lg border border-line bg-ink/[0.05] px-3 py-2 text-[0.71875rem] text-ink">
               {inviteLink.url}
             </code>
             <button className="btn shrink-0" onClick={copyLink}>
@@ -157,7 +157,7 @@ export function TeamCard({ selfId }: { selfId: string }) {
       )}
 
       {showForm && (
-        <form onSubmit={invite} className="mb-4 grid gap-3 rounded-lg border border-line bg-white/[0.02] p-3 sm:grid-cols-4">
+        <form onSubmit={invite} className="mb-4 grid gap-3 rounded-lg border border-line bg-ink/[0.025] p-3 sm:grid-cols-4">
           <div>
             <label className="mb-1 block text-[0.6875rem] font-medium text-ink-2" htmlFor="invite-name">
               Name

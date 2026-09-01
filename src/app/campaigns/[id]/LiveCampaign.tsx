@@ -213,7 +213,7 @@ export function LiveCampaign({
                 ? "border-good/30 bg-good/8 text-good"
                 : notice.kind === "note"
                   ? // Something the operator has to go and do, not a failure.
-                    "border-line bg-white/[0.03] text-ink-2"
+                    "border-line bg-ink/[0.03] text-ink-2"
                   : "border-critical/35 bg-critical/8 text-critical"
             }`}
           >
@@ -260,7 +260,7 @@ export function LiveCampaign({
               No calls yet. Start the campaign and events will appear here as they happen.
             </p>
           ) : (
-            <ul className="divide-y divide-white/[0.05]">
+            <ul className="divide-y divide-ink/[0.07]">
               {state.activity.map((item) => (
                 <li key={item.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
                   <span className="num text-[0.71875rem] text-ink-3">{timeOf(item.at)}</span>

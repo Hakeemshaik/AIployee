@@ -33,10 +33,27 @@ export function PageHeader({
 }
 
 /**
+ * A wash a card can wear.
+ *
+ * Colour is how a person finds the card they want before reading a word of it.
+ * A plot never gets one: the series colours are validated against white and
+ * lose contrast over a tint.
+ */
+export type Tint = "mint" | "cream" | "lilac" | "peach" | "sky";
+
+const TINTS: Record<Tint, string> = {
+  mint: "tint-mint",
+  cream: "tint-cream",
+  lilac: "tint-lilac",
+  peach: "tint-peach",
+  sky: "tint-sky",
+};
+
+/**
  * A card.
  *
  * `i` staggers its entrance when several arrive together — the row reads
- * left to right instead of appearing all at once.
+ * left to right instead of appearing all at once. `tint` washes it.
  */
 export function Card({
   title,
@@ -46,6 +63,7 @@ export function Card({
   className = "",
   pad = true,
   i,
+  tint,
 }: {
   title?: string;
   subtitle?: string;
@@ -54,10 +72,13 @@ export function Card({
   className?: string;
   pad?: boolean;
   i?: number;
+  tint?: Tint;
 }) {
   return (
     <section
-      className={`card ${i === undefined ? "" : "rise-in"} ${pad ? "p-5 sm:p-[1.375rem]" : ""} ${className}`}
+      className={`card ${tint ? TINTS[tint] : ""} ${i === undefined ? "" : "rise-in"} ${
+        pad ? "p-5 sm:p-[1.375rem]" : ""
+      } ${className}`}
       style={i === undefined ? undefined : ({ "--i": i } as CSSProperties)}
     >
       {(title || actions) && (
@@ -87,6 +108,10 @@ export function StatCard({
   tone,
   hero = false,
   i,
+  tint,
+  spark,
+  meter,
+  icon,
 }: {
   label: string;
   value: string;
@@ -94,10 +119,16 @@ export function StatCard({
   tone?: "good" | "critical" | "accent";
   hero?: boolean;
   i?: number;
+  /** A wash, so a tile is recognised by colour before it is read. */
+  tint?: Tint;
+  /** Thirty-odd values behind the number: the shape of how it got there. */
+  spark?: number[];
+  /** 0–1. A number that is a share of something reads better as a bar. */
+  meter?: number;
+  icon?: ReactNode;
 }) {
-  const valueColor = hero
-    ? "text-cream"
-    : tone === "good"
+  const valueColor =
+    tone === "good"
       ? "text-good"
       : tone === "critical"
         ? "text-critical"
@@ -106,18 +137,144 @@ export function StatCard({
           : "text-ink";
   return (
     <div
-      className={`card-2 ${i === undefined ? "" : "rise-in"} ${hero ? "px-5 py-4" : "px-4 py-3.5"}`}
+      className={`card ${tint ? TINTS[tint] : ""} ${i === undefined ? "" : "rise-in"} ${
+        hero ? "p-5" : "px-4 py-4"
+      }`}
       style={i === undefined ? undefined : ({ "--i": i } as CSSProperties)}
     >
-      <p className="text-[0.6875rem] font-medium uppercase tracking-[0.09em] text-ink-3">{label}</p>
+      <p className="flex items-center gap-1.5 text-[0.6875rem] font-medium uppercase tracking-[0.09em] text-ink-3">
+        {icon}
+        {label}
+      </p>
       <p
         className={`value-in mt-2.5 font-semibold leading-none tracking-tight ${valueColor} ${
-          hero ? "num text-[1.875rem]" : "num text-[1.375rem]"
+          hero ? "num text-[2rem]" : "num text-[1.4375rem]"
         }`}
       >
         {value}
       </p>
-      {sub && <p className="mt-2 text-[0.71875rem] leading-relaxed text-ink-3">{sub}</p>}
+      {meter !== undefined && (
+        <span className="mt-3 block h-1.5 w-full overflow-hidden rounded-full bg-ink/[0.08]">
+          <span
+            className="block h-full rounded-full bg-accent transition-[width] duration-700"
+            style={{ width: `${Math.round(Math.min(1, Math.max(0, meter)) * 100)}%` }}
+          />
+        </span>
+      )}
+      {spark && spark.length > 1 && <Sparkline values={spark} className="mt-3" />}
+      {sub && <p className="mt-2.5 text-[0.71875rem] leading-relaxed text-ink-3">{sub}</p>}
+    </div>
+  );
+}
+
+/**
+ * The shape of a series, at tile size.
+ *
+ * No axes, no grid, no labels: a figure with a line under it says "rising" or
+ * "flat" in the time it takes to read the figure, which is the only question a
+ * tile can answer. The chart with the numbers on it is elsewhere on the page.
+ */
+export function Sparkline({
+  values,
+  className = "",
+  height = 26,
+}: {
+  values: number[];
+  className?: string;
+  height?: number;
+}) {
+  const width = 100;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const step = width / (values.length - 1);
+  const points = values.map((value, index) => {
+    const x = index * step;
+    const y = height - ((value - min) / span) * (height - 3) - 1.5;
+    return `${x.toFixed(2)},${y.toFixed(2)}`;
+  });
+  const id = `spark-${values.length}-${Math.round(min)}-${Math.round(max)}`;
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
+      style={{ height }}
+      className={`block w-full ${className}`}
+      aria-hidden
+    >
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon
+        points={`0,${height} ${points.join(" ")} ${width},${height}`}
+        fill={`url(#${id})`}
+      />
+      <polyline
+        points={points.join(" ")}
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+
+/**
+ * One share, drawn as an arc.
+ *
+ * For a single percentage a ring beats a bar chart of one bar: the figure sits
+ * in the middle of its own context, and the gap left in the arc is the part
+ * still to win.
+ */
+export function Gauge({
+  value,
+  label,
+  caption,
+}: {
+  /** 0–1. */
+  value: number;
+  label: string;
+  caption?: string;
+}) {
+  const clamped = Math.min(1, Math.max(0, value));
+  const radius = 52;
+  const circumference = Math.PI * radius; // a half turn
+  return (
+    <div className="flex flex-col items-center">
+      <svg viewBox="0 0 130 78" className="w-full max-w-[220px]" role="img" aria-label={`${label}: ${Math.round(clamped * 100)}%`}>
+        <path
+          d="M13 65 A52 52 0 0 1 117 65"
+          fill="none"
+          stroke="var(--color-line)"
+          strokeWidth="11"
+          strokeLinecap="round"
+        />
+        <path
+          d="M13 65 A52 52 0 0 1 117 65"
+          fill="none"
+          stroke="var(--color-accent)"
+          strokeWidth="11"
+          strokeLinecap="round"
+          strokeDasharray={`${(circumference * clamped).toFixed(2)} ${circumference.toFixed(2)}`}
+        />
+        <text
+          x="65"
+          y="60"
+          textAnchor="middle"
+          className="num fill-ink text-[1.5rem] font-semibold"
+          style={{ fontSize: 22 }}
+        >
+          {Math.round(clamped * 100)}%
+        </text>
+      </svg>
+      <p className="mt-1 text-center text-[0.78125rem] font-medium text-ink">{label}</p>
+      {caption && <p className="mt-0.5 text-center text-[0.71875rem] text-ink-3">{caption}</p>}
     </div>
   );
 }
@@ -142,7 +299,7 @@ export function Disclosure({
 }) {
   return (
     <details className={`card group ${className}`}>
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-[18px] px-5 py-4 transition-colors hover:bg-white/[0.03]">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-[18px] px-5 py-4 transition-colors hover:bg-ink/[0.03]">
         <span>
           <span className="text-[0.875rem] font-medium text-ink">{summary}</span>
           {hint && <span className="ml-2 text-[0.75rem] text-ink-3">{hint}</span>}
@@ -158,7 +315,7 @@ export function Disclosure({
           <path d="M3 5.5L7 9.5L11 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       </summary>
-      <div className="page-in border-t border-white/[0.055] p-5 sm:p-[1.375rem]">{children}</div>
+      <div className="page-in border-t border-ink/[0.07] p-5 sm:p-[1.375rem]">{children}</div>
     </details>
   );
 }
@@ -170,7 +327,7 @@ type Tone = "neutral" | "info" | "good" | "warning" | "serious" | "critical" | "
 // Every badge carries its word as well as its colour, so none of them depends
 // on the colour being told apart.
 const TONE_CLASSES: Record<Tone, string> = {
-  neutral: "border-white/10 bg-white/[0.05] text-ink-2",
+  neutral: "border-ink/10 bg-ink/[0.05] text-ink-2",
   info: "border-accent/35 bg-accent/12 text-accent-ink",
   good: "border-good/35 bg-good/12 text-good",
   warning: "border-warning/30 bg-warning/10 text-warning",
@@ -266,12 +423,12 @@ export function EmptyState({
   return (
     <div className="card flex flex-col items-center justify-center gap-3 px-6 py-14 text-center">
       {/* The mark's own bars, flattened: nothing has been measured yet. */}
-      <svg width="52" height="34" viewBox="0 0 52 34" fill="none" aria-hidden className="opacity-70">
-        <rect x="2" y="24" width="4" height="6" rx="2" fill="#16B3A2" opacity="0.28" />
-        <rect x="14" y="24" width="4" height="6" rx="2" fill="#16B3A2" opacity="0.22" />
-        <rect x="26" y="24" width="4" height="6" rx="2" fill="#16B3A2" opacity="0.16" />
-        <rect x="38" y="24" width="4" height="6" rx="2" fill="#FBF3D6" opacity="0.16" />
-        <path d="M0 33h52" stroke="currentColor" strokeOpacity="0.12" strokeWidth="1" />
+      <svg width="52" height="34" viewBox="0 0 52 34" fill="none" aria-hidden>
+        <rect x="2" y="24" width="4" height="6" rx="2" fill="#0E9E90" opacity="0.35" />
+        <rect x="14" y="24" width="4" height="6" rx="2" fill="#0E9E90" opacity="0.26" />
+        <rect x="26" y="24" width="4" height="6" rx="2" fill="#0E9E90" opacity="0.18" />
+        <rect x="38" y="24" width="4" height="6" rx="2" fill="#C97A0F" opacity="0.22" />
+        <path d="M0 33h52" stroke="#15202E" strokeOpacity="0.12" strokeWidth="1" />
       </svg>
       <p className="text-[0.875rem] font-medium text-ink-2">{title}</p>
       {hint && <p className="max-w-sm text-[0.75rem] leading-relaxed text-ink-3">{hint}</p>}

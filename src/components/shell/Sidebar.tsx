@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import {
   AlertTriangle,
   Banknote,
@@ -11,6 +11,8 @@ import {
   FileText,
   LayoutDashboard,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   PhoneCall,
   Radar,
   ScanSearch,
@@ -19,7 +21,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { BrandLockup } from "@/components/Brand";
+import { BrandLockup, BrandMark } from "@/components/Brand";
 
 // ---------------------------------------------------------------------------
 // Navigation.
@@ -68,7 +70,60 @@ const GROUPS = [
 /** A demo session can only reach the analytics screen. */
 const GUEST_NAV: readonly string[] = ["/analytics"];
 
-function NavLinks({ onNavigate, guest }: { onNavigate?: () => void; guest: boolean }) {
+// ---------------------------------------------------------------------------
+// Collapsed to a rail, the analytics get 168px more width — on a laptop that is
+// the difference between a chart you read and one you squint at. The choice is
+// remembered, because re-collapsing it every morning is the sort of small tax
+// that makes a tool annoying to live with.
+//
+// Read through the store rather than an effect: the server has no localStorage,
+// both toggle buttons stay in step, and a browser with storage blocked simply
+// gets the full sidebar.
+// ---------------------------------------------------------------------------
+
+const RAIL_KEY = "aiployee.nav.rail";
+const RAIL_EVENT = "aiployee:nav-rail";
+
+function subscribeRail(onChange: () => void) {
+  window.addEventListener(RAIL_EVENT, onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener(RAIL_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+
+function readRail(): boolean {
+  try {
+    return window.localStorage.getItem(RAIL_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function useRail(): boolean {
+  return useSyncExternalStore(subscribeRail, readRail, () => false);
+}
+
+function toggleRail() {
+  try {
+    window.localStorage.setItem(RAIL_KEY, readRail() ? "0" : "1");
+  } catch {
+    // Not worth failing a click over — the sidebar just will not remember.
+  }
+  window.dispatchEvent(new Event(RAIL_EVENT));
+}
+
+function NavLinks({
+  onNavigate,
+  guest,
+  rail = false,
+}: {
+  onNavigate?: () => void;
+  guest: boolean;
+  /** Icons only. The labels come back as a tooltip on hover. */
+  rail?: boolean;
+}) {
   const pathname = usePathname();
   const groups = guest
     ? GROUPS.map((group) => ({
@@ -78,13 +133,17 @@ function NavLinks({ onNavigate, guest }: { onNavigate?: () => void; guest: boole
     : GROUPS;
 
   return (
-    <nav className="flex flex-col gap-5">
+    <nav className={`flex flex-col ${rail ? "gap-3" : "gap-5"}`}>
       {groups.map((group) => (
         <div key={group.label}>
-          <p className="mb-1 px-3 text-[0.5625rem] font-semibold uppercase tracking-[0.16em] text-ink-3">
-            {group.label}
-          </p>
-          <div className="flex flex-col gap-px">
+          {rail ? (
+            <span className="mx-auto mb-1.5 block h-px w-5 bg-line" aria-hidden />
+          ) : (
+            <p className="mb-1 px-3 text-[0.5625rem] font-semibold uppercase tracking-[0.16em] text-ink-3">
+              {group.label}
+            </p>
+          )}
+          <div className={`flex flex-col ${rail ? "items-center gap-1" : "gap-px"}`}>
             {group.items.map(({ href, label, icon: Icon }) => {
               const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
               return (
@@ -93,25 +152,33 @@ function NavLinks({ onNavigate, guest }: { onNavigate?: () => void; guest: boole
                   href={href}
                   onClick={onNavigate}
                   aria-current={active ? "page" : undefined}
-                  className={`group relative flex items-center gap-2.5 rounded-lg py-2 pl-3 pr-3 text-[0.8125rem] transition-colors ${
+                  title={rail ? label : undefined}
+                  aria-label={rail ? label : undefined}
+                  className={`group relative flex items-center transition-colors ${
+                    rail
+                      ? "h-9 w-9 justify-center rounded-xl"
+                      : "gap-2.5 rounded-xl py-2 pl-3 pr-3 text-[0.8125rem]"
+                  } ${
                     active
-                      ? "bg-accent/12 text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
-                      : "text-ink-2 hover:bg-white/[0.045] hover:text-ink"
+                      ? "bg-white text-ink shadow-[0_1px_2px_rgba(21,32,46,0.06),0_6px_16px_-10px_rgba(21,32,46,0.25)]"
+                      : "text-ink-2 hover:bg-ink/[0.045] hover:text-ink"
                   }`}
                 >
                   {/* The teal rule marking where you are. It is the only thing
                       on the screen that moves between pages. */}
-                  <span
-                    className={`nav-mark absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full bg-accent ${
-                      active ? "opacity-100" : "opacity-0"
-                    }`}
-                  />
+                  {!rail && (
+                    <span
+                      className={`nav-mark absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full bg-accent ${
+                        active ? "opacity-100" : "opacity-0"
+                      }`}
+                    />
+                  )}
                   <Icon
-                    size={16}
+                    size={rail ? 17 : 16}
                     strokeWidth={1.75}
                     className={active ? "text-accent" : "text-ink-3 group-hover:text-ink-2"}
                   />
-                  {label}
+                  {!rail && label}
                 </Link>
               );
             })}
@@ -124,20 +191,49 @@ function NavLinks({ onNavigate, guest }: { onNavigate?: () => void; guest: boole
 
 export function Sidebar({ guest = false }: { guest?: boolean }) {
   const [open, setOpen] = useState(false);
+  const rail = useRail();
+
   return (
     <>
       {/* Desktop */}
-      <aside className="sticky top-0 hidden h-screen w-[236px] shrink-0 flex-col gap-6 border-r border-white/[0.06] bg-plane/55 py-5 backdrop-blur-2xl lg:flex">
-        <Link href="/" className="px-3">
-          <BrandLockup />
-        </Link>
-        <div className="flex-1 overflow-y-auto px-2">
-          <NavLinks guest={guest} />
+      <aside
+        className={`sticky top-0 hidden h-screen shrink-0 flex-col gap-6 border-r border-ink/[0.07] bg-plane/60 py-5 backdrop-blur-2xl transition-[width] duration-300 lg:flex ${
+          rail ? "w-[68px] px-2" : "w-[236px]"
+        }`}
+      >
+        <div className={`flex items-center ${rail ? "justify-center" : "justify-between pl-3 pr-2"}`}>
+          <Link href="/" aria-label="AIployee Command Centre">
+            {rail ? <BrandMark size={30} /> : <BrandLockup />}
+          </Link>
+          {!rail && (
+            <button
+              onClick={toggleRail}
+              className="rounded-lg p-1.5 text-ink-3 transition-colors hover:bg-ink/[0.05] hover:text-ink"
+              aria-label="Collapse the navigation"
+              title="Collapse the navigation"
+            >
+              <PanelLeftClose size={16} />
+            </button>
+          )}
         </div>
-        {guest && (
-          <p className="px-5 text-[0.6875rem] leading-relaxed text-ink-3">
-            Demo session. Sign in to reach the rest.
-          </p>
+        <div className={`flex-1 overflow-y-auto ${rail ? "px-0" : "px-2"}`}>
+          <NavLinks guest={guest} rail={rail} />
+        </div>
+        {rail ? (
+          <button
+            onClick={toggleRail}
+            className="mx-auto rounded-lg p-2 text-ink-3 transition-colors hover:bg-ink/[0.05] hover:text-ink"
+            aria-label="Expand the navigation"
+            title="Expand the navigation"
+          >
+            <PanelLeftOpen size={16} />
+          </button>
+        ) : (
+          guest && (
+            <p className="px-5 text-[0.6875rem] leading-relaxed text-ink-3">
+              Demo session. Sign in to reach the rest.
+            </p>
+          )
         )}
       </aside>
 
@@ -145,14 +241,14 @@ export function Sidebar({ guest = false }: { guest?: boolean }) {
       <button
         aria-label="Open navigation"
         onClick={() => setOpen(true)}
-        className="fixed left-4 top-3.5 z-40 rounded-xl border border-white/[0.09] bg-panel/70 p-2 text-ink-2 backdrop-blur-xl lg:hidden"
+        className="fixed left-4 top-3.5 z-40 rounded-xl border border-ink/10 bg-panel/70 p-2 text-ink-2 backdrop-blur-xl lg:hidden"
       >
         <Menu size={18} />
       </button>
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
-          <div className="page-in absolute inset-y-0 left-0 flex w-[264px] flex-col gap-6 border-r border-white/[0.08] bg-plane/85 py-5 backdrop-blur-2xl">
+          <div className="absolute inset-0 bg-ink/25 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <div className="page-in absolute inset-y-0 left-0 flex w-[264px] flex-col gap-6 border-r border-ink/[0.09] bg-plane/85 py-5 backdrop-blur-2xl">
             <div className="flex items-center justify-between pl-3 pr-3">
               <Link href="/" onClick={() => setOpen(false)}>
                 <BrandLockup />

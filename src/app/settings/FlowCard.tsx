@@ -176,7 +176,7 @@ export function FlowCard({ initial, canEdit }: { initial: FlowConfig; canEdit: b
                 className={`rounded-full border px-2.5 py-1 text-[0.6875rem] transition-colors ${
                   start === option.value
                     ? "border-accent/45 bg-accent-soft text-ink"
-                    : "border-line bg-white/[0.03] text-ink-2 hover:text-ink"
+                    : "border-line bg-ink/[0.03] text-ink-2 hover:text-ink"
                 }`}
               >
                 {option.label}

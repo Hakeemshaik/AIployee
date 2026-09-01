@@ -1,12 +1,20 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, CalendarClock, PhoneCall, Sparkles } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  CalendarClock,
+  PhoneCall,
+  Sparkles,
+  TrendingUp,
+  Wallet,
+} from "lucide-react";
 import { getContext } from "@/lib/auth";
 import { setupStatus } from "@/services/setup-status";
 import { SetupChecklist } from "@/components/SetupChecklist";
 import { label } from "@/lib/domain";
-import { formatDateTime, money, percent, relativeDays } from "@/lib/format";
+import { count, formatDateTime, money, percent, relativeDays } from "@/lib/format";
 import { getDashboardData, getWorkQueue } from "@/services/dashboard";
-import { Badge, Card, Disclosure, PageHeader, StatCard } from "@/components/ui";
+import { Badge, Card, Disclosure, Gauge, PageHeader, Sparkline, StatCard } from "@/components/ui";
 import {
   AgingChart,
   ContactActivityChart,
@@ -44,6 +52,19 @@ export default async function DashboardPage() {
 
   const attempts = data.contactSeries.reduce((s, d) => s + d.attempts, 0);
   const connected = data.contactSeries.reduce((s, d) => s + d.connected, 0);
+  // The shape behind each figure, at tile size. A number with its own line
+  // under it answers "is this getting better" without a second look.
+  const recoveredSpark = data.recoverySeries.map((d) => d.cumulative);
+  const paidSpark = data.recoverySeries.map((d) => d.received);
+  // A day's reach ratio swings between 0 and 1 on a handful of calls, which in
+  // a tile reads as noise rather than a trend. Seven days trailing is the
+  // shortest window that shows the direction instead of the weather.
+  const reachSpark = data.contactSeries.map((_, index) => {
+    const window = data.contactSeries.slice(Math.max(0, index - 6), index + 1);
+    const tried = window.reduce((total, day) => total + day.attempts, 0);
+    const got = window.reduce((total, day) => total + day.connected, 0);
+    return tried > 0 ? got / tried : 0;
+  });
 
   // One list, ordered by how much a delay costs: a promise going unchased, then
   // an escalation nobody has picked up, then somebody who asked to be called.
@@ -89,33 +110,47 @@ export default async function DashboardPage() {
           need a permanent checklist taking the top of the dashboard. */}
       {setup.done < setup.total && <SetupChecklist status={setup} compact />}
 
-      {/* 1 — where the book stands */}
-      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* 1 — where the book stands.
+          A bento rather than four identical boxes: the tile you want is found
+          by its wash before a word of it is read, and each figure carries the
+          shape of how it got there. */}
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           hero
           i={0}
+          tint="sky"
           label="Outstanding"
           value={money(m.totalOutstanding)}
           sub="across the full book"
+          icon={<Wallet size={12} className="text-ink-3" />}
         />
         <StatCard
           i={1}
+          tint="mint"
           label="Recovered"
           value={money(m.totalRecovered)}
           tone="good"
+          spark={recoveredSpark}
           sub={`${percent(m.recoveryRate)} of the book, all time`}
+          icon={<TrendingUp size={12} className="text-ink-3" />}
         />
         <StatCard
           i={2}
+          tint="lilac"
           label="Promised, unpaid"
           value={money(m.promiseValue)}
-          sub={`${m.promisesOpen} open promise${m.promisesOpen === 1 ? "" : "s"}`}
+          meter={m.totalOutstanding > 0 ? m.promiseValue / m.totalOutstanding : 0}
+          sub={`${m.promisesOpen} open promise${m.promisesOpen === 1 ? "" : "s"} · share of the book`}
+          icon={<CalendarClock size={12} className="text-ink-3" />}
         />
         <StatCard
           i={3}
+          tint="peach"
           label="Reached"
           value={attempts > 0 ? percent(connected / attempts) : "—"}
-          sub={`${m.successfulContacts} of ${attempts} call attempts`}
+          spark={reachSpark}
+          sub={`${m.successfulContacts} of ${attempts} attempts · 7-day trend`}
+          icon={<PhoneCall size={12} className="text-ink-3" />}
         />
       </div>
 
@@ -233,13 +268,44 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      {/* 3 — is it getting better */}
-      <div className="mb-4 grid gap-4 lg:grid-cols-2">
-        <Card i={0} title="Recovery over time" subtitle="Cumulative rand recovered, last 30 days">
+      {/* 3 — is it getting better.
+          Plots on white cards, single figures on washed ones: the series
+          colours are validated against white and lose their separation over a
+          tint, so the two never share a surface. */}
+      <div className="mb-4 grid gap-4 xl:grid-cols-3">
+        <Card
+          i={0}
+          className="xl:col-span-2"
+          title="Recovery over time"
+          subtitle="Cumulative rand recovered, last 30 days"
+        >
           <RecoveryTrendChart data={data.recoverySeries} />
         </Card>
-        <Card i={1} title="Contact success" subtitle="Daily call attempts and connections">
+        <Card i={1} tint="mint" title="Reach" subtitle="Connected calls as a share of attempts">
+          <div className="pt-2">
+            <Gauge
+              value={attempts > 0 ? connected / attempts : 0}
+              label={`${count(connected)} of ${count(attempts)} attempts`}
+              caption="Last 30 days. A reached call is one a person answered."
+            />
+          </div>
+        </Card>
+        <Card
+          i={2}
+          className="xl:col-span-2"
+          title="Contact success"
+          subtitle="Daily call attempts and connections"
+        >
           <ContactActivityChart data={data.contactSeries} />
+        </Card>
+        <Card i={3} tint="cream" title="Payments in" subtitle="Day by day, last 30 days">
+          <p className="num text-[1.5rem] font-semibold leading-none tracking-tight text-ink">
+            {money(m.paymentsValue)}
+          </p>
+          <p className="mt-1.5 text-[0.71875rem] text-ink-3">
+            across {m.paymentsReceived} payment{m.paymentsReceived === 1 ? "" : "s"}
+          </p>
+          <Sparkline values={paidSpark} height={64} className="mt-4" />
         </Card>
       </div>
 

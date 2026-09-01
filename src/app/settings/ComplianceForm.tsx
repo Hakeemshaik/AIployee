@@ -37,7 +37,7 @@ function Toggle({
   hint: string;
 }) {
   return (
-    <label className="flex cursor-pointer items-start justify-between gap-4 rounded-lg border border-line-2 bg-white/[0.02] p-3">
+    <label className="flex cursor-pointer items-start justify-between gap-4 rounded-lg border border-line-2 bg-ink/[0.025] p-3">
       <span>
         <span className="block text-[0.8125rem] font-medium text-ink">{text}</span>
         <span className="mt-0.5 block text-[0.6875rem] leading-relaxed text-ink-3">{hint}</span>
@@ -113,7 +113,7 @@ export function ComplianceForm({ initial }: { initial: Compliance }) {
                 className={`rounded-md border px-2 py-1 text-[0.6875rem] transition-colors ${
                   days.includes(d)
                     ? "border-accent/40 bg-accent-soft text-ink"
-                    : "border-line bg-white/[0.03] text-ink-3 hover:text-ink-2"
+                    : "border-line bg-ink/[0.03] text-ink-3 hover:text-ink-2"
                 }`}
               >
                 {DAY_LABELS[d]}

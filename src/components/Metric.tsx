@@ -69,7 +69,7 @@ export function FunnelStep({
           )}
         </span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-white/[0.05]">
+      <div className="h-2 overflow-hidden rounded-full bg-ink/[0.05]">
         <div className="h-full rounded-full bg-accent" style={{ width: `${width}%` }} />
       </div>
       {dropped !== null && dropped > 0 && (

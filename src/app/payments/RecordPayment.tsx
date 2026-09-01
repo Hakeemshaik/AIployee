@@ -55,7 +55,7 @@ export function RecordPaymentButton({
       </button>
       {open && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[10vh]">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !busy && setOpen(false)} />
+          <div className="absolute inset-0 bg-ink/30 backdrop-blur-sm" onClick={() => !busy && setOpen(false)} />
           <div className="card-float relative w-full max-w-md p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-[0.9375rem] font-semibold text-ink">Record a payment</h2>
@@ -72,7 +72,7 @@ export function RecordPaymentButton({
                 {fixedDebtor ? (
                   <div>
                     <p className="mb-1 text-[0.71875rem] font-medium text-ink-2">Debtor</p>
-                    <p className="field w-full bg-white/[0.02] text-ink">
+                    <p className="field w-full bg-ink/[0.025] text-ink">
                       {fixedDebtor.name} — {fixedDebtor.accountNumber}
                     </p>
                     <input type="hidden" name="debtorId" value={fixedDebtor.id} />

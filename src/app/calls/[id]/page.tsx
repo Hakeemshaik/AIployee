@@ -93,7 +93,7 @@ export default async function CallDetailPage({
                   <summary className="cursor-pointer text-[0.71875rem] text-ink-3 hover:text-ink-2">
                     Structured extraction (JSON)
                   </summary>
-                  <pre className="scroll-x mt-2 rounded-lg border border-line bg-black/30 p-3 text-[0.6875rem] leading-relaxed text-ink-2">
+                  <pre className="scroll-x mt-2 rounded-lg border border-line bg-ink/[0.05] p-3 text-[0.6875rem] leading-relaxed text-ink-2">
                     {JSON.stringify(extraction, null, 2)}
                   </pre>
                 </details>
@@ -117,7 +117,7 @@ export default async function CallDetailPage({
                       <div
                         className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-[0.8125rem] leading-relaxed ${
                           isAgent
-                            ? "rounded-tl-sm border border-line bg-white/[0.04] text-ink-2"
+                            ? "rounded-tl-sm border border-line bg-ink/[0.04] text-ink-2"
                             : "rounded-tr-sm border border-accent/25 bg-accent/10 text-ink"
                         }`}
                       >
@@ -168,8 +168,8 @@ export default async function CallDetailPage({
           </Card>
 
           <Card title="Recording">
-            <div className="flex items-center gap-3 rounded-lg border border-line bg-white/[0.03] p-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-white/[0.04]">
+            <div className="flex items-center gap-3 rounded-lg border border-line bg-ink/[0.03] p-3">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-ink/[0.04]">
                 <AudioLines size={16} className="text-ink-2" />
               </span>
               <div className="min-w-0 flex-1">

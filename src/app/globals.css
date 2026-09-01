@@ -16,47 +16,56 @@
 @theme {
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  /* surfaces — the brand navy, one step down for the ground and one up for
-     anything that has to lift off it */
-  --color-base: #0b1219;
-  --color-plane: #101a24;
-  --color-panel: #15202e;
-  --color-raised: #1d2b3c;
+  /* surfaces — light. The ground is a soft off-white the pastel washes sit in;
+     panels are white, which is what glass frosts. */
+  --color-base: #f4f5fa;
+  --color-plane: #fbfbfe;
+  --color-panel: #ffffff;
+  --color-raised: #ffffff;
 
-  /* ink */
-  --color-ink: #f2f6f9;
-  --color-ink-2: #97a3b0; /* Mafadi label grey */
-  --color-ink-3: #6a7787;
+  /* ink — the Mafadi navy, its body grey and its label grey */
+  --color-ink: #15202e;
+  --color-ink-2: #5a6472;
+  --color-ink-3: #97a3b0;
 
-  /* hairlines */
-  --color-line: rgba(255, 255, 255, 0.09);
-  --color-line-2: rgba(255, 255, 255, 0.055);
+  /* hairlines: the ink at low alpha, so a rule is the same colour as the text
+     it separates rather than a grey of its own */
+  --color-line: rgba(21, 32, 46, 0.1);
+  --color-line-2: rgba(21, 32, 46, 0.055);
 
-  /* accent — Mafadi teal */
-  --color-accent: #16b3a2;
-  --color-accent-lift: #1fc9b6;
-  --color-accent-ink: #4fd8c8;
-  --color-accent-soft: rgba(22, 179, 162, 0.13);
+  /* accent — Mafadi teal, stepped down for a white ground so it carries text
+     as well as fills */
+  --color-accent: #0e9e90;
+  --color-accent-lift: #12b3a2;
+  --color-accent-ink: #0b7f74;
+  --color-accent-soft: rgba(14, 158, 144, 0.1);
 
-  /* cream — the highlight. One per screen: the number the page is about. */
-  --color-cream: #fbf3d6;
+  /* Card washes. A number lives on one of these, never on a colour of its own:
+     the tint says which card, the ink stays ink. */
+  --color-mint: #e6f5f2;
+  --color-cream: #fdf5e4;
+  --color-lilac: #efedfb;
+  --color-peach: #fdece5;
+  --color-sky: #e9f1fb;
 
-  /* status. Reserved: never used as a chart series, and never carried alone —
-     every one of them ships beside a word. */
-  --color-good: #4fbf63;
-  --color-warning: #e0a93f;
-  --color-serious: #e5794a;
-  --color-critical: #e0555a;
+  /* status. Reserved: never a chart series, and never carried alone — each of
+     them ships beside a word. Stepped for contrast on white. */
+  --color-good: #14855a;
+  --color-warning: #9d6a0b;
+  --color-serious: #bd4f1f;
+  --color-critical: #bd2f38;
 
-  /* chart series — validated on #15202e, all pairs:
-     lightness 0.48–0.67 · chroma ≥ 0.1 · CVD ΔE 12.6 worst · contrast ≥ 3:1 */
-  --color-series-1: #15a899; /* teal */
-  --color-series-2: #c98500; /* gold */
-  --color-series-3: #9085e9; /* violet */
+  /* chart series — validated on white, every pair:
+     lightness 0.43–0.77 · chroma >= 0.1 · CVD dE 13.5 worst · contrast >= 3:1.
+     Charts sit on white cards only: over a tinted wash the same three drop to
+     2.9:1, which the method allows only with labels doing the work instead. */
+  --color-series-1: #0e9e90; /* teal */
+  --color-series-2: #c97a0f; /* gold */
+  --color-series-3: #6c5ce0; /* violet */
 
   /* chart chrome */
-  --color-grid: #223142;
-  --color-axis: #33475c;
+  --color-grid: #e9ebf2;
+  --color-axis: #c8cddb;
 
   /* motion */
   --ease-out-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
@@ -66,20 +75,20 @@
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
   background-color: var(--color-base);
-  /* Glass has nothing to do without something behind it. Three very soft
-     washes — teal, a deeper navy, a warm trace of the cream — give every
-     translucent surface something to bend, and they are fixed so scrolling
-     moves the content across the light rather than dragging the light along.
-     Each is under 8% opacity: this is a backdrop, not a pattern. */
+  /* The washes glass has to bend. Four of them, all pastel and all under 60%,
+     placed so no two meet at full strength: mint top-left, lilac top-right,
+     cream low-centre, sky far right. Fixed, so scrolling moves the content
+     across the light rather than dragging the light along. */
   background-image:
-    radial-gradient(1200px 520px at 8% -12%, rgba(22, 179, 162, 0.16), transparent 62%),
-    radial-gradient(1000px 760px at 98% 2%, rgba(36, 76, 112, 0.6), transparent 60%),
-    radial-gradient(760px 520px at 58% 112%, rgba(251, 243, 214, 0.05), transparent 60%);
+    radial-gradient(1100px 520px at 6% -10%, rgba(14, 158, 144, 0.16), transparent 62%),
+    radial-gradient(900px 620px at 92% -6%, rgba(108, 92, 224, 0.14), transparent 62%),
+    radial-gradient(1000px 560px at 40% 106%, rgba(201, 122, 15, 0.1), transparent 60%),
+    radial-gradient(700px 520px at 100% 58%, rgba(56, 132, 214, 0.1), transparent 62%);
   background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-sans);
@@ -87,101 +96,133 @@ body {
 }
 
 ::selection {
-  background: rgba(22, 179, 162, 0.32);
+  background: rgba(14, 158, 144, 0.2);
 }
 
 /* A visible focus ring on everything reachable by keyboard, in one place. */
 :focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 /* --- surfaces: glass ------------------------------------------------------
    Three layers and nothing else: a card, a quieter card for things inside it,
-   and a floating one for dialogs.
+   and a floating one for dialogs — plus five pastel washes a card can wear.
 
-   Each is translucent over a blurred, slightly saturated backdrop, with a
-   bright hairline along the top edge where light would catch and a soft dark
-   one along the bottom. That top edge is what separates glass from "a panel
-   with some transparency" — it reads as a physical edge rather than a border.
-   The blur is what makes the washes behind the page bend as content scrolls
-   over them.
+   Each layer is translucent over a blurred, lightly saturated backdrop, with a
+   white hairline along the top edge where light would catch and a soft ink one
+   underneath. That top edge is what separates glass from "a panel with some
+   transparency": it reads as a physical edge rather than a border. The blur is
+   what makes the washes behind the page bend as content scrolls over them.
 
-   Every layer still paints a real colour underneath the transparency, so a
-   browser without backdrop-filter shows a solid navy card rather than text on
-   the page background. */
+   Every layer still paints real white underneath the transparency, so a
+   browser without backdrop-filter shows a solid card rather than text sitting
+   on the page's gradients. */
 
 .card {
   position: relative;
   background: linear-gradient(
     180deg,
-    color-mix(in oklab, var(--color-panel) 74%, transparent),
-    color-mix(in oklab, var(--color-panel) 88%, transparent)
+    color-mix(in oklab, var(--color-panel) 72%, transparent),
+    color-mix(in oklab, var(--color-panel) 86%, transparent)
   );
-  backdrop-filter: blur(22px) saturate(160%);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 18px;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 20px;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.09),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
-    0 14px 40px -22px rgba(0, 0, 0, 0.7);
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(21, 32, 46, 0.04),
+    0 18px 40px -24px rgba(21, 32, 46, 0.22);
 }
 
 .card-2 {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.022));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.5));
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 15px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 16px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 2px rgba(21, 32, 46, 0.03);
 }
 
 /* Dialogs sit over live content, so they are the least transparent of the
    three: readable first, glass second. */
 .card-float {
-  background: color-mix(in oklab, var(--color-raised) 92%, transparent);
+  background: color-mix(in oklab, var(--color-raised) 94%, transparent);
   backdrop-filter: blur(30px) saturate(150%);
   -webkit-backdrop-filter: blur(30px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 22px;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.11),
-    0 30px 70px -28px rgba(0, 0, 0, 0.92);
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 30px 70px -26px rgba(21, 32, 46, 0.32);
+}
+
+/* --- card washes ----------------------------------------------------------
+   A tint says which card you are looking at, so a person finds the one they
+   want by colour before reading a word of it. The ink never changes: the tint
+   is the card's, not the number's.
+
+   A chart never sits on one. The series colours are validated against white
+   and drop to 2.9:1 over a wash, which the method allows only when labels do
+   the work instead — so tinted cards carry figures and lists, white cards
+   carry plots. */
+
+.tint-mint {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2)),
+    var(--color-mint);
+}
+.tint-cream {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2)),
+    var(--color-cream);
+}
+.tint-lilac {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2)),
+    var(--color-lilac);
+}
+.tint-peach {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2)),
+    var(--color-peach);
+}
+.tint-sky {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2)),
+    var(--color-sky);
 }
 
 /* The old glass names, pointing at the new surfaces, so a screen that still
    carries one is not left unstyled. */
 .glass {
-  position: relative;
-  background: linear-gradient(
-    180deg,
-    color-mix(in oklab, var(--color-panel) 74%, transparent),
-    color-mix(in oklab, var(--color-panel) 88%, transparent)
-  );
-  backdrop-filter: blur(22px) saturate(160%);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 18px;
+  background: color-mix(in oklab, var(--color-panel) 80%, transparent);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 20px;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.09),
-    0 14px 40px -22px rgba(0, 0, 0, 0.7);
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 18px 40px -24px rgba(21, 32, 46, 0.22);
 }
 .glass-subtle {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.022));
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 16px;
 }
 .glass-solid {
-  background: color-mix(in oklab, var(--color-raised) 92%, transparent);
-  backdrop-filter: blur(30px) saturate(150%);
-  -webkit-backdrop-filter: blur(30px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  box-shadow: 0 30px 70px -28px rgba(0, 0, 0, 0.92);
+  background: color-mix(in oklab, var(--color-raised) 94%, transparent);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 22px;
+  box-shadow: 0 30px 70px -26px rgba(21, 32, 46, 0.32);
 }
 
 /* --- data tables --- */
@@ -211,7 +252,7 @@ body {
   transition: background-color 140ms var(--ease-out-soft);
 }
 .data-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(14, 158, 144, 0.05);
 }
 .data-table tbody tr:last-child td {
   border-bottom: none;
@@ -222,135 +263,136 @@ body {
 
 /* --- form controls --- */
 .field {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 11px;
+  box-shadow: inset 0 1px 2px rgba(21, 32, 46, 0.05);
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
   color: var(--color-ink);
   font-size: 0.8125rem;
   padding: 0.5rem 0.6875rem;
   outline: none;
-  transition: border-color 140ms var(--ease-out-soft), background-color 140ms var(--ease-out-soft);
+  transition: border-color 140ms var(--ease-out-soft), background-color 140ms var(--ease-out-soft),
+    box-shadow 140ms var(--ease-out-soft);
 }
 .field:hover {
-  background: rgba(255, 255, 255, 0.055);
+  background: #ffffff;
 }
 .field:focus {
   border-color: var(--color-accent);
-  background: rgba(22, 179, 162, 0.06);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
 }
 .field:focus-visible {
   outline: none;
 }
 select.field option {
-  background: var(--color-raised);
+  background: #ffffff;
   color: var(--color-ink);
 }
 .field::placeholder {
   color: var(--color-ink-3);
 }
-input.field[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(0.7);
-}
 
 /* --- buttons ---------------------------------------------------------------
-   Four of them and no gradients: solid teal for the one action a screen is
-   for, a bordered one for everything else, a bare one for tertiary, and a
-   red-lettered one for anything destructive. Same height, same radius. */
+   Four of them and no gradients beyond a single highlight: solid teal for the
+   action a screen is for, a white one for everything else, a bare one for
+   tertiary, and a red-lettered one for anything destructive. Same height, same
+   radius, and a press that takes the tap. */
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.4375rem;
-  border-radius: 11px;
+  border-radius: 12px;
   font-size: 0.8125rem;
   font-weight: 500;
   line-height: 1;
   padding: 0.5625rem 0.9375rem;
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  border: 1px solid var(--color-line);
   color: var(--color-ink);
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(21, 32, 46, 0.05);
   transition: background-color 160ms var(--ease-out-soft), border-color 160ms var(--ease-out-soft),
     color 160ms var(--ease-out-soft), transform 140ms var(--ease-spring), box-shadow 160ms var(--ease-out-soft);
   cursor: pointer;
   white-space: nowrap;
 }
 .btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: #ffffff;
+  border-color: rgba(21, 32, 46, 0.16);
   transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 6px 16px -8px rgba(21, 32, 46, 0.28);
 }
-/* The press: down and very slightly in, which is what makes a glass control
-   feel like it took the tap. */
 .btn:active {
   transform: translateY(0) scale(0.975);
   transition-duration: 60ms;
 }
 .btn:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: default;
   transform: none;
 }
 
 .btn-primary {
-  background: linear-gradient(
-    180deg,
-    color-mix(in oklab, var(--color-accent-lift) 92%, transparent),
-    var(--color-accent)
-  );
-  border-color: color-mix(in oklab, var(--color-accent-lift) 70%, transparent);
-  color: #04231e;
+  background: linear-gradient(180deg, var(--color-accent-lift), var(--color-accent));
+  border-color: var(--color-accent);
+  color: #ffffff;
   font-weight: 600;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    0 6px 20px -10px rgba(22, 179, 162, 0.7);
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 6px 18px -8px rgba(14, 158, 144, 0.55);
 }
 .btn-primary:hover {
   background: var(--color-accent-lift);
   border-color: var(--color-accent-lift);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.34),
-    0 10px 26px -10px rgba(22, 179, 162, 0.8);
+    inset 0 1px 0 rgba(255, 255, 255, 0.36),
+    0 10px 24px -8px rgba(14, 158, 144, 0.6);
 }
 
 .btn-ghost {
   border-color: transparent;
   background: transparent;
+  box-shadow: none;
   color: var(--color-ink-2);
 }
 .btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.055);
+  background: rgba(21, 32, 46, 0.05);
   border-color: transparent;
   color: var(--color-ink);
+  box-shadow: none;
 }
 
 .btn-danger {
-  border-color: rgba(224, 85, 90, 0.4);
-  background: transparent;
+  border-color: rgba(189, 47, 56, 0.3);
+  background: rgba(255, 255, 255, 0.8);
   color: var(--color-critical);
 }
 .btn-danger:hover {
-  background: rgba(224, 85, 90, 0.12);
-  border-color: rgba(224, 85, 90, 0.55);
+  background: rgba(189, 47, 56, 0.07);
+  border-color: rgba(189, 47, 56, 0.45);
 }
 
 .btn-sm {
-  padding: 0.375rem 0.6875rem;
+  padding: 0.4375rem 0.6875rem;
   font-size: 0.75rem;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 /* --- misc --- */
 .scroll-x {
   overflow-x: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+  scrollbar-color: rgba(21, 32, 46, 0.18) transparent;
 }
 
 /* --- motion ----------------------------------------------------------------
@@ -405,11 +447,11 @@ input.field[type="date"]::-webkit-calendar-picker-indicator {
 }
 .lift:hover {
   transform: translateY(-3px);
-  border-color: rgba(22, 179, 162, 0.45);
+  border-color: rgba(14, 158, 144, 0.4);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    0 20px 44px -22px rgba(0, 0, 0, 0.75),
-    0 0 0 1px rgba(22, 179, 162, 0.12);
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 24px 48px -24px rgba(21, 32, 46, 0.28),
+    0 0 0 1px rgba(14, 158, 144, 0.14);
 }
 
 /* A row in a list: the pointer lights the glass under it and nudges it along
@@ -419,7 +461,7 @@ input.field[type="date"]::-webkit-calendar-picker-indicator {
   border-radius: 10px;
 }
 .row-hover:hover {
-  background: rgba(255, 255, 255, 0.045);
+  background: rgba(14, 158, 144, 0.06);
   padding-left: 0.75rem;
 }
 
@@ -438,11 +480,11 @@ input.field[type="date"]::-webkit-calendar-picker-indicator {
   0%,
   100% {
     opacity: 1;
-    box-shadow: 0 0 0 0 rgba(22, 179, 162, 0.5);
+    box-shadow: 0 0 0 0 rgba(14, 158, 144, 0.45);
   }
   50% {
-    opacity: 0.75;
-    box-shadow: 0 0 0 5px rgba(22, 179, 162, 0);
+    opacity: 0.7;
+    box-shadow: 0 0 0 5px rgba(14, 158, 144, 0);
   }
 }
 
@@ -468,12 +510,12 @@ input.field[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .skeleton {
-  border-radius: 8px;
+  border-radius: 10px;
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.04) 25%,
-    rgba(255, 255, 255, 0.08) 50%,
-    rgba(255, 255, 255, 0.04) 75%
+    rgba(21, 32, 46, 0.05) 25%,
+    rgba(21, 32, 46, 0.09) 50%,
+    rgba(21, 32, 46, 0.05) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite linear;
@@ -520,8 +562,15 @@ input.field[type="date"]::-webkit-calendar-picker-indicator {
   .card,
   .card-2,
   .glass,
-  .glass-subtle {
+  .glass-subtle,
+  .tint-mint,
+  .tint-cream,
+  .tint-lilac,
+  .tint-peach,
+  .tint-sky {
     background: #ffffff !important;
+    backdrop-filter: none !important;
+    border-color: rgba(21, 32, 46, 0.18) !important;
     box-shadow: none !important;
     break-inside: avoid;
   }

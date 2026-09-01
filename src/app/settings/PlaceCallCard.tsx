@@ -110,7 +110,7 @@ export function PlaceCallCard() {
           </p>
           <details className="mt-2 text-[0.6875rem] text-ink-3">
             <summary className="cursor-pointer">What was sent, and what came back</summary>
-            <pre className="scroll-x mt-1.5 rounded-lg border border-line bg-black/30 p-2.5 text-[0.625rem] leading-relaxed text-ink-2">
+            <pre className="scroll-x mt-1.5 rounded-lg border border-line bg-ink/[0.05] p-2.5 text-[0.625rem] leading-relaxed text-ink-2">
 {JSON.stringify({ sent: result.sent, received: result.received }, null, 2)}
             </pre>
           </details>

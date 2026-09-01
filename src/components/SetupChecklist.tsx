@@ -25,7 +25,7 @@ export function SetupChecklist({ status, compact = false }: { status: SetupStatu
       <div className="card-2 mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
         <span className="flex items-center gap-2.5">
           {/* Progress as a bar rather than a fraction to read. */}
-          <span className="h-1.5 w-20 overflow-hidden rounded-full bg-white/10">
+          <span className="h-1.5 w-20 overflow-hidden rounded-full bg-ink/10">
             <span
               className="block h-full rounded-full bg-accent transition-[width] duration-500"
               style={{ width: `${Math.round((status.done / status.total) * 100)}%` }}
@@ -73,7 +73,7 @@ export function SetupChecklist({ status, compact = false }: { status: SetupStatu
                 <span className={step.done ? "text-ink-2" : "font-medium text-ink"}>{step.title}</span>
                 {step.serverSide && !step.done && (
                   <span
-                    className="inline-flex items-center gap-1 rounded-full border border-line bg-white/[0.03] px-2 py-0.5 text-[0.625rem] text-ink-3"
+                    className="inline-flex items-center gap-1 rounded-full border border-line bg-ink/[0.03] px-2 py-0.5 text-[0.625rem] text-ink-3"
                     title="Needs an environment variable set on the host, then a redeploy"
                   >
                     <Lock size={9} /> Admin

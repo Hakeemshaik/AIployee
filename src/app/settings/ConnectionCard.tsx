@@ -415,7 +415,7 @@ export function ConnectionCard({
                       <summary className="cursor-pointer text-ink-3">
                         What was sent, and what came back
                       </summary>
-                      <pre className="scroll-x mt-1.5 rounded-lg border border-line bg-black/30 p-2.5 text-[0.625rem] leading-relaxed">
+                      <pre className="scroll-x mt-1.5 rounded-lg border border-line bg-ink/[0.05] p-2.5 text-[0.625rem] leading-relaxed">
 {JSON.stringify({ sent: attempt.sent, received: attempt.received }, null, 2)}
                       </pre>
                     </details>

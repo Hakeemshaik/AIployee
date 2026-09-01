@@ -256,7 +256,7 @@ export function BookImporter({
       )}
 
       {preview && (
-        <div className="space-y-3 rounded-lg border border-line bg-white/[0.02] p-4">
+        <div className="space-y-3 rounded-lg border border-line bg-ink/[0.025] p-4">
           <p className="text-[0.78125rem] text-ink">
             Read as: <span className="font-medium">{FORMAT_LABELS[preview.format]}</span>
             {preview.format !== preview.detectedFormat && (
@@ -279,12 +279,12 @@ export function BookImporter({
               </span>
             )}
             {preview.unchanged > 0 && (
-              <span className="rounded-full border border-line bg-white/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-3">
+              <span className="rounded-full border border-line bg-ink/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-3">
                 Already up to date <span className="num">{count(preview.unchanged)}</span>
               </span>
             )}
             {preview.duplicateInFile > 0 && (
-              <span className="rounded-full border border-line bg-white/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-2">
+              <span className="rounded-full border border-line bg-ink/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-2">
                 Duplicates in file <span className="num">{count(preview.duplicateInFile)}</span>
               </span>
             )}

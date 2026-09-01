@@ -152,18 +152,18 @@ export function CommandPalette() {
     <>
       <button
         onClick={openPalette}
-        className="hidden items-center gap-2 rounded-lg border border-line bg-white/[0.04] px-2.5 py-1.5 text-[0.75rem] text-ink-3 transition-colors hover:bg-white/[0.07] hover:text-ink-2 sm:inline-flex"
+        className="hidden items-center gap-2 rounded-lg border border-line bg-ink/[0.04] px-2.5 py-1.5 text-[0.75rem] text-ink-3 transition-colors hover:bg-ink/[0.07] hover:text-ink-2 sm:inline-flex"
         aria-label="Open search"
       >
         <Search size={13} />
         Search…
-        <kbd suppressHydrationWarning className="rounded border border-line bg-black/30 px-1.5 py-0.5 text-[0.625rem] text-ink-3">
+        <kbd suppressHydrationWarning className="rounded border border-line bg-ink/[0.05] px-1.5 py-0.5 text-[0.625rem] text-ink-3">
           {isMac ? "⌘K" : "Ctrl K"}
         </kbd>
       </button>
       <button
         onClick={openPalette}
-        className="rounded-lg border border-line bg-white/[0.04] p-2 text-ink-3 sm:hidden"
+        className="rounded-lg border border-line bg-ink/[0.04] p-2 text-ink-3 sm:hidden"
         aria-label="Open search"
       >
         <Search size={15} />
@@ -171,7 +171,7 @@ export function CommandPalette() {
 
       {open && (
         <div className="fixed inset-0 z-[60] flex items-start justify-center p-4 pt-[12vh]">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <div className="absolute inset-0 bg-ink/30 backdrop-blur-sm" onClick={() => setOpen(false)} />
           <div className="card-float relative w-full max-w-lg overflow-hidden p-0">
             <div className="flex items-center gap-2.5 border-b border-line px-4">
               <Search size={15} className="shrink-0 text-ink-3" />
@@ -203,7 +203,7 @@ export function CommandPalette() {
                           i === active ? "bg-accent-soft" : ""
                         }`}
                       >
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line bg-white/[0.04]">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line bg-ink/[0.04]">
                           <Icon size={13} className={i === active ? "text-accent" : "text-ink-3"} />
                         </span>
                         <span className="min-w-0">

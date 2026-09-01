@@ -490,7 +490,7 @@ export function IngestionPanel({
                       ? "border-good/35 bg-good/10 text-good"
                       : active
                         ? "border-accent/45 bg-accent-soft text-ink"
-                        : "border-line bg-white/[0.03] text-ink-3"
+                        : "border-line bg-ink/[0.03] text-ink-3"
                   }`}
                 >
                   {done ? (

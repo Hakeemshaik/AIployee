@@ -22,18 +22,23 @@ import { count, moneyCompact } from "@/lib/format";
 // carries more than one series.
 // ---------------------------------------------------------------------------
 
-// The three series are the Mafadi hues stepped for the navy chart surface and
+// The three series are the Mafadi hues stepped for a WHITE chart surface and
 // validated on it as a set — lightness band, chroma floor, colour-vision
-// separation on every pair, contrast — not the interface accent reused as data.
+// separation on every pair (worst dE 13.5), contrast — not the interface accent
+// reused as data.
+//
+// Charts belong on white cards. Over one of the pastel washes these same three
+// fall to 2.9:1, which the method allows only when labels carry the identity
+// instead, so a plot never sits on a tinted card.
 const C = {
-  s1: "#15a899", // teal
-  s2: "#c98500", // gold
-  s3: "#9085e9", // violet
-  grid: "#223142",
-  axis: "#33475c",
-  muted: "#97a3b0",
-  ink: "#f2f6f9",
-  notReached: "#39485c",
+  s1: "#0e9e90", // teal
+  s2: "#c97a0f", // gold
+  s3: "#6c5ce0", // violet
+  grid: "#e9ebf2",
+  axis: "#c8cddb",
+  muted: "#7b869a",
+  ink: "#15202e",
+  notReached: "#cfd6e4",
 };
 
 const axisProps = {
@@ -62,7 +67,7 @@ function GlassTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-white/10 bg-raised/95 px-3 py-2 text-[0.71875rem] shadow-xl backdrop-blur">
+    <div className="card-float px-3 py-2 text-[0.71875rem]">
       <p className="mb-1 text-ink-3">{label}</p>
       {payload.map((row, i) => (
         <p key={i} className="flex items-center gap-1.5 text-ink">
@@ -149,7 +154,7 @@ export function ContactActivityChart({
           <CartesianGrid stroke={C.grid} vertical={false} />
           <XAxis dataKey="date" {...axisProps} tickFormatter={shortDate} minTickGap={28} />
           <YAxis {...axisProps} allowDecimals={false} width={34} />
-          <Tooltip content={<GlassTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+          <Tooltip content={<GlassTooltip />} cursor={{ fill: "rgba(21,32,46,0.05)" }} />
           <Bar dataKey="connected" name="Connected" stackId="a" fill={C.s1} />
           <Bar dataKey="notReached" name="Not reached" stackId="a" fill={C.notReached} radius={[4, 4, 0, 0]} />
         </BarChart>
@@ -194,7 +199,7 @@ export function PaymentsBarChart({ data }: { data: { date: string; received: num
         <CartesianGrid stroke={C.grid} vertical={false} />
         <XAxis dataKey="date" {...axisProps} tickFormatter={shortDate} minTickGap={28} />
         <YAxis {...axisProps} tickFormatter={(v: number) => moneyCompact(v)} width={52} />
-        <Tooltip content={<GlassTooltip money />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+        <Tooltip content={<GlassTooltip money />} cursor={{ fill: "rgba(21,32,46,0.05)" }} />
         <Bar dataKey="received" name="Received" fill={C.s1} radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
@@ -222,7 +227,7 @@ export function HBarChart({
           allowDecimals={false}
         />
         <YAxis type="category" dataKey="label" {...axisProps} width={148} tick={{ fill: C.muted, fontSize: 11 }} />
-        <Tooltip content={<GlassTooltip money={money} />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+        <Tooltip content={<GlassTooltip money={money} />} cursor={{ fill: "rgba(21,32,46,0.05)" }} />
         <Bar dataKey="value" name={money ? "Recovered" : "Calls"} fill={C.s1} radius={[0, 4, 4, 0]}>
           {data.map((_, i) => (
             <Cell key={i} fill={C.s1} />
@@ -252,7 +257,7 @@ export function AgingChart({
           <CartesianGrid stroke={C.grid} vertical={false} />
           <XAxis dataKey="bucket" {...axisProps} />
           <YAxis {...axisProps} tickFormatter={(v: number) => moneyCompact(v)} width={52} />
-          <Tooltip content={<GlassTooltip money />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+          <Tooltip content={<GlassTooltip money />} cursor={{ fill: "rgba(21,32,46,0.05)" }} />
           <Bar dataKey="outstanding" name="Outstanding" fill={C.s1} radius={[4, 4, 0, 0]} />
           <Bar dataKey="recovered" name="Recovered" fill={C.s2} radius={[4, 4, 0, 0]} />
         </BarChart>
@@ -280,7 +285,7 @@ export function ReachByHourChart({
         <YAxis {...axisProps} width={40} tickFormatter={(v: number) => `${v}%`} />
         <Tooltip
           content={<GlassTooltip />}
-          cursor={{ fill: "rgba(255,255,255,0.04)" }}
+          cursor={{ fill: "rgba(21,32,46,0.05)" }}
         />
         <Bar dataKey="rate" name="Reach rate %" fill={C.s1} radius={[4, 4, 0, 0]} />
       </BarChart>
@@ -308,7 +313,7 @@ export function CumulativeReachChart({
           <CartesianGrid stroke={C.grid} vertical={false} />
           <XAxis dataKey="label" {...axisProps} />
           <YAxis {...axisProps} allowDecimals={false} width={36} />
-          <Tooltip content={<GlassTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+          <Tooltip content={<GlassTooltip />} cursor={{ fill: "rgba(21,32,46,0.05)" }} />
           <Bar dataKey="cumulative" name="Cumulative reached" fill={C.s1} radius={[4, 4, 0, 0]} />
           <Bar dataKey="firstReached" name="First reached here" fill={C.s2} radius={[4, 4, 0, 0]} />
         </BarChart>

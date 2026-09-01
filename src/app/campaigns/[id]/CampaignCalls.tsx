@@ -106,7 +106,7 @@ export function CampaignCalls({
                 className={`rounded-full border px-2.5 py-1 text-[0.6875rem] transition-colors ${
                   filter === chip.key
                     ? "border-accent/45 bg-accent-soft text-ink"
-                    : "border-line bg-white/[0.03] text-ink-2 hover:text-ink"
+                    : "border-line bg-ink/[0.03] text-ink-2 hover:text-ink"
                 }`}
               >
                 {chip.label} <span className="num text-ink-3">{count(chip.n)}</span>
@@ -127,19 +127,19 @@ export function CampaignCalls({
           </div>
 
           <div className="flex flex-wrap gap-1.5">
-            <span className="rounded-full border border-line bg-white/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-2">
+            <span className="rounded-full border border-line bg-ink/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-2">
               Accounts in campaign <span className="num">{count(log.accountsInCampaign)}</span>
             </span>
-            <span className="rounded-full border border-line bg-white/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-2">
+            <span className="rounded-full border border-line bg-ink/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-2">
               Dialled <span className="num">{count(log.accountsDialled)}</span>
             </span>
             {log.batchCode && (
-              <span className="rounded-full border border-line bg-white/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-2">
+              <span className="rounded-full border border-line bg-ink/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-2">
                 Carrying batch on the platform <span className="num">{count(log.accountsCarryingBatch)}</span>
               </span>
             )}
             {log.callsBeforeBatch > 0 && (
-              <span className="rounded-full border border-line bg-white/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-3">
+              <span className="rounded-full border border-line bg-ink/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-3">
                 Excluded, predate the batch <span className="num">{count(log.callsBeforeBatch)}</span>
               </span>
             )}
@@ -182,7 +182,7 @@ export function CampaignCalls({
                 {visible.map((call) => (
                   <tr
                     key={call.conversationUuid}
-                    className="cursor-pointer transition-colors hover:bg-white/[0.03]"
+                    className="cursor-pointer transition-colors hover:bg-ink/[0.03]"
                     onClick={() => setOpenAccount(call.debtorId)}
                     title="Open the account and read the conversation"
                   >

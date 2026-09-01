@@ -94,7 +94,7 @@ export function ImportForm({ campaigns }: { campaigns: { id: string; name: strin
         <p className="mb-2 text-[0.71875rem] font-medium text-ink-2">
           1 · Prepare a CSV with these columns
         </p>
-        <pre className="scroll-x rounded-lg border border-line bg-black/30 p-3 text-[0.65625rem] leading-relaxed text-ink-2">{TEMPLATE}</pre>
+        <pre className="scroll-x rounded-lg border border-line bg-ink/[0.05] p-3 text-[0.65625rem] leading-relaxed text-ink-2">{TEMPLATE}</pre>
         <div className="mt-2 flex items-center gap-3">
           <button
             className="btn btn-ghost text-[0.71875rem]"
@@ -120,7 +120,7 @@ export function ImportForm({ campaigns }: { campaigns: { id: string; name: strin
           <button
             type="button"
             onClick={() => fileInput.current?.click()}
-            className="flex h-full min-h-[110px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-white/[0.02] p-4 text-ink-3 transition-colors hover:border-accent/50 hover:text-ink-2"
+            className="flex h-full min-h-[110px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-ink/[0.025] p-4 text-ink-3 transition-colors hover:border-accent/50 hover:text-ink-2"
           >
             <FileUp size={18} />
             <span className="text-[0.75rem]">{fileName ?? "Choose a .csv file"}</span>

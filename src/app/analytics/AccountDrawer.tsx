@@ -106,7 +106,7 @@ function CallTurns({ turns }: { turns: Turn[] }) {
               className={`max-w-[88%] rounded-xl px-3 py-2 text-[0.78125rem] leading-relaxed ${
                 isTenant
                   ? "rounded-tr-sm border border-accent/28 bg-accent/11 text-ink"
-                  : "rounded-tl-sm border border-line bg-white/[0.035] text-ink-2"
+                  : "rounded-tl-sm border border-line bg-ink/[0.035] text-ink-2"
               }`}
             >
               <p
@@ -138,7 +138,7 @@ function CallRow({ call, defaultOpen }: { call: JourneyCall; defaultOpen: boolea
           className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[0.625rem] font-semibold ${
             call.reached
               ? "border-good/40 bg-good/14 text-good"
-              : "border-line bg-white/[0.04] text-ink-3"
+              : "border-line bg-ink/[0.04] text-ink-3"
           }`}
         >
           {call.attempt}
@@ -153,7 +153,7 @@ function CallRow({ call, defaultOpen }: { call: JourneyCall; defaultOpen: boolea
             </span>
             {call.voicemailFlag && (
               <span
-                className="rounded-full border border-line bg-white/[0.04] px-1.5 py-0.5 text-[0.5625rem] uppercase tracking-[0.06em] text-ink-3"
+                className="rounded-full border border-line bg-ink/[0.04] px-1.5 py-0.5 text-[0.5625rem] uppercase tracking-[0.06em] text-ink-3"
                 title="The provider flagged this call as voicemail. The flag is shown for reference only — it is unreliable and is never used to decide reach."
               >
                 provider: voicemail
@@ -204,7 +204,7 @@ function Messaging({ messaging }: { messaging: Journey["messaging"] }) {
         className={`mb-2.5 flex items-start gap-2 rounded-lg border px-3 py-2 text-[0.71875rem] leading-relaxed ${
           messaging.basis === "ambiguous_name"
             ? "border-warning/30 bg-warning/7 text-warning"
-            : "border-line bg-white/[0.03] text-ink-3"
+            : "border-line bg-ink/[0.03] text-ink-3"
         }`}
       >
         {messaging.basis === "ambiguous_name" && <AlertTriangle size={13} className="mt-0.5 shrink-0" />}
@@ -217,7 +217,7 @@ function Messaging({ messaging }: { messaging: Journey["messaging"] }) {
           {messaging.events.map((event, i) => (
             <li
               key={i}
-              className="flex items-center gap-2.5 rounded-lg border border-line bg-white/[0.02] px-3 py-2"
+              className="flex items-center gap-2.5 rounded-lg border border-line bg-ink/[0.025] px-3 py-2"
             >
               {event.succeeded ? (
                 <CheckCircle2 size={14} className="shrink-0 text-good" />
@@ -296,7 +296,7 @@ function DrawerBody({ accountId, onClose, bucketLabels, bucketExplanations }: Dr
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label="Account detail">
-      <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-ink/30 backdrop-blur-sm" onClick={onClose} />
       <div className="relative flex h-full w-full max-w-[620px] flex-col border-l border-line bg-plane shadow-2xl">
         <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
           <div className="min-w-0">
@@ -312,7 +312,7 @@ function DrawerBody({ accountId, onClose, bucketLabels, bucketExplanations }: Dr
           <button
             onClick={onClose}
             aria-label="Close account detail"
-            className="shrink-0 rounded-lg p-1.5 text-ink-3 hover:bg-white/[0.05] hover:text-ink"
+            className="shrink-0 rounded-lg p-1.5 text-ink-3 hover:bg-ink/[0.05] hover:text-ink"
           >
             <X size={17} />
           </button>

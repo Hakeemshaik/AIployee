@@ -146,7 +146,7 @@ export default async function SettingsPage() {
           title="Inbound call webhook"
           subtitle="For a provider that can post results — Jobix results arrive through ingestion"
         >
-          <div className="mb-3 flex items-start gap-3 rounded-lg border border-line bg-white/[0.03] p-3">
+          <div className="mb-3 flex items-start gap-3 rounded-lg border border-line bg-ink/[0.03] p-3">
             <Webhook size={15} className="mt-0.5 shrink-0 text-accent" />
             <div className="min-w-0">
               <p className="text-[0.78125rem] font-medium text-ink">
@@ -164,7 +164,7 @@ export default async function SettingsPage() {
               </p>
             </div>
           </div>
-          <pre className="scroll-x rounded-lg border border-line bg-black/30 p-3 text-[0.65625rem] leading-relaxed text-ink-2">
+          <pre className="scroll-x rounded-lg border border-line bg-ink/[0.05] p-3 text-[0.65625rem] leading-relaxed text-ink-2">
             {EXAMPLE_PAYLOAD}
           </pre>
           <h3 className="mb-2 mt-4 text-[0.6875rem] font-medium uppercase tracking-[0.07em] text-ink-3">
@@ -172,7 +172,7 @@ export default async function SettingsPage() {
           </h3>
           <ul className="space-y-2">
             {apiKeys.map((k) => (
-              <li key={k.id} className="flex items-center justify-between gap-3 rounded-lg border border-line-2 bg-white/[0.02] px-3 py-2">
+              <li key={k.id} className="flex items-center justify-between gap-3 rounded-lg border border-line-2 bg-ink/[0.025] px-3 py-2">
                 <div className="flex min-w-0 items-center gap-2.5">
                   <KeyRound size={14} className="shrink-0 text-ink-3" />
                   <div className="min-w-0">
@@ -199,7 +199,7 @@ export default async function SettingsPage() {
           </p>
           <div className="flex flex-wrap gap-1.5">
             {EVENT_TYPES.filter((t) => t !== "sms.sent").map((t) => (
-              <span key={t} className="num rounded-md border border-line bg-white/[0.03] px-2 py-1 text-[0.6875rem] text-ink-2">
+              <span key={t} className="num rounded-md border border-line bg-ink/[0.03] px-2 py-1 text-[0.6875rem] text-ink-2">
                 {t}
               </span>
             ))}

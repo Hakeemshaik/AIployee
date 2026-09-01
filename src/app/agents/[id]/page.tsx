@@ -106,7 +106,7 @@ export default async function AgentDetailPage({
             </p>
           </Card>
           <Card title="Prompt configuration">
-            <div className="flex items-start gap-3 rounded-lg border border-line bg-white/[0.03] p-3">
+            <div className="flex items-start gap-3 rounded-lg border border-line bg-ink/[0.03] p-3">
               <Lock size={15} className="mt-0.5 shrink-0 text-ink-3" />
               <div>
                 <p className="text-[0.78125rem] font-medium text-ink">Prompt stored on the voice platform</p>

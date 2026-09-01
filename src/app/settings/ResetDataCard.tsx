@@ -92,7 +92,7 @@ export function ResetDataCard() {
           {result.usersRemoved === 1 ? "account" : "accounts"}. You are signed in to{" "}
           <span className="font-medium text-ink">{result.organizationName}</span>.
         </p>
-        <p className="mt-3 rounded-lg border border-line bg-white/[0.03] px-3 py-2.5 text-[0.78125rem] leading-relaxed text-ink-2">
+        <p className="mt-3 rounded-lg border border-line bg-ink/[0.03] px-3 py-2.5 text-[0.78125rem] leading-relaxed text-ink-2">
           Next: import your book at <span className="text-accent">Debtors → Import</span>, then issue a
           fresh webhook key below and point your voice platform at it. The old key no longer works.
         </p>

@@ -138,7 +138,7 @@ export function DebtorActions({
 
       {escalateOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[14vh]">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !busy && setEscalateOpen(false)} />
+          <div className="absolute inset-0 bg-ink/30 backdrop-blur-sm" onClick={() => !busy && setEscalateOpen(false)} />
           <div className="card-float relative w-full max-w-md p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-[0.9375rem] font-semibold text-ink">Escalate {debtor.name}</h2>

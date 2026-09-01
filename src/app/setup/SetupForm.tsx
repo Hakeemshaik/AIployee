@@ -66,7 +66,7 @@ export function SetupForm() {
             Jobix webhook key — shown once, copy it now
           </p>
           <div className="flex items-center gap-2">
-            <code className="num flex-1 truncate rounded-lg border border-line bg-black/30 px-3 py-2.5 text-[0.78125rem] text-ink">
+            <code className="num flex-1 truncate rounded-lg border border-line bg-ink/[0.05] px-3 py-2.5 text-[0.78125rem] text-ink">
               {result.apiKey}
             </code>
             <button
@@ -88,7 +88,7 @@ export function SetupForm() {
           <p className="mb-1.5 text-[0.71875rem] font-medium uppercase tracking-[0.07em] text-ink-3">
             Configure Jobix to send completed calls to
           </p>
-          <code className="num block truncate rounded-lg border border-line bg-black/30 px-3 py-2.5 text-[0.71875rem] text-ink-2">
+          <code className="num block truncate rounded-lg border border-line bg-ink/[0.05] px-3 py-2.5 text-[0.71875rem] text-ink-2">
             POST {webhookUrl}
           </code>
           <p className="mt-1.5 text-[0.71875rem] text-ink-3">
@@ -113,7 +113,7 @@ export function SetupForm() {
           className={`rounded-xl border p-4 text-left transition-colors ${
             mode === "demo"
               ? "border-accent/50 bg-accent-soft"
-              : "border-line bg-white/[0.02] hover:bg-white/[0.04]"
+              : "border-line bg-ink/[0.025] hover:bg-ink/[0.04]"
           }`}
         >
           <p className="flex items-center gap-2 text-[0.875rem] font-semibold text-ink">
@@ -130,7 +130,7 @@ export function SetupForm() {
           className={`rounded-xl border p-4 text-left transition-colors ${
             mode === "clean"
               ? "border-accent/50 bg-accent-soft"
-              : "border-line bg-white/[0.02] hover:bg-white/[0.04]"
+              : "border-line bg-ink/[0.025] hover:bg-ink/[0.04]"
           }`}
         >
           <p className="flex items-center gap-2 text-[0.875rem] font-semibold text-ink">

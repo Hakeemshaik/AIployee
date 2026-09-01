@@ -404,7 +404,7 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
               {state.excluded.map((entry) => (
                 <span
                   key={entry.reason}
-                  className="rounded-full border border-line bg-white/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-2"
+                  className="rounded-full border border-line bg-ink/[0.03] px-2.5 py-1 text-[0.6875rem] text-ink-2"
                   title="Excluded from dialling"
                 >
                   {entry.reason} <span className="num text-ink-3">{entry.count}</span>
@@ -490,7 +490,7 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                 )}
 
                 {rowProbe && (
-                  <div className="rounded-lg border border-line bg-white/[0.02] px-3 py-2.5">
+                  <div className="rounded-lg border border-line bg-ink/[0.025] px-3 py-2.5">
                     <p className="text-[0.78125rem] leading-relaxed text-ink">{rowProbe.verdict}</p>
                     <p className="mt-1 text-[0.6875rem] text-ink-3">
                       Tested with {rowProbe.account}, against {count(rowProbe.scanned)} customer
@@ -508,7 +508,7 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                     </ul>
                     <details className="mt-2 text-[0.6875rem] text-ink-3">
                       <summary className="cursor-pointer">What was sent, and what came back</summary>
-                      <pre className="scroll-x mt-1.5 rounded-lg border border-line bg-black/30 p-2.5 text-[0.625rem] leading-relaxed text-ink-2">
+                      <pre className="scroll-x mt-1.5 rounded-lg border border-line bg-ink/[0.05] p-2.5 text-[0.625rem] leading-relaxed text-ink-2">
 {JSON.stringify(rowProbe.variants, null, 2)}
                       </pre>
                     </details>
@@ -679,7 +679,7 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
 
                 {/* Or set a time. The presets exist because "in five minutes"
                     is how a test run is actually described. */}
-                <div className="rounded-lg border border-line bg-white/[0.02] p-3">
+                <div className="rounded-lg border border-line bg-ink/[0.025] p-3">
                   <p className="mb-2 flex items-center gap-2 text-[0.75rem] font-medium text-ink">
                     <CalendarClock size={13} className="text-accent" /> Or schedule it
                   </p>

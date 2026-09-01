@@ -169,7 +169,7 @@ export function DuplicatesCard({ initial, canMerge }: { initial: DuplicateReport
 
       <div className="space-y-2.5">
         {report.groups.map((group) => (
-          <div key={group.key} className="rounded-lg border border-line bg-white/[0.02] p-3">
+          <div key={group.key} className="rounded-lg border border-line bg-ink/[0.025] p-3">
             <div className="mb-2 flex flex-wrap items-center gap-2.5">
               {canMerge && (
                 <input
@@ -184,7 +184,7 @@ export function DuplicatesCard({ initial, canMerge }: { initial: DuplicateReport
               <span className="text-[0.78125rem] font-medium text-ink">
                 {count(group.members.length)} records
               </span>
-              <span className="rounded-full border border-line bg-white/[0.03] px-2 py-0.5 text-[0.625rem] text-ink-3">
+              <span className="rounded-full border border-line bg-ink/[0.03] px-2 py-0.5 text-[0.625rem] text-ink-3">
                 {MATCH_LABEL[group.matchedOn]}
               </span>
               {group.doubleCountedValue > 0 && (

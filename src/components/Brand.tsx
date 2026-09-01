@@ -20,12 +20,12 @@ export function BrandMark({ size = 32, className = "" }: { size?: number; classN
       aria-hidden="true"
       className={className}
     >
-      <rect width="32" height="32" rx="9" fill="#15202E" />
-      <rect x="0.5" y="0.5" width="31" height="31" rx="8.5" stroke="rgba(22,179,162,0.35)" />
-      <rect x="6" y="18" width="3" height="8" rx="1.5" fill="#16B3A2" opacity="0.5" />
-      <rect x="12" y="14" width="3" height="12" rx="1.5" fill="#16B3A2" opacity="0.75" />
-      <rect x="18" y="10" width="3" height="16" rx="1.5" fill="#16B3A2" />
-      <rect x="24" y="6" width="3" height="20" rx="1.5" fill="#FBF3D6" />
+      <rect width="32" height="32" rx="9" fill="#0E9E90" />
+      <rect x="0.5" y="0.5" width="31" height="31" rx="8.5" stroke="rgba(21,32,46,0.12)" />
+      <rect x="6" y="18" width="3" height="8" rx="1.5" fill="#FFFFFF" opacity="0.5" />
+      <rect x="12" y="14" width="3" height="12" rx="1.5" fill="#FFFFFF" opacity="0.7" />
+      <rect x="18" y="10" width="3" height="16" rx="1.5" fill="#FFFFFF" opacity="0.88" />
+      <rect x="24" y="6" width="3" height="20" rx="1.5" fill="#FDF5E4" />
     </svg>
   );
 }
@@ -39,7 +39,7 @@ export function BrandLockup() {
         {/* "AI" is set apart because in a humanist sans a capital I and a
             lowercase l are the same stroke — the wordmark read "Alployee". */}
         <span className="block text-[0.9375rem] font-semibold tracking-tight text-ink">
-          <span className="text-accent">AI</span>ployee
+          <span className="text-accent-ink">AI</span>ployee
         </span>
         <span className="block text-[0.5625rem] font-medium uppercase tracking-[0.16em] text-ink-3">
           Command Centre
