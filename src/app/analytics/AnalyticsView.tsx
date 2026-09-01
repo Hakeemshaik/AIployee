@@ -1,14 +1,33 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertTriangle, Download, PhoneOff, Search } from "lucide-react";
+import { Download, PhoneForwarded, PhoneOff, Search, UserRound } from "lucide-react";
 import { count, money, percent } from "@/lib/format";
-import { Badge, Card } from "@/components/ui";
+import { Badge, Card, StatCard } from "@/components/ui";
 import { Pager } from "@/components/Pager";
 import { paginate } from "@/lib/paginate";
-import { FunnelStep, Metric } from "@/components/Metric";
+import { FunnelStep } from "@/components/Metric";
 import { CumulativeReachChart, ReachByHourChart } from "@/components/charts";
 import { AccountDrawer } from "./AccountDrawer";
+
+// ---------------------------------------------------------------------------
+// Call analytics, arranged as the four questions a collections manager
+// actually asks, in the order they ask them:
+//
+//   1. How is it going?            — four headline figures, nothing else
+//   2. Where does the book stand?  — the funnel, and where the MONEY sits
+//   3. When do calls land?         — by hour and by attempt
+//   4. What do we do next?         — three actions, each with a button
+//
+// and then the accounts themselves, for when a question is about one person.
+//
+// The screen used to open with eight metric tiles of mixed importance, a
+// separate Efficiency card restating some of them, and a full second table for
+// dead numbers. Every number on it was defensible; together they read as a
+// spreadsheet. What was cut is not gone — the formulas still live in tooltips,
+// dead numbers are an action row with the same export, and anything about one
+// account is one click into the drawer.
+// ---------------------------------------------------------------------------
 
 type Bucket =
   | "conversation"
@@ -82,6 +101,23 @@ const BUCKET_ORDER: Bucket[] = [
   "never_called",
 ];
 
+/**
+ * One colour per bucket for the money bars, all validated on white.
+ *
+ * The encoding is reachability: teal is money in live conversations, thinning
+ * as the contact gets weaker; amber is money behind numbers that never
+ * connect, which no amount of redialling will reach; grey is money not yet
+ * worked. Amber is the only alarm on the chart, because it is the only bucket
+ * where the fix is not "call again".
+ */
+const BUCKET_BAR: Record<Bucket, string> = {
+  conversation: "#0E9E90",
+  answered_few_words: "rgba(14, 158, 144, 0.6)",
+  connected_no_conversation: "rgba(14, 158, 144, 0.32)",
+  never_connected: "#C97A0F",
+  never_called: "rgba(21, 32, 46, 0.22)",
+};
+
 type Chip = { key: string; label: string; count: number; title: string };
 
 function maskPhone(phone: string) {
@@ -94,9 +130,6 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [openAccount, setOpenAccount] = useState<string | null>(null);
-  // The list used to show the 200 largest balances and quietly drop the rest.
-  // Fifty at a time, with every page reachable — a book of two thousand
-  // accounts has nowhere to hide.
   const [page, setPage] = useState(1);
 
   const chips: Chip[] = useMemo(() => {
@@ -118,6 +151,16 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
     ];
   }, [rows, a.buckets, payload.bucketLabels, payload.bucketExplanations]);
 
+  // The composite filters from "What to do next" get a chip only while active,
+  // so the table always says what it is showing without ten permanent chips
+  // becoming twelve.
+  const activeComposite =
+    filter === "ring_again"
+      ? { key: "ring_again", label: "Ring again", count: 0, title: "Answered before, no conversation yet, safe to dial" }
+      : filter === "needs_person"
+        ? { key: "needs_person", label: "Needs a person", count: 0, title: "Disputed or escalated" }
+        : null;
+
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows
@@ -127,6 +170,15 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
         if (filter === "disputed") return r.disputed;
         if (filter === "paid_claimed") return r.paidClaimed;
         if (filter === "escalated") return r.escalated;
+        // The two composite filters exist so the "What to do next" buttons
+        // show exactly the accounts their row counted — a button that says 12
+        // and a table that shows 9 is a bug wearing a filter.
+        if (filter === "ring_again")
+          return (
+            (r.bucket === "answered_few_words" || r.bucket === "connected_no_conversation") &&
+            !r.doNotCall && !r.hasPtp && !r.disputed && !r.escalated
+          );
+        if (filter === "needs_person") return r.disputed || r.escalated;
         return r.bucket === filter;
       })
       .filter((r) => !q || r.name.toLowerCase().includes(q) || r.phone.includes(q) || (r.unit ?? "").toLowerCase().includes(q))
@@ -134,9 +186,29 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
   }, [rows, filter, search]);
 
   const shown = paginate(visible, page);
-  const deadRows = useMemo(() => rows.filter((r) => r.bucket === "never_connected"), [rows]);
   const selectedRows = visible.filter((r) => selected.has(r.accountId));
   const selectedValue = selectedRows.reduce((s, r) => s + r.balance, 0);
+
+  // --- where the money sits ---------------------------------------------
+  // The buckets as counts say how many people are reachable; as rand they say
+  // whether the RECOVERABLE money is reachable, which is the question the
+  // counts only gesture at. A book can be 80% contactable and still have most
+  // of its value behind dead numbers.
+  const moneyByBucket = useMemo(() => {
+    const sums = Object.fromEntries(BUCKET_ORDER.map((b) => [b, 0])) as Record<Bucket, number>;
+    for (const r of rows) sums[r.bucket] += r.balance;
+    const total = rows.reduce((s, r) => s + r.balance, 0);
+    return { sums, total };
+  }, [rows]);
+
+  // --- the three next actions --------------------------------------------
+  const ringAgain = useMemo(
+    () => rows.filter((r) => (r.bucket === "answered_few_words" || r.bucket === "connected_no_conversation") && !r.doNotCall && !r.hasPtp && !r.disputed && !r.escalated),
+    [rows],
+  );
+  const deadRows = useMemo(() => rows.filter((r) => r.bucket === "never_connected"), [rows]);
+  const needsPerson = useMemo(() => rows.filter((r) => r.disputed || r.escalated), [rows]);
+  const sum = (list: typeof rows) => list.reduce((s, r) => s + r.balance, 0);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -145,6 +217,14 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
       else next.add(id);
       return next;
     });
+  }
+
+  /** An action row's button: filter the table to those accounts and go there. */
+  function showAccounts(key: string) {
+    setFilter(key);
+    setSearch("");
+    setPage(1);
+    document.getElementById("accounts")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function exportDeadNumbers() {
@@ -165,6 +245,13 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
     ? payload.transcripts.total - payload.transcripts.withTranscript
     : 0;
 
+  // Cash committed is a range only when the floor and ceiling differ; a range
+  // whose ends are equal is one number said twice.
+  const cash =
+    a.commitments.floor === a.commitments.ceiling
+      ? money(a.commitments.floor)
+      : `${money(a.commitments.floor)}–${money(a.commitments.ceiling)}`;
+
   return (
     <div className="space-y-5">
       {/* Reach is a transcript reading. Until every call has one, the reach and
@@ -183,81 +270,120 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
         </div>
       )}
 
-      {/* KPI strip — every tile states its formula */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
-        <Metric label="Accounts" value={count(a.accounts)} formula="accounts in book" />
-        <Metric label="Calls" value={count(a.calls)} formula="total call records (not accounts)" />
-        <Metric
-          label="Right-party"
-          value={count(a.rpcAccounts)}
-          formula={`accounts where the account holder spoke${
-            a.wrongPartyAccounts > 0 ? ` — ${a.wrongPartyAccounts} wrong-party contacts excluded` : ""
-          }`}
-          sub={a.wrongPartyAccounts > 0 ? `${count(a.wrongPartyAccounts)} wrong party` : undefined}
+      {/* --- 1 · how is it going -------------------------------------------- */}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          i={0}
+          label="Contact rate"
+          value={percent(a.contactRate)}
+          meter={a.contactRate}
+          sub={`${count(a.contactAccounts)} of ${count(a.attempted)} attempted accounts answered`}
         />
-        <Metric label="RPC rate" value={percent(a.rpcRate)} formula={payload.formulas.rpcRate} tone="good" />
-        <Metric label="Promises" value={count(a.commitments.count)} formula="accounts with a confirmed commitment" />
-        <Metric label="PTP rate" value={percent(a.ptpRate)} formula={payload.formulas.ptpRate} />
-        <Metric
+        <StatCard
+          i={1}
+          label="Promises to pay"
+          value={count(a.commitments.count)}
+          tone={a.commitments.count > 0 ? "good" : undefined}
+          sub={`${percent(a.ptpRate)} of right-party conversations commit`}
+        />
+        <StatCard
+          i={2}
           label="Cash committed"
-          // A range only when there is one. With every commitment carrying a
-          // stated amount the floor and the ceiling are the same number, and
-          // "R 266 600–R 266 600" is that number said twice, wrapped onto two
-          // lines, looking like a rendering fault.
-          value={
-            a.commitments.floor === a.commitments.ceiling
-              ? money(a.commitments.floor)
-              : `${money(a.commitments.floor)}\u2013${money(a.commitments.ceiling)}`
+          value={cash}
+          sub={
+            a.commitments.withoutStatedAmount > 0
+              ? `${count(a.commitments.withoutStatedAmount)} promise${a.commitments.withoutStatedAmount === 1 ? "" : "s"} with no stated amount`
+              : `across ${count(a.commitments.count)} commitment${a.commitments.count === 1 ? "" : "s"}`
           }
-          formula={`floor: ${payload.formulas.cashCommittedFloor} · ceiling: ${payload.formulas.cashCommittedCeiling}`}
-          sub={`${a.commitments.withoutStatedAmount} with no stated amount`}
         />
-        <Metric
-          label="Dead numbers"
-          value={count(a.deadNumberAccounts)}
-          formula={payload.formulas.dataQualityFailRate}
-          tone={a.deadNumberAccounts > 0 ? "critical" : undefined}
-          sub={`${percent(a.dataQualityFailRate, 0)} of dialled`}
+        <StatCard
+          i={3}
+          label="Book worked"
+          value={percent(a.penetration)}
+          meter={a.penetration}
+          sub={`${count(a.attempted)} of ${count(a.accounts)} accounts dialled${a.dialsPerRpc > 0 ? ` · ${a.dialsPerRpc.toFixed(1)} dials per right-party talk` : ""}`}
         />
       </div>
 
-      <div className="grid items-start gap-4 xl:grid-cols-3">
-        <Card title="Funnel" subtitle="Book → attempted → connected → conversation → promise">
+      {/* --- 2 · where the book stands --------------------------------------- */}
+      <div className="grid items-start gap-4 xl:grid-cols-2">
+        <Card title="The funnel" subtitle="How many people, at each step from book to promise">
           <div className="space-y-3.5">
             <FunnelStep label="Book" count={a.accounts} total={a.accounts} />
             <FunnelStep label="Attempted" count={a.attempted} previous={a.accounts} total={a.accounts} dropReason="never called" />
             <FunnelStep
               label="Connected"
-              count={a.attempted - a.buckets.never_connected}
+              count={a.contactAccounts}
               previous={a.attempted}
               total={a.accounts}
-              dropReason="dead numbers (zero talk time on every attempt)"
+              dropReason="numbers that never answered"
             />
             <FunnelStep
               label="Conversation"
               count={a.conversationAccounts}
-              previous={a.attempted - a.buckets.never_connected}
+              previous={a.contactAccounts}
               total={a.accounts}
-              dropReason="connected but no real conversation"
+              dropReason="hung up or said nothing"
             />
             <FunnelStep
               label="Promise"
               count={a.commitments.count}
               previous={a.conversationAccounts}
               total={a.accounts}
-              dropReason="spoke but did not commit"
+              dropReason="talked but did not commit"
             />
           </div>
-          <p className="mt-4 border-t border-line-2 pt-3 text-[0.6875rem] leading-relaxed text-ink-3">
-            Arrears under commitment {money(a.commitments.arrearsUnderCommitment)} — this is what committed
-            accounts owe, not cash committed. Conflating the two overstates the pipeline.
-          </p>
         </Card>
 
         <Card
-          className="xl:col-span-2"
-          title="Reach rate by hour"
-          subtitle="South African time (UTC+2) — reached calls ÷ attempted calls"
+          title="Where the money sits"
+          subtitle="Arrears by how reachable the account holder is"
+        >
+          <div className="space-y-3.5">
+            {BUCKET_ORDER.map((bucket, index) => {
+              const value = moneyByBucket.sums[bucket];
+              const share = moneyByBucket.total > 0 ? value / moneyByBucket.total : 0;
+              return (
+                <div key={bucket} title={payload.bucketExplanations[bucket]}>
+                  <div className="mb-1 flex items-baseline justify-between gap-3">
+                    <span className="text-[0.8125rem] text-ink">{payload.bucketLabels[bucket]}</span>
+                    <span className="num text-[0.8125rem] font-medium text-ink">
+                      {money(value)}
+                      <span className="ml-2 text-[0.6875rem] font-normal text-ink-3">
+                        {Math.round(share * 100)}%
+                      </span>
+                    </span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-ink/[0.05]">
+                    <div
+                      className="h-full rounded-full transition-[width] duration-700"
+                      style={{
+                        width: `${Math.max(share > 0 ? 2 : 0, share * 100)}%`,
+                        background: BUCKET_BAR[bucket],
+                        transitionDelay: `${index * 60}ms`,
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {moneyByBucket.sums.never_connected > 0 && (
+            <p className="mt-4 text-[0.71875rem] leading-relaxed text-ink-3">
+              <span className="font-medium text-warning">
+                {money(moneyByBucket.sums.never_connected)}
+              </span>{" "}
+              sits behind numbers that never connect — redialling cannot reach it, new numbers can.
+            </p>
+          )}
+        </Card>
+      </div>
+
+      {/* --- 3 · when calls land --------------------------------------------- */}
+      <div className="grid items-start gap-4 xl:grid-cols-2">
+        <Card
+          title="Reach by time of day"
+          subtitle="South African time — reached calls ÷ attempted calls, per hour"
         >
           {a.reachByHour.length === 0 ? (
             <p className="py-10 text-center text-[0.8125rem] text-ink-3">No call data yet.</p>
@@ -265,13 +391,9 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
             <ReachByHourChart data={a.reachByHour} />
           )}
         </Card>
-      </div>
-
-      <div className="grid items-start gap-4 xl:grid-cols-3">
         <Card
-          className="xl:col-span-2"
-          title="Cumulative reach by attempt"
-          subtitle="Unique accounts counted at their first reach — never summed per round"
+          title="Reach by attempt"
+          subtitle="Unique accounts counted at their first reach — when does another round stop paying?"
         >
           {a.reachByAttempt.length === 0 ? (
             <p className="py-10 text-center text-[0.8125rem] text-ink-3">No attempts yet.</p>
@@ -279,88 +401,77 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
             <CumulativeReachChart data={a.reachByAttempt} />
           )}
         </Card>
-        <Card title="Efficiency">
-          <dl className="space-y-2.5">
-            <div className="flex items-baseline justify-between gap-3" title={payload.formulas.penetration}>
-              <dt className="text-[0.75rem] text-ink-3">Book worked</dt>
-              <dd className="num text-[0.875rem] font-medium text-ink">{percent(a.penetration)}</dd>
-            </div>
-            <div className="flex items-baseline justify-between gap-3" title={payload.formulas.contactRate}>
-              <dt className="text-[0.75rem] text-ink-3">Contact rate</dt>
-              <dd className="num text-[0.875rem] font-medium text-ink">{percent(a.contactRate)}</dd>
-            </div>
-            <div className="flex items-baseline justify-between gap-3" title={payload.formulas.bookRpcRate}>
-              <dt className="text-[0.75rem] text-ink-3">RPC across the book</dt>
-              <dd className="num text-[0.875rem] font-medium text-ink">{percent(a.bookRpcRate)}</dd>
-            </div>
-            <div className="flex items-baseline justify-between gap-3" title={payload.formulas.dialsPerRpc}>
-              <dt className="text-[0.75rem] text-ink-3">Dials per RPC</dt>
-              <dd className="num text-[0.875rem] font-medium text-ink">
-                {a.dialsPerRpc > 0 ? a.dialsPerRpc.toFixed(1) : "—"}
-              </dd>
-            </div>
-            <div className="flex items-baseline justify-between gap-3" title={payload.formulas.dataQualityFailRate}>
-              <dt className="text-[0.75rem] text-ink-3">Data-quality fail</dt>
-              <dd className="num text-[0.875rem] font-medium text-ink">{percent(a.dataQualityFailRate)}</dd>
-            </div>
-          </dl>
-          <p className="mt-4 text-[0.6875rem] leading-relaxed text-ink-3">
-            Reach is decided from transcript content, never from the platform&apos;s voicemail flag —
-            that flag misfires badly.
-          </p>
-        </Card>
       </div>
 
-      {/* Dead numbers — these need new phone numbers, not more attempts */}
-      {deadRows.length > 0 && (
-        <Card
-          title="Dead numbers"
-          subtitle={`${deadRows.length} accounts where every attempt had zero talk time`}
-          actions={
-            <button className="btn" onClick={exportDeadNumbers}>
-              <Download size={13} /> Export for contact repair
+      {/* --- 4 · what to do next ---------------------------------------------
+          Three rows, each a decision already made: who to ring again, whose
+          numbers to replace, who needs a person. The counts are the same
+          accounts the table below shows — the button just takes you there. */}
+      <Card title="What to do next" subtitle="The book, sorted into the three moves available">
+        <div className="divide-y divide-line-2">
+          <div className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/12">
+              <PhoneForwarded size={16} className="text-accent" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[0.8125rem] font-medium text-ink">Ring again</p>
+              <p className="text-[0.71875rem] leading-relaxed text-ink-2">
+                Answered before but no real conversation yet — another attempt has a fair chance.
+              </p>
+            </div>
+            <span className="num text-right text-[0.8125rem] text-ink">
+              {count(ringAgain.length)} <span className="text-ink-3">· {money(sum(ringAgain))}</span>
+            </span>
+            <button className="btn" onClick={() => showAccounts("ring_again")} disabled={ringAgain.length === 0}>
+              Show them
             </button>
-          }
-        >
-          <p className="mb-3 flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/7 px-3 py-2 text-[0.78125rem] text-warning">
-            <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-            These accounts need new phone numbers, not more attempts. Re-dialling them will not
-            improve recovery — send the export to whoever maintains the contact data.
-          </p>
-          {/* Its own scroll pane rather than a cut-off list: the export is the
-              thing to act on, so the table is here to confirm what is in it and
-              every row belongs in it. */}
-          <div className="scroll-x max-h-72 overflow-y-auto overscroll-contain">
-            <table className="data-table">
-              <thead>
-                <tr><th>Name</th><th>Unit</th><th>Phone</th><th className="text-right">Balance</th><th className="text-right">Attempts</th></tr>
-              </thead>
-              <tbody>
-                {deadRows.map((r) => (
-                  <tr key={r.accountId}>
-                    <td>
-                      <button
-                        onClick={() => setOpenAccount(r.accountId)}
-                        className="text-left text-ink hover:text-accent hover:underline"
-                        title="Open call history and transcripts"
-                      >
-                        {r.name}
-                      </button>
-                    </td>
-                    <td className="text-ink-3">{r.unit ?? "—"}</td>
-                    <td className="num text-ink-3">{maskPhone(r.phone)}</td>
-                    <td className="num text-right">{money(r.balance)}</td>
-                    <td className="num text-right">{r.attempts}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
-        </Card>
-      )}
 
-      {/* Account table */}
-      <Card pad={false}>
+          <div className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-warning/12">
+              <PhoneOff size={16} className="text-warning" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[0.8125rem] font-medium text-ink">Get new numbers</p>
+              <p className="text-[0.71875rem] leading-relaxed text-ink-2">
+                Every attempt had zero talk time — these need contact repair, not more dialling.
+              </p>
+            </div>
+            <span className="num text-right text-[0.8125rem] text-ink">
+              {count(deadRows.length)} <span className="text-ink-3">· {money(sum(deadRows))}</span>
+            </span>
+            <span className="flex gap-2">
+              <button className="btn" onClick={() => showAccounts("never_connected")} disabled={deadRows.length === 0}>
+                Show them
+              </button>
+              <button className="btn" onClick={exportDeadNumbers} disabled={deadRows.length === 0} title="CSV for whoever maintains the contact data">
+                <Download size={13} /> Export
+              </button>
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-critical/10">
+              <UserRound size={16} className="text-critical" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[0.8125rem] font-medium text-ink">Hand to a person</p>
+              <p className="text-[0.71875rem] leading-relaxed text-ink-2">
+                Disputed or escalated — the AI is done here, and dialling them again causes harm.
+              </p>
+            </div>
+            <span className="num text-right text-[0.8125rem] text-ink">
+              {count(needsPerson.length)} <span className="text-ink-3">· {money(sum(needsPerson))}</span>
+            </span>
+            <button className="btn" onClick={() => showAccounts("needs_person")} disabled={needsPerson.length === 0}>
+              Show them
+            </button>
+          </div>
+        </div>
+      </Card>
+
+      {/* --- the accounts ------------------------------------------------------ */}
+      <Card pad={false} className="scroll-mt-24" id="accounts">
         <div className="flex flex-wrap items-center gap-2 p-4 pb-3">
           <div className="relative">
             <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3" />
@@ -376,7 +487,7 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
             />
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {chips.map((chip) => (
+            {[...(activeComposite ? [activeComposite] : []), ...chips].map((chip) => (
               <button
                 key={chip.key}
                 onClick={() => {
@@ -390,7 +501,10 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
                     : "border-line bg-ink/[0.03] text-ink-2 hover:text-ink"
                 }`}
               >
-                {chip.label} <span className="num text-ink-3">{chip.count}</span>
+                {chip.label}{" "}
+                <span className="num text-ink-3">
+                  {chip.key === filter && activeComposite ? visible.length : chip.count}
+                </span>
               </button>
             ))}
           </div>

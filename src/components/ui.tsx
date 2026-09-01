@@ -64,6 +64,7 @@ export function Card({
   pad = true,
   i,
   tint,
+  id,
 }: {
   title?: string;
   subtitle?: string;
@@ -73,9 +74,12 @@ export function Card({
   pad?: boolean;
   i?: number;
   tint?: Tint;
+  /** Anchor, for buttons elsewhere on the page that scroll to this card. */
+  id?: string;
 }) {
   return (
     <section
+      id={id}
       className={`card ${tint ? TINTS[tint] : ""} ${i === undefined ? "" : "rise-in"} ${
         pad ? "p-5 sm:p-[1.375rem]" : ""
       } ${className}`}
