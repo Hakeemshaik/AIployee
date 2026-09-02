@@ -749,12 +749,12 @@ select.field option {
   }
 }
 
-/* The search capsule lifting out of the bar: it grows leftward from the icon
+/* The search capsule lifting out of the bar: it grows rightward from the icon
    it detached from, so the motion says where it came from and where Escape
    puts it back. */
 .island-in {
   animation: island-in 340ms var(--ease-spring) backwards;
-  transform-origin: right center;
+  transform-origin: left center;
 }
 @keyframes island-in {
   from {

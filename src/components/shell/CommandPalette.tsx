@@ -77,13 +77,20 @@ export function CommandPalette() {
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Where the icon sits, so the detached capsule opens FROM it rather than
   // appearing somewhere else on the screen.
-  const [anchor, setAnchor] = useState<{ top: number; right: number } | null>(null);
+  const [anchor, setAnchor] = useState<{ top: number; left: number } | null>(null);
 
   const openPalette = useCallback(() => {
     const box = triggerRef.current?.getBoundingClientRect();
     // Grown a hair beyond the icon on every side, so the capsule reads as the
-    // icon having lifted out of the bar, not as a strip pasted over it.
-    setAnchor(box ? { top: box.top - 5, right: window.innerWidth - box.right - 5 } : { top: 72, right: 24 });
+    // icon having lifted out of the bar, not as a strip pasted over it. The
+    // capsule grows rightward, so clamp the left edge to keep the whole width
+    // on screen when the icon sits near the viewport's right side.
+    const width = Math.min(368, window.innerWidth - 32);
+    setAnchor(
+      box
+        ? { top: box.top - 5, left: Math.max(16, Math.min(box.left - 5, window.innerWidth - width - 16)) }
+        : { top: 72, left: 24 },
+    );
     setQuery("");
     setRemote([]);
     setActive(0);
@@ -183,7 +190,7 @@ export function CommandPalette() {
     // Closed, search is one more item in the dock — the magnifier sitting in
     // line after the five words. Pressed (or ⌘K), it detaches: a capsule of its
     // own glass lifts out of the bar at the icon's exact position and stretches
-    // leftward into the input, results hanging beneath it. Escape, or a click
+    // rightward into the input, results hanging beneath it. Escape, or a click
     // anywhere else, puts it back.
     //
     // The open capsule is portalled to <body> and placed off the icon's
@@ -208,7 +215,7 @@ export function CommandPalette() {
           <div
             ref={islandRef}
             className="fixed z-[60]"
-            style={{ top: anchor.top, right: anchor.right }}
+            style={{ top: anchor.top, left: anchor.left }}
           >
             <div className="island-in flex w-[min(23rem,calc(100vw-2rem))] items-center overflow-hidden rounded-full border border-accent/35 bg-gradient-to-b from-white/95 to-white/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_14px_34px_-18px_rgba(21,32,46,0.45)] backdrop-blur-2xl">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center text-accent">
@@ -233,8 +240,8 @@ export function CommandPalette() {
             </div>
 
             <div
-              className="card-float menu-in absolute right-0 top-[calc(100%+0.5rem)] w-[min(23rem,calc(100vw-2rem))] overflow-hidden p-0"
-              style={{ ["--origin" as string]: "top right" }}
+              className="card-float menu-in absolute left-0 top-[calc(100%+0.5rem)] w-[min(23rem,calc(100vw-2rem))] overflow-hidden p-0"
+              style={{ ["--origin" as string]: "top left" }}
             >
               <ul className="max-h-[46vh] overflow-y-auto overscroll-contain p-1.5">
                 {results.length === 0 ? (
