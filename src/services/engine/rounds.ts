@@ -24,11 +24,15 @@ const MONTHS = [
   "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
 ] as const;
 
+/** 01SEP, today in SAST — the date half of every batch code and export name. */
+export function engineBatchStamp(now = new Date()): string {
+  const sast = new Date(now.getTime() + 2 * 3_600_000);
+  return `${String(sast.getUTCDate()).padStart(2, "0")}${MONTHS[sast.getUTCMonth()]}${sast.getUTCFullYear()}`;
+}
+
 /** 01SEP-R2-B3 — date, round, batch. Globally unique per campaign by constraint. */
 export function engineBatchCode(round: number, index: number, now = new Date()): string {
-  const sast = new Date(now.getTime() + 2 * 3_600_000);
-  const stamp = `${String(sast.getUTCDate()).padStart(2, "0")}${MONTHS[sast.getUTCMonth()]}`;
-  return `${stamp}-R${round}-B${index}`;
+  return `${engineBatchStamp(now).slice(0, 5)}-R${round}-B${index}`;
 }
 
 /** Lock 4's key: replaying the same upload must be a no-op, not a second run. */

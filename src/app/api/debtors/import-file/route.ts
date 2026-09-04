@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     const mode = String(form.get("mode") ?? "preview");
     const campaignId = String(form.get("campaignId") ?? "") || undefined;
     const requested = String(form.get("format") ?? "auto");
-    const FORMATS: BookFormatChoice[] = ["auto", "jobix", "simple", "generic"];
+    const FORMATS: BookFormatChoice[] = ["auto", "mafadi", "jobix", "simple", "generic"];
     if (!FORMATS.includes(requested as BookFormatChoice)) {
       return NextResponse.json(
         { error: "validation_failed", message: `Unknown format "${requested}".` },

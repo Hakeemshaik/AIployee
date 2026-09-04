@@ -3,6 +3,12 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { normalizePhone } from "@/services/debtors";
 import { money } from "@/lib/format";
+import {
+  detectFormat as detectArrearsFormat,
+  findHeaderRow,
+  FORMAT_MAP as ARREARS_FORMAT_MAP,
+  parseSheet as parseArrearsSheet,
+} from "@/services/engine/import";
 
 // ---------------------------------------------------------------------------
 // Book file import.
@@ -16,10 +22,15 @@ import { money } from "@/lib/format";
 // dialling exclusions.
 //
 // Format detection, in order:
-//   1. "jobix"   — the 72-column import workbook (matched on its distinctive
+//   1. "mafadi"  — a raw arrears export (title row, then Prop/Name/Unit/…/
+//                  Bal/Contact). Recognised positionally by the campaign
+//                  engine's detector and cleaned by its pipeline — names
+//                  de-titled and comma-flipped, phones to +27, whole rands —
+//                  before the sheet reaches the mapper.
+//   2. "jobix"   — the 72-column import workbook (matched on its distinctive
 //                  headers: full_name + tenant_code + arrears_amount).
-//   2. "simple"  — the platform's own template (firstName/lastName/...).
-//   3. "generic" — anything else: headers are fuzzy-matched per concept, and
+//   3. "simple"  — the platform's own template (firstName/lastName/...).
+//   4. "generic" — anything else: headers are fuzzy-matched per concept, and
 //                  the mapping used is reported so a wrong guess is visible.
 // ---------------------------------------------------------------------------
 
@@ -37,7 +48,7 @@ export type BookRow = {
 
 export type RowIssue = { row: number; problem: string };
 
-export type BookFormat = "jobix" | "simple" | "generic";
+export type BookFormat = "mafadi" | "jobix" | "simple" | "generic";
 /** "auto" detects; naming a format forces that reading of the headers. */
 export type BookFormatChoice = BookFormat | "auto";
 
@@ -121,7 +132,12 @@ function pickColumn(headers: string[], concept: string): string | null {
   return null;
 }
 
-export type ParsedSheet = { headers: string[]; rows: Record<string, string>[] };
+export type ParsedSheet = {
+  headers: string[];
+  rows: Record<string, string>[];
+  /** Set when a raw arrears export was recognised and pre-cleaned. */
+  source?: "mafadi";
+};
 
 /** Parse an uploaded workbook or CSV into header-keyed string rows. */
 export function parseSpreadsheet(buffer: Buffer, filename: string): ParsedSheet {
@@ -134,6 +150,13 @@ export function parseSpreadsheet(buffer: Buffer, filename: string): ParsedSheet 
   const sheetName = workbook.SheetNames[0];
   if (!sheetName) throw new Error("The file contains no sheets.");
   const sheet = workbook.Sheets[sheetName];
+
+  const arrears = readArrearsExport(
+    XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, raw: false, defval: "" }),
+    filename,
+  );
+  if (arrears) return arrears;
+
   const table = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
     defval: "",
     raw: false,
@@ -143,8 +166,77 @@ export function parseSpreadsheet(buffer: Buffer, filename: string): ParsedSheet 
   const rows = table.map((row) =>
     Object.fromEntries(Object.entries(row).map(([key, value]) => [key, String(value ?? "").trim()])),
   );
-  void filename;
   return { headers, rows };
+}
+
+/**
+ * Recognise a raw arrears export — the file the client's property system
+ * prints, title row and all — and hand back a sheet that is already cleaned:
+ * names de-titled and comma-flipped, phones as +27, balances in whole rands.
+ * The headers are the Jobix workbook's own, so the mapper downstream needs no
+ * separate column logic. Rows the cleaner rejected are kept with their raw
+ * values, so the preview can show every data row and say why one is unusable.
+ */
+/**
+ * The complete header vocabulary of the raw exports. The engine's detector is
+ * positional — it reads column COUNT, not names — which is right on the engine
+ * screen where only arrears files arrive, but here any client spreadsheet
+ * passes through, and a named-header sheet must never be read positionally.
+ * A sheet only counts as a raw export when every header it has is from this
+ * vocabulary.
+ */
+const ARREARS_HEADERS =
+  /^(prop(erty)?|name|unit|pfl|type|door\s*no\.?|bal(\s*o\/s)?|balance|contact(\s*numbers?)?|cc|let|unit\s*ref)$/i;
+
+function readArrearsExport(raw: unknown[][], filename: string): ParsedSheet | null {
+  const headerRow = findHeaderRow(raw);
+  if (headerRow === null) return null;
+  const headerCells = (raw[headerRow] ?? []).map((value) => String(value ?? "").trim());
+  if (!headerCells.every((cell) => cell === "" || ARREARS_HEADERS.test(cell))) return null;
+  const format = detectArrearsFormat(raw[headerRow]);
+  if (!format) return null;
+
+  const mapping = ARREARS_FORMAT_MAP[format];
+  const parsed = parseArrearsSheet(raw, mapping, filename, headerRow, format);
+  const cleanBySourceRow = new Map(parsed.rows.map((row) => [row.sourceRow, row]));
+
+  const at = (row: unknown[], index: number | null) =>
+    index === null ? "" : String(row[index] ?? "").trim();
+
+  const rows: Record<string, string>[] = [];
+  for (let i = headerRow + 1; i < raw.length; i += 1) {
+    const line = raw[i];
+    if (!line || line.every((value) => String(value ?? "").trim() === "")) continue;
+    const clean = cleanBySourceRow.get(i + 1);
+    rows.push(
+      clean
+        ? {
+            full_name: clean.fullName,
+            phone: clean.phone ?? "",
+            total_due: String(clean.balance),
+            unit_number: clean.unitNumber ?? "",
+            building_name: clean.buildingName ?? "",
+            tenant_code: clean.tenantCode ?? "",
+          }
+        : {
+            // The cleaner rejected this row (no name, or nothing owed) — pass
+            // the raw values through so the preview shows it and says why.
+            full_name: at(line, mapping.tenant),
+            phone: at(line, mapping.phone),
+            total_due: at(line, mapping.bal),
+            unit_number: at(line, mapping.unit),
+            building_name: at(line, mapping.building),
+            tenant_code: at(line, mapping.code),
+          },
+    );
+  }
+  if (rows.length === 0) return null;
+
+  return {
+    headers: ["full_name", "phone", "total_due", "unit_number", "building_name", "tenant_code"],
+    rows,
+    source: "mafadi",
+  };
 }
 
 function splitFullName(full: string): { firstName: string; lastName: string } {
@@ -215,13 +307,16 @@ export function mapBook(sheet: ParsedSheet, choice: BookFormatChoice = "auto"): 
   const isJobix = has("full_name") && has("tenant_code") && (has("arrears_amount") || has("total_due"));
   const isSimple = has("firstName") && has("lastName") && has("accountNumber") && has("creditorName");
 
-  const detectedFormat: BookFormat = isJobix ? "jobix" : isSimple ? "simple" : "generic";
+  const detectedFormat: BookFormat =
+    sheet.source === "mafadi" ? "mafadi" : isJobix ? "jobix" : isSimple ? "simple" : "generic";
   // A named format wins over detection: an operator who knows the file is a
   // Jobix workbook with a renamed header should be able to say so.
   const format: BookFormat = choice === "auto" ? detectedFormat : choice;
 
   const col = (concept: string): string | null => {
-    if (format === "jobix") {
+    // A recognised arrears export was rewritten onto the workbook's own
+    // headers upstream, so the two formats read identically here.
+    if (format === "jobix" || format === "mafadi") {
       const jobixMap: Record<string, string[]> = {
         fullName: ["full_name", "Name", "name"],
         phone: ["Phone", "phone"],

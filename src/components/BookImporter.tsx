@@ -29,8 +29,8 @@ type PreviewRow = {
 };
 
 type Preview = {
-  format: "jobix" | "simple" | "generic";
-  detectedFormat: "jobix" | "simple" | "generic";
+  format: "mafadi" | "jobix" | "simple" | "generic";
+  detectedFormat: "mafadi" | "jobix" | "simple" | "generic";
   mapping: Record<string, string>;
   totalRows: number;
   creatable: number;
@@ -57,6 +57,7 @@ const FORMAT_OPTIONS = [
 ] as const;
 
 const FORMAT_LABELS: Record<Preview["format"], string> = {
+  mafadi: "Raw arrears export — cleaned automatically (names, phones, whole rands)",
   jobix: "Jobix import workbook (72 columns)",
   simple: "Platform template",
   generic: "Generic spreadsheet, columns matched by name",

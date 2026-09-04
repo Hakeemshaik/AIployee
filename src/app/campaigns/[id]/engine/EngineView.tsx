@@ -382,6 +382,16 @@ export function EngineView({ initial, campaignId }: { initial: EngineState; camp
             />
           </div>
 
+          <div className="flex flex-wrap items-center gap-2">
+            <a href={`/api/engine/${campaignId}/import-file`} className="btn">
+              <Download size={14} /> Jobix import (.xlsx)
+            </a>
+            <p className="text-[0.6875rem] text-ink-3">
+              The cleaned book as the 72-column import workbook — for a manual upload or the archive.
+              The engine itself dials by API and never needs it.
+            </p>
+          </div>
+
           {summary && summary.skipped.length > 0 && (
             <Card title="Rows the import skipped" subtitle="Each with its reason — nothing is dropped silently">
               <ul className="grid gap-1 text-[0.75rem] text-ink-2 sm:grid-cols-2">

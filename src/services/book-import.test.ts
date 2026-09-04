@@ -114,6 +114,57 @@ describe("book import mapping", () => {
   });
 });
 
+describe("raw arrears exports", () => {
+  function arrearsBuffer(): Buffer {
+    // The file as the property system prints it: a title line, the positional
+    // header on row 2, and rows in every state the cleaner has to handle.
+    const rows = [
+      ["UNIT O/S BALS - 03 SEP 2026  Month :09", "", "", "", "", "", ""],
+      ["Prop", "Name", "Unit", "PFl", "Name", "Bal O/s", "Contact Numbers"],
+      ["002M", "PHILBERTA", "808", "P", "MR T IWU *HANDED", "4221.12", "0825550101"],
+      ["003M", "LOSCHE", "83", "", "NCUBE, LINDIWE", "21424.39", "27825550102,0115550000"],
+      ["008K", "COLIN", "509", "", "MS ZERO OWED", "0", "0825550103"],
+      ["011M", "FASADE", "411", "", "MR NO NUMBER", "500", "12"],
+    ];
+    const sheet = XLSX.utils.aoa_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, sheet, "Sheet1");
+    return XLSX.write(wb, { type: "buffer", bookType: "xlsx" }) as Buffer;
+  }
+
+  it("recognises the layout past the title row and pre-cleans every row", () => {
+    const sheet = parseSpreadsheet(arrearsBuffer(), "arrears.xlsx");
+    expect(sheet.source).toBe("mafadi");
+    expect(sheet.headers).toContain("full_name");
+
+    const mapped = mapBook(sheet);
+    expect(mapped.detectedFormat).toBe("mafadi");
+    expect(mapped.rows).toHaveLength(4);
+
+    const [handed, flipped, zero, noPhone] = mapped.rows;
+    // Title stripped, junk after * cut, Title Case.
+    expect(`${handed.data.firstName} ${handed.data.lastName}`).toBe("T Iwu");
+    expect(handed.data.phone).toBe("+27825550101");
+    expect(handed.data.originalBalance).toBe(4221);
+    // Comma-flip, and the first of two comma-separated numbers.
+    expect(`${flipped.data.firstName} ${flipped.data.lastName}`).toBe("Lindiwe Ncube");
+    expect(flipped.data.phone).toBe("+27825550102");
+    // The cleaner's rejects still reach the preview with their reasons.
+    expect(zero.problem).toBe("amount owing is zero");
+    // An unusable number is kept by the cleaner with no phone — same as the
+    // engine, where such accounts are held for contact repair.
+    expect(noPhone.problem).toBe("no phone number");
+  });
+
+  it("leaves ordinary spreadsheets alone", () => {
+    const sheet = parseSpreadsheet(
+      workbookBuffer([{ name: "Plain Person", phone: "0825550100", balance: 100 }]),
+      "plain.xlsx",
+    );
+    expect(sheet.source).toBeUndefined();
+  });
+});
+
 describe("format choice", () => {
   it("reads a file as the named format even when detection disagrees", () => {
     // Headers of the platform template, but the operator insists on generic:
