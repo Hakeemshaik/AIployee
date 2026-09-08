@@ -154,6 +154,18 @@ to Pay (if one was made) → the debtor's timeline and campaign metrics update �
 dashboard work queue picks up the follow-up. Record the payment when it lands and the
 promise resolves to Fulfilled.
 
+## Background documents
+
+`docs/` holds the earlier client-facing work this platform grew out of:
+
+- `mafadi-automation-proposal.md` (and the .docx built from it by
+  `tools/md2docx.py`) — the departmental automation proposal for leasing,
+  collections and operations.
+- `dashboard-data-model.md` and `db/schema.sql` — the data model sketched for
+  that proposal. **Superseded by `prisma/schema.prisma`**, which is the schema
+  the platform actually runs on; the files are kept for the reasoning behind
+  the design, not as something to apply.
+
 ## Clearing data
 
 Settings → **Danger zone** → *Clear data* removes a book so you can start fresh.
