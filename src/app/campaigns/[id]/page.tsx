@@ -11,6 +11,7 @@ import { StatusControls } from "./StatusControls";
 import { JobixExport } from "./JobixExport";
 import { LiveCampaign } from "./LiveCampaign";
 import { getCampaignLiveState } from "@/services/campaign-live";
+import { syncCampaignContacts } from "@/services/campaign-control";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Campaign" };
@@ -25,6 +26,10 @@ export default async function CampaignDetailPage({
   const result = await getCampaign(ctx.organizationId, id);
   if (!result) notFound();
   const { campaign, metrics, series } = result;
+  // Idempotent, and the only write on this render: debtors assigned to the
+  // campaign elsewhere become dialable contacts here, so the batch counts the
+  // page shows are the ones the runner will actually use.
+  await syncCampaignContacts(ctx.organizationId, id);
   const [debtors, live] = await Promise.all([
     listDebtors(ctx.organizationId, { campaignId: id }),
     getCampaignLiveState(ctx.organizationId, id),

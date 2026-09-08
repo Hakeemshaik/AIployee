@@ -159,6 +159,10 @@ model Campaign {
   maxAttempts        Int       @default(6)
   retryIntervalHours Int       @default(48)
   strategy           String    @default("standard") // standard | payment_plan_first | early_settlement | firm_reminder
+  // Contacts sent to the dialler per run. A campaign is worked in batches so
+  // the operator can watch one batch land before releasing the next, rather
+  // than pushing the whole book at the provider in one go.
+  batchSize          Int       @default(150)
   // draft | scheduled | queued | running | paused | completed | stopped | failed
   // ("active" is retained as a synonym of "running" for existing records)
   status             String    @default("draft")
@@ -213,14 +217,23 @@ model CampaignContact {
   @@index([organizationId, callbackAt])
 }
 
-// A filtered re-dial run over a subset of a campaign's contacts (no answers,
-// busy numbers, callbacks due, failed calls). Sent to the provider as its own
-// batch, always linked back to the parent campaign.
+// One run sent to the provider, always linked back to its campaign.
+//
+// Two kinds share this table because they are the same thing operationally —
+// a bounded set of contacts dialled together, tracked to completion:
+//   kind=initial  a slice of never-dialled contacts (run batch 1, 2, 3 …)
+//   kind=redial   contacts picked by outcome once a run has been worked
+// One table means one history, one live view and one idempotency rule.
 model RedialBatch {
   id                 String    @id @default(cuid())
   organizationId     String
   campaignId         String
-  filter             String // no_answer | busy | failed | callback_due | custom
+  // initial = a slice of never-dialled contacts (run batch 1, 2, 3 …)
+  // redial  = contacts selected by outcome after a run has been worked
+  kind               String    @default("redial")
+  // Position within its kind, so the UI can say "batch 3".
+  sequence           Int       @default(1)
+  filter             String // batch | no_answer | busy | failed | callback_due | custom
   contactCount       Int       @default(0)
   maxRetries         Int       @default(3)
   status             String    @default("queued") // queued | running | completed | failed

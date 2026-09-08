@@ -5,6 +5,7 @@ import { formatDateTime } from "@/lib/format";
 import { getSettings } from "@/services/settings";
 import { Badge, GlassCard, Meta, PageHeader } from "@/components/ui";
 import { ComplianceForm } from "./ComplianceForm";
+import { ClearData } from "./ClearData";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Settings" };
@@ -164,6 +165,15 @@ export default async function SettingsPage() {
             Audit logging is always on: ingestion, payments, status changes and settings edits are
             written to the audit log with actor attribution and no sensitive payload content.
           </p>
+        </GlassCard>
+      </div>
+
+      <div className="mt-4">
+        <GlassCard
+          title="Danger zone"
+          subtitle="Clear this organization's data to start fresh"
+        >
+          <ClearData organizationName={org.name} />
         </GlassCard>
       </div>
     </div>

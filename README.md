@@ -90,9 +90,20 @@ database.)
 
 **3. Import your book and set up the campaign**
 
-Debtors → **Import debtors** (CSV per the template — phone numbers are normalized to
-`+27…` E.164, the same format your Jobix imports use). Create the matching campaign,
-assign the debtors and the agent, and set it **Active**. To link agents to Jobix, set each
+Debtors → **Import debtors**. Drop in a **.xlsx, .csv or tab-separated export in
+whatever layout you already have** — the columns are worked out from the file
+itself, so it does not have to match a template and a headerless property
+arrears export imports as-is. Detection is shown before anything is written and
+every column can be corrected from a dropdown.
+
+Data is cleaned on the way in: titles stripped from names (`MR THANDI NKOSI` →
+`Thandi Nkosi`), surname-and-initial forms split correctly (`VAN WYK A` →
+Van Wyk, A), phone numbers normalised to `+27…` E.164 including the numbers
+Excel has eaten the leading zero from, and amounts rounded to whole rand.
+Anything that cannot be dialled is reported row by row rather than imported.
+
+Then create the matching campaign, assign the debtors and the agent, and set it
+**Active**. To link agents to Jobix, set each
 agent's `externalId` to the Jobix agent id (`npx prisma studio` → AIAgent) and pass it as
 `externalAgentId` on the webhook.
 
@@ -119,13 +130,49 @@ Debtor matching works on `accountNumber` **or** `phone` — Jobix always knows t
 dialled, so `phone` alone is enough. The endpoint is idempotent on `externalCallId`
 (re-sending a call is safe) and rate limited at 120 req/min per key.
 
-**6. Confirm the loop**
+**6. Run it in batches**
+
+The campaign page runs the book a batch at a time rather than pushing everything
+at the dialler at once. **Run batch 1** releases the first 150 contacts, biggest
+balances first; when that batch has been worked, **Run batch 2** releases the
+next 150, and so on until the book is done. The panel shows how many have been
+released, how many are still waiting and how many are held back (suppressed,
+settled, no valid number, or at the attempt cap). Batch size is per campaign —
+`Campaign.batchSize`, default 150.
+
+**Resync results** pulls the completed calls back from the voice platform and
+puts them through the same ingestion the webhook uses, so who picked up and who
+did not is correct before anyone is redialled. It is idempotent: resyncing twice,
+or over calls a webhook already delivered, changes nothing. Then the redial
+buttons send only the contacts matching their filter.
+
+**7. Confirm the loop**
 
 Send one test call (see the payload below or Settings → Voice platform integration) and
 check: the call appears under Calls with an AI analysis → a promise appears under Promises
 to Pay (if one was made) → the debtor's timeline and campaign metrics update → the
 dashboard work queue picks up the follow-up. Record the payment when it lands and the
 promise resolves to Fulfilled.
+
+## Clearing data
+
+Settings → **Danger zone** → *Clear data* removes a book so you can start fresh.
+Two scopes:
+
+- **Clear the book** (default) — debtors, campaigns, calls, promises, payments,
+  escalations, reports and insights. Keeps the organization, users, API keys,
+  agents and integration settings, so the voice platform webhook keeps working.
+- **Clear everything** — the above plus agents, API keys and integration
+  settings. You will need to re-run `/setup` and re-issue the webhook key.
+
+It counts what will go before you commit, and asks you to type the organization
+name — none of it is recoverable. The same thing from the CLI:
+
+```bash
+npm run db:clear -- --dry-run      # show what would go, delete nothing
+npm run db:clear                   # clear the book, with a typed confirmation
+npm run db:clear -- --everything   # also agents, keys and integration settings
+```
 
 ## Live Jobix integration (campaign execution)
 

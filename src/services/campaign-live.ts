@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { UNREACHED_OUTCOMES } from "@/lib/domain";
 import { redialCounts } from "@/services/redial";
+import { getBatchPlan } from "@/services/campaign-batches";
 
 // ---------------------------------------------------------------------------
 // Live campaign state — the numbers behind the command centre view.
@@ -46,6 +47,18 @@ export type CampaignLiveState = {
     fulfilmentRate: number;
   };
   redial: Record<string, number>;
+  /** Where the campaign is in its batched run. */
+  batch: {
+    batchSize: number;
+    assigned: number;
+    eligible: number;
+    released: number;
+    remaining: number;
+    excluded: number;
+    nextSequence: number;
+    nextBatchSize: number;
+    complete: boolean;
+  };
   activity: LiveActivityItem[];
   batches: {
     id: string;
@@ -153,6 +166,21 @@ export async function getCampaignLiveState(
       fulfilmentRate: kept + broken > 0 ? kept / (kept + broken) : 0,
     },
     redial: await redialCounts(organizationId, campaignId, campaign.maxAttempts),
+    batch: await (async () => {
+      // Read-only: the SSE stream polls this, and a write per tick would churn.
+      const plan = await getBatchPlan(organizationId, campaignId);
+      return {
+        batchSize: plan.batchSize,
+        assigned: plan.assigned,
+        eligible: plan.eligible,
+        released: plan.released,
+        remaining: plan.remaining,
+        excluded: plan.excluded,
+        nextSequence: plan.nextSequence,
+        nextBatchSize: plan.nextBatchSize,
+        complete: plan.complete,
+      };
+    })(),
     activity: recent.map((c) => ({
       id: c.id,
       at: c.startedAt,
@@ -178,6 +206,8 @@ export async function getCampaignLiveState(
       state.promises.value,
       recent[0]?.id ?? "",
       batches[0]?.id ?? "",
+      state.batch.remaining,
+      state.batch.nextSequence,
     ].join("|"),
   };
 }

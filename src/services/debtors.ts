@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { normalizePhone } from "@/lib/phone";
+import { syncCampaignContacts } from "@/services/campaign-control";
 import { audit } from "@/lib/audit";
 import { riskBand } from "@/lib/domain";
 import { daysBetween, startOfDay } from "@/lib/format";
@@ -225,15 +227,9 @@ export async function getDebtorProfile(organizationId: string, debtorId: string)
 // Import & campaign assignment
 // ---------------------------------------------------------------------------
 
-/** Normalize a South African phone number to E.164 where possible. */
-export function normalizePhone(raw: string): string | null {
-  const digits = raw.replace(/[^\d+]/g, "");
-  if (/^\+27\d{9}$/.test(digits)) return digits;
-  if (/^27\d{9}$/.test(digits)) return `+${digits}`;
-  if (/^0\d{9}$/.test(digits)) return `+27${digits.slice(1)}`;
-  if (/^\+\d{8,15}$/.test(digits)) return digits; // other international
-  return null;
-}
+// normalizePhone moved to @/lib/phone so the import mapper and client
+// components can use it without pulling Prisma in. Re-exported for callers.
+export { normalizePhone };
 
 export const importRowSchema = z.object({
   firstName: z.string().min(1).max(80),
@@ -331,6 +327,12 @@ export async function importDebtors(
       },
     });
     result.created++;
+  }
+
+  // Materialise campaign membership now, so the batch plan is correct the
+  // moment the import finishes rather than only after the first run.
+  if (campaignId && result.created > 0) {
+    await syncCampaignContacts(organizationId, campaignId);
   }
 
   await audit({
