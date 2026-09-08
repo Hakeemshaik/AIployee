@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Collections Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">Collections <span>Console</span></div>
+  <div class="row" id="crumb"></div>
+  <div class="spacer"></div>
+  <button class="btn ghost sm" id="btn-home">Campaigns</button>
+  <button class="btn ghost sm" id="btn-settings">Settings</button>
+</div>
+
+<div class="wrap" id="view"></div>
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+
+<script type="module" src="/app.js"></script>
+</body>
+</html>

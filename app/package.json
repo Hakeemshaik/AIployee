@@ -1,0 +1,17 @@
+{
+  "name": "collections-console",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Upload any collections spreadsheet, dispatch it to the voice agent in batches, resync who did not pick up, and build the redial round.",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "express": "^4.21.2",
+    "multer": "^2.0.1",
+    "xlsx": "^0.18.5"
+  }
+}
