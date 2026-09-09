@@ -123,6 +123,7 @@ describe.skipIf(!scratch)("the campaign engine", () => {
     await db.engineAccount.deleteMany();
     await db.jobixTranscript.deleteMany();
     await db.jobixConversation.deleteMany();
+    await db.integrationSettings.deleteMany();
     await db.campaign.deleteMany();
     await db.user.deleteMany();
     await db.organization.deleteMany();
@@ -424,5 +425,39 @@ describe.skipIf(!scratch)("the campaign engine", () => {
   it("refuses to resync a campaign that has not dialled yet", async () => {
     await seedCampaign([{ due: 1000 }]);
     await expect(resyncRound(orgId, campaignId, userId)).rejects.toThrow(/cut a run first/i);
+  });
+
+  it("stamps the configured call flag, not the run's code, in the column the flow filters on", async () => {
+    // The flow's entry filter matches a fixed word. Stamping this run's batch
+    // code instead means the filter never matches: the rows land, the platform
+    // says queued, and nobody's phone rings.
+    await db.integrationSettings.upsert({
+      where: { organizationId: orgId },
+      create: { organizationId: orgId, provider: "jobix", callFlag: "mpm" },
+      update: { callFlag: "mpm" },
+    });
+    await seedCampaign([{ due: 5000 }]);
+    await buildRound(orgId, campaignId, userId);
+    const batch = await db.engineBatch.findFirstOrThrow({ where: { campaignId, round: 1 } });
+    await startBatch(orgId, batch.id, userId);
+
+    const lastCall = save.mock.calls.at(-1) as unknown as unknown[];
+    const values = lastCall[3] as Record<string, unknown>;
+    expect(values.call).toBe("mpm");
+    expect(values.all).toBe("mpm");
+    // The code still rides in `batch`, which is how results come back.
+    expect(values.batch).toBe(batch.code);
+  });
+
+  it("falls back to the run's code when no flag is configured", async () => {
+    await db.integrationSettings.deleteMany({ where: { organizationId: orgId } });
+    await seedCampaign([{ due: 5000 }]);
+    await buildRound(orgId, campaignId, userId);
+    const batch = await db.engineBatch.findFirstOrThrow({ where: { campaignId, round: 1 } });
+    await startBatch(orgId, batch.id, userId);
+
+    const lastCall = save.mock.calls.at(-1) as unknown as unknown[];
+    const values = lastCall[3] as Record<string, unknown>;
+    expect(values.call).toBe(batch.code);
   });
 });

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { JobixClient, JobixError, resolveJobixEnv } from "@/services/jobix/client";
 import { save } from "@/services/jobix/push";
+import { callColumnValue, loadFlowConfig } from "@/services/flow-config";
 import { checkEngineWindow } from "./window";
 import { classifyBatch } from "./classify";
 
@@ -171,6 +172,10 @@ export async function tickBatch(organizationId: string, batchId: string): Promis
       const env = await resolveJobixEnv();
       if (!env || !env.companyKey) throw new JobixError("Jobix is not configured.", "not_configured");
       const client = new JobixClient(env);
+      // The fixed flag when one is configured, this run's code otherwise —
+      // resolved through the same helper the file export uses, so the two can
+      // never write different things into the column the flow filters on.
+      const callFlag = callColumnValue(await loadFlowConfig(organizationId), batch.code) ?? batch.code;
       const accounts = await db.engineAccount.findMany({ where: { id: { in: toWrite } } });
       const byId = new Map(accounts.map((a) => [a.id, a]));
 
@@ -184,6 +189,12 @@ export async function tickBatch(organizationId: string, batchId: string): Promis
         // The proven write shape: identity in main, the dialling fields in
         // values, the flag in both `call` and `all`, attribution in `batch`.
         // Every key snake_case, spelled exactly as the agent prompt reads it.
+        //
+        // `call` carries the CONFIGURED flag, not this run's code. The flow's
+        // entry filter matches a fixed word; stamping the batch code instead
+        // means the filter never matches, so the rows land, the platform says
+        // queued, and no phone rings. `batch` keeps the code, which is what
+        // results are attributed by.
         //
         // The suid on the wire is a FRESH uuid per dial, not the account's own:
         // this workspace's flow starts on INSERT, and a repeated suid is an
@@ -205,8 +216,8 @@ export async function tickBatch(organizationId: string, batchId: string): Promis
           ...(account.tenantCode ? { tenant_code: account.tenantCode } : {}),
           ...(account.email ? { email: account.email } : {}),
           batch: batch.code,
-          call: batch.code,
-          all: batch.code,
+          call: callFlag,
+          all: callFlag,
         });
         written += 1;
         // The cursor advances per row, so a crash mid-drip resumes instead of
