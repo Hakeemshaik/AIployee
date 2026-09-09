@@ -67,6 +67,11 @@ export async function previewReset(
     ingestionRuns,
     compliance,
     integration,
+    engineAccounts,
+    engineBatches,
+    engineAttempts,
+    engineAlerts,
+    engineMappings,
   ] = await Promise.all([
     db.organization.findUniqueOrThrow({ where: { id: organizationId }, select: { name: true } }),
     db.debtor.count({ where }),
@@ -96,6 +101,11 @@ export async function previewReset(
     db.ingestionRun.count({ where }),
     db.complianceSettings.count({ where }),
     db.integrationSettings.count({ where }),
+    db.engineAccount.count({ where }),
+    db.engineBatch.count({ where }),
+    db.engineAttempt.count({ where }),
+    db.engineAlert.count({ where }),
+    db.engineMapping.count({ where }),
   ]);
 
   const removing = [
@@ -104,6 +114,11 @@ export async function previewReset(
     { label: "Campaigns", count: campaigns },
     { label: "Campaign contacts", count: campaignContacts },
     { label: "Redial batches", count: redialBatches },
+    { label: "Engine accounts (the loaded book)", count: engineAccounts },
+    { label: "Engine runs", count: engineBatches },
+    { label: "Engine call attempts", count: engineAttempts },
+    { label: "Engine alerts", count: engineAlerts },
+    { label: "Remembered column mappings", count: engineMappings },
     { label: "Voice agents", count: agents },
     { label: "Calls", count: calls },
     { label: "Call analyses", count: analyses },
@@ -187,6 +202,15 @@ export async function resetOrganizationData(options: ResetOptions): Promise<Rese
 
   // Child rows first. Explicit order, so this does not depend on cascade rules
   // that a future schema change might alter.
+  // The engine's own tables. These would cascade when their campaign goes,
+  // but the reset states what it removes and then removes exactly that — and
+  // EngineMapping hangs off the organization, so nothing would collect it.
+  await record("engineAttempts", () => db.engineAttempt.deleteMany({ where }));
+  await record("engineBatches", () => db.engineBatch.deleteMany({ where }));
+  await record("engineAccounts", () => db.engineAccount.deleteMany({ where }));
+  await record("engineAlerts", () => db.engineAlert.deleteMany({ where }));
+  await record("engineMappings", () => db.engineMapping.deleteMany({ where }));
+
   await record("callAnalyses", () => db.callAnalysis.deleteMany({ where }));
   await record("payments", () => db.payment.deleteMany({ where }));
   await record("promises", () => db.promiseToPay.deleteMany({ where }));

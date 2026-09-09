@@ -44,6 +44,7 @@ vi.mock("./window", async (importOriginal) => {
 const { importIntoEngine, parseSheet, dedupeByPhone } = await import("./import");
 const { buildRound, evaluateEligibility } = await import("./rounds");
 const { startBatch, tickBatch, resumeBatch, EngineGuardError } = await import("./dial");
+const { resyncRound } = await import("./resync");
 const { classifyBatch } = await import("./classify");
 const { buildCampaignReport, completeCampaign, buildWorklists } = await import("./complete");
 
@@ -387,5 +388,41 @@ describe.skipIf(!scratch)("the campaign engine", () => {
     const campaign = await db.campaign.findFirstOrThrow({ where: { id: campaignId } });
     const verdict = evaluateEligibility(campaign, []);
     expect(verdict.eligible).toHaveLength(0);
+  });
+
+  it("resyncs a live round on demand and counts who is left to redial", async () => {
+    // Two accounts: one has a real conversation waiting on the platform, the
+    // other never picked up.
+    await seedCampaign([{ due: 5000 }, { due: 3000 }]);
+    await buildRound(orgId, campaignId, userId);
+    const batch = await db.engineBatch.findFirstOrThrow({ where: { campaignId, round: 1 } });
+    await startBatch(orgId, batch.id, userId);
+
+    const [talker, ghost] = await db.engineAccount.findMany({
+      where: { campaignId },
+      orderBy: { totalDue: "desc" },
+    });
+    await simulateCall(talker.phone!, { duration: 120, userWords: 40 });
+
+    const first = await resyncRound(orgId, campaignId, userId);
+    expect(first.round).toBe(1);
+    expect(first.answered).toBe(1);
+    expect(first.newAttempts).toBe(1);
+    // The one nobody spoke to is the redial pool, and its arrears come with
+    // it — even though the platform returned no call record for it at all.
+    expect(first.redialable).toBe(1);
+    expect(first.redialArrears).toBe(ghost.totalDue);
+    expect(first.noResult).toBe(1);
+
+    // Pressing it again finds the same call, not a second one.
+    const second = await resyncRound(orgId, campaignId, userId);
+    expect(second.newAttempts).toBe(0);
+    expect(second.attempts).toBe(first.attempts);
+    expect(second.answered).toBe(1);
+  });
+
+  it("refuses to resync a campaign that has not dialled yet", async () => {
+    await seedCampaign([{ due: 1000 }]);
+    await expect(resyncRound(orgId, campaignId, userId)).rejects.toThrow(/cut a run first/i);
   });
 });

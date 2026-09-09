@@ -38,12 +38,17 @@ export type FieldMapping = {
   tenant: number;
   bal: number;
   phone: number;
-  unit: number;
-  building: number;
+  /** null when the file carries no such column — not every book has units. */
+  unit: number | null;
+  building: number | null;
   code: number | null;
 };
 
-const HEADER_WORDS = /tenant|balance|contact|building|unit|prop\b/i;
+// Words that mark a row as the header. Broad on purpose: a client file may
+// say "Cell" and "Amount Owing" and nothing else recognisable. The real guard
+// against picking a title line is the four-non-empty-cells rule below.
+const HEADER_WORDS =
+  /tenant|balance|contact|building|unit|prop\b|name|phone|cell|mobile|amount|owing|arrears|due|debtor/i;
 
 function cell(row: unknown[], index: number | null | undefined): string {
   if (index === null || index === undefined) return "";
@@ -94,6 +99,83 @@ export function detectFormat(headerRow: unknown[]): ArrearsFormat | null {
   }
   if (count >= 11) return has("Cc") || has("Let") ? "E" : null;
   return null;
+}
+
+/**
+ * Map by what the headers are CALLED, for the files the positional detector
+ * cannot place: an already-built 72-column import workbook, an agency export,
+ * a three-column list somebody typed. Column count says nothing about these,
+ * but their headers name themselves.
+ *
+ * Tiers run most-specific first, so "full_name" beats a bare "name" and
+ * "arrears_amount" beats "total". Returns null unless a name, a balance and a
+ * phone are all found — a book missing any of those is not a book, and the
+ * caller shows the manual mapper rather than guessing.
+ */
+const HEADER_SYNONYMS: Record<keyof FieldMapping, string[][]> = {
+  tenant: [
+    ["full name", "fullname", "tenant name", "customer name", "debtor name", "account name"],
+    ["tenant", "debtor", "customer", "client", "resident", "occupant"],
+    ["name"],
+  ],
+  bal: [
+    ["arrears amount", "total due", "amount owing", "amount outstanding"],
+    ["arrears", "balance", "outstanding", "bal o/s", "bal"],
+    ["amount", "owing", "due", "total"],
+  ],
+  phone: [
+    ["contact numbers", "contact number", "cell number", "phone number", "cellphone", "cell phone"],
+    ["phone", "contact", "cell", "mobile", "msisdn"],
+    ["tel", "telephone", "number"],
+  ],
+  unit: [
+    ["unit number", "unit no", "unit ref", "main unit no", "unit"],
+    ["door no", "door"],
+  ],
+  building: [
+    ["building name", "body corporate", "complex", "building"],
+    ["property", "prop", "scheme", "block"],
+  ],
+  code: [
+    ["tenant code", "account number", "account no", "account code"],
+    ["code", "reference", "ref", "acc", "account"],
+  ],
+};
+
+export function mapByHeaderNames(headerRow: unknown[]): FieldMapping | null {
+  // Underscores and spaces are the same word break to a person reading the
+  // sheet, so "full_name", "Full Name" and "FULL  NAME" all normalise alike
+  // and the synonym lists below stay short.
+  const cells = headerRow.map((value) =>
+    String(value ?? "").trim().toLowerCase().replace(/[_\s]+/g, " "),
+  );
+
+  const find = (field: keyof FieldMapping): number | null => {
+    for (const tier of HEADER_SYNONYMS[field]) {
+      // Within a tier, the synonym list's own order decides — it is written
+      // canonical-first, so "unit number" wins over "main unit no" wherever
+      // the columns happen to sit.
+      for (const synonym of tier) {
+        const hits = cells.flatMap((header, index) => (header === synonym ? [index] : []));
+        if (hits.length === 0) continue;
+        // Two different columns answering to the same word is the bug that
+        // puts a building name in the tenant field: a raw export carries
+        // "Name" twice. Where the name itself is at stake, refuse and let a
+        // human map it. Elsewhere a duplicate is one value spelled twice
+        // ("Phone" and "phone" in the import workbook), so the first will do.
+        if (field === "tenant" && hits.length > 1) return null;
+        return hits[0];
+      }
+    }
+    return null;
+  };
+
+  const tenant = find("tenant");
+  const bal = find("bal");
+  const phone = find("phone");
+  if (tenant === null || bal === null || phone === null) return null;
+
+  return { tenant, bal, phone, unit: find("unit"), building: find("building"), code: find("code") };
 }
 
 /** A stable fingerprint of a header row, for remembering manual mappings. */

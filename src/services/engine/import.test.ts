@@ -6,6 +6,7 @@ import {
   dedupeByPhone,
   detectFormat,
   findHeaderRow,
+  mapByHeaderNames,
   parseSheet,
   type ParsedRow,
 } from "./import";
@@ -213,5 +214,61 @@ describe("parsing a sheet end to end", () => {
       "no name after cleaning",
       "zero, negative or unreadable balance",
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Mapping by header name — the path for files the positional detector cannot
+// place: an already-built import workbook, an agency export, a typed list.
+// ---------------------------------------------------------------------------
+
+describe("mapByHeaderNames", () => {
+  it("reads an already-built import workbook, preferring the specific name", () => {
+    // The 72-column workbook carries Name, name AND full_name; total_due AND
+    // arrears_amount; Phone AND phone. The specific spellings must win.
+    const header = [
+      "SUID", "UUID", "Name", "Phone", "Email", "Timezone",
+      "email", "phone", "full_name", "timezone", "main_unit_no",
+      "unit_number", "total_due", "tenant_code", "batch", "building_name",
+    ];
+    const mapping = mapByHeaderNames(header);
+    expect(mapping).toEqual({
+      tenant: header.indexOf("full_name"),
+      bal: header.indexOf("total_due"),
+      phone: header.indexOf("Phone"),
+      unit: header.indexOf("unit_number"),
+      building: header.indexOf("building_name"),
+      code: header.indexOf("tenant_code"),
+    });
+  });
+
+  it("reads a plain three-column list and reports no unit or building", () => {
+    const mapping = mapByHeaderNames(["Customer Name", "Cell Number", "Amount Owing"]);
+    expect(mapping).toEqual({ tenant: 0, bal: 2, phone: 1, unit: null, building: null, code: null });
+  });
+
+  it("refuses a file where two columns both answer to Name", () => {
+    // A raw export names the building AND the tenant "Name". Guessing here is
+    // how a building name ends up being read out as somebody's name.
+    expect(mapByHeaderNames(["Prop", "Name", "Unit", "Name", "Bal", "Contact"])).toBeNull();
+  });
+
+  it("refuses a file with no amount column at all", () => {
+    expect(mapByHeaderNames(["Full Name", "Phone", "Unit"])).toBeNull();
+  });
+
+  it("parses rows through a name-derived mapping, cleaning as usual", () => {
+    const rows = [
+      ["Full Name", "Contact Number", "Arrears Amount", "Unit Number"],
+      ["MR S NDULI *HANDED", "0825550111", "1086.49", "U217"],
+    ];
+    const mapping = mapByHeaderNames(rows[0])!;
+    const parsed = parseSheet(rows, mapping, "agency.xlsx", 0, "manual");
+    expect(parsed.rows).toHaveLength(1);
+    expect(parsed.rows[0].fullName).toBe("S Nduli");
+    expect(parsed.rows[0].phone).toBe("+27825550111");
+    expect(parsed.rows[0].balance).toBe(1086);
+    expect(parsed.rows[0].unitNumber).toBe("U217");
+    expect(parsed.rows[0].buildingName).toBeNull();
   });
 });

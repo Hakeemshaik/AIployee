@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
-import { resetOrganizationData, slugify } from "./data-reset";
+import { previewReset, resetOrganizationData, slugify } from "./data-reset";
 
 // ---------------------------------------------------------------------------
 // The reset deletes real rows, so its invariants are tested against a real
@@ -160,5 +160,59 @@ describe.skipIf(!scratch)("resetOrganizationData (integration)", () => {
     const logs = await db.auditLog.findMany();
     expect(logs).toHaveLength(1);
     expect(logs[0].action).toBe("organization.data_reset");
+  });
+
+  it("removes the engine's own book, runs and remembered mappings", async () => {
+    // A remembered column mapping hangs off the organization, not a campaign,
+    // so nothing would ever collect it by cascade.
+    const campaign = await db.campaign.create({
+      data: { organizationId: orgId, name: "Engine Campaign", engineStatus: "ready" },
+    });
+    const account = await db.engineAccount.create({
+      data: {
+        organizationId: orgId,
+        campaignId: campaign.id,
+        suid: "suid-reset-1",
+        fullName: "Engine Person",
+        greetingName: "Engine",
+        phone: "+27825550190",
+        totalDue: 4000,
+      },
+    });
+    await db.engineBatch.create({
+      data: {
+        organizationId: orgId,
+        campaignId: campaign.id,
+        round: 1,
+        index: 1,
+        code: "09SEP-R1-B1",
+        accountIds: JSON.stringify([account.id]),
+        accountCount: 1,
+        arrears: 4000,
+        idempotencyKey: "idem-reset-1",
+      },
+    });
+    await db.engineAlert.create({
+      data: { organizationId: orgId, campaignId: campaign.id, kind: "balance_drift", message: "check" },
+    });
+    await db.engineMapping.create({
+      data: { organizationId: orgId, fingerprint: "fp-reset-1", mapping: "{}" },
+    });
+
+    const preview = await previewReset(orgId, keeperId);
+    const labels = preview.removing.map((row) => row.label);
+    expect(labels).toContain("Engine accounts (the loaded book)");
+    expect(labels).toContain("Remembered column mappings");
+
+    await resetOrganizationData({
+      organizationId: orgId,
+      actorId: keeperId,
+      confirmation: "Demo Recoveries",
+    });
+
+    expect(await db.engineAccount.count()).toBe(0);
+    expect(await db.engineBatch.count()).toBe(0);
+    expect(await db.engineAlert.count()).toBe(0);
+    expect(await db.engineMapping.count()).toBe(0);
   });
 });

@@ -5,6 +5,7 @@ import {
   findHeaderRow,
   FORMAT_MAP,
   headerFingerprint,
+  mapByHeaderNames,
   parseSheet,
   type FieldMapping,
   type ParseResult,
@@ -75,9 +76,13 @@ export async function parseUploads(
 
   const parsed: ParseResult[] = [];
   for (const input of inputs) {
-    const headerRow = findHeaderRow(input.rows);
+    let headerRow = findHeaderRow(input.rows);
     if (headerRow === null) {
-      return needsMapping(input, 0);
+      // No recognised header words anywhere in the first four rows. The first
+      // row may still be a header whose names we know, so try it by name
+      // before asking a human.
+      if (input.rows.length > 1 && mapByHeaderNames(input.rows[0])) headerRow = 0;
+      else return needsMapping(input, 0);
     }
     const header = input.rows[headerRow];
     const fingerprint = headerFingerprint(header);
@@ -94,6 +99,14 @@ export async function parseUploads(
 
     const format = detectFormat(header);
     if (!format) {
+      // Not one of the known layouts — but the headers may name themselves.
+      // This is what lets an already-built import workbook, or any sheet with
+      // a name/amount/phone column, go straight in.
+      const byName = mapByHeaderNames(header);
+      if (byName) {
+        parsed.push(parseSheet(input.rows, byName, input.name, headerRow, "manual"));
+        continue;
+      }
       return needsMapping(input, headerRow);
     }
     const spec = FORMAT_MAP[format];

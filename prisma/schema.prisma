@@ -198,7 +198,7 @@ model Campaign {
   engineStatus       String    @default("none") // none | draft | ready | calling | between_rounds | review | complete
   currentRound       Int       @default(0)
   maxRounds          Int       @default(3)
-  batchSize          Int       @default(200)
+  batchSize          Int       @default(150)
   maxConcurrency     Int       @default(4)
   /// A blocking alert (balance drift, delivery failure) that must be
   /// acknowledged before the next round can start. Null = nothing blocking.

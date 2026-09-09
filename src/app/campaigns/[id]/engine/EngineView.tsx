@@ -10,6 +10,7 @@ import {
   Loader2,
   PhoneCall,
   Play,
+  RefreshCw,
   ShieldAlert,
   Upload,
 } from "lucide-react";
@@ -19,6 +20,7 @@ import { Select } from "@/components/Select";
 import { Overlay } from "@/components/Overlay";
 import { useConfirm } from "@/components/Dialog";
 import type { EngineState } from "@/services/engine/state";
+import type { ResyncResult } from "@/services/engine/resync";
 
 // ---------------------------------------------------------------------------
 // The engine, on one screen.
@@ -100,6 +102,9 @@ export function EngineView({ initial, campaignId }: { initial: EngineState; camp
 
   // drill-through
   const [drill, setDrill] = useState<{ title: string; rows: AccountRow[] } | null>(null);
+
+  // what the last "pull the results now" pass found
+  const [resync, setResync] = useState<ResyncResult | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -583,6 +588,113 @@ export function EngineView({ initial, campaignId }: { initial: EngineState; camp
           </Card>
         );
       })}
+
+      {/* --- pull the results now, then redial ---------------------------------- */}
+      {state.campaign.currentRound > 0 && status !== "complete" && (
+        <Card
+          title="Results from the platform"
+          subtitle="Read live from the calls themselves — not from an outcome label somebody set"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              className="btn"
+              disabled={busy !== null}
+              onClick={async () => {
+                setBusy("resync");
+                setNotice(null);
+                try {
+                  const response = await fetch(`/api/engine/${campaignId}/resync`, { method: "POST" });
+                  const body = await response.json().catch(() => ({}));
+                  if (!response.ok) {
+                    setNotice({ kind: "error", text: body.message ?? "The resync was refused." });
+                    return;
+                  }
+                  setResync(body as ResyncResult);
+                  await refresh();
+                } catch {
+                  setNotice({ kind: "error", text: "The platform could not be reached." });
+                } finally {
+                  setBusy(null);
+                }
+              }}
+            >
+              {busy === "resync" ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <RefreshCw size={14} />
+              )}
+              Resync who picked up
+            </button>
+            <p className="text-[0.6875rem] text-ink-3">
+              Checks every call in round {state.campaign.currentRound} again. Dials nobody, and a second
+              press records nothing twice.
+            </p>
+          </div>
+
+          {resync && (
+            <div className="mt-3.5 rounded-xl border border-line bg-white/55 px-3.5 py-3">
+              <p className="text-[0.8125rem] text-ink">
+                Round {resync.round}:{" "}
+                <span className="num font-semibold">{count(resync.answered)}</span> answered,{" "}
+                <span className="num font-semibold">{count(resync.noAnswer)}</span> rang out,{" "}
+                <span className="num font-semibold">{count(resync.voicemail)}</span> voicemail,{" "}
+                <span className="num font-semibold">{count(resync.zeroDuration)}</span> cut at zero
+                seconds
+                {resync.noResult > 0 && (
+                  <>
+                    , and <span className="num font-semibold">{count(resync.noResult)}</span> came back
+                    with nothing at all
+                  </>
+                )}
+                .
+                {resync.newAttempts > 0 && (
+                  <>
+                    {" "}
+                    <span className="num font-semibold text-good">+{count(resync.newAttempts)}</span> new
+                    since the last check.
+                  </>
+                )}
+              </p>
+              {resync.stillCalling > 0 && (
+                <p className="mt-1 text-[0.71875rem] text-ink-2">
+                  <span className="num">{count(resync.stillCalling)}</span> run
+                  {resync.stillCalling === 1 ? " is" : "s are"} still uploading, so these figures are a
+                  snapshot of a round in progress.
+                </p>
+              )}
+              {resync.deadNumbers > 0 && (
+                <p className="mt-1 text-[0.71875rem] text-ink-2">
+                  <span className="num">{count(resync.deadNumbers)}</span> number
+                  {resync.deadNumbers === 1 ? " was" : "s were"} proved dead and will not be dialled
+                  again.
+                </p>
+              )}
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                <button
+                  className="rounded-full border border-line bg-white/60 px-3 py-1.5 text-[0.75rem] text-ink-2 transition-all hover:border-accent/45 hover:bg-white hover:text-ink"
+                  onClick={() => void openDrill("To redial — nobody spoke", `round=${resync.round}`)}
+                >
+                  To redial{" "}
+                  <span className="num font-semibold text-ink">{count(resync.redialable)}</span>
+                  {resync.redialArrears > 0 && (
+                    <span className="text-ink-3"> · {money(resync.redialArrears)}</span>
+                  )}
+                </button>
+                {resync.redialable > 0 && status === "between_rounds" && (
+                  <span className="text-[0.71875rem] text-ink-2">
+                    Build round {state.campaign.currentRound + 1} above to call these back.
+                  </span>
+                )}
+                {resync.redialable === 0 && (
+                  <span className="text-[0.71875rem] text-ink-2">
+                    Nobody is waiting on a redial in this round.
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* --- stage 4 · results, every count clickable --------------------------- */}
       {state.rounds.map((round) => (

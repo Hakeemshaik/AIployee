@@ -15,8 +15,8 @@ const mappingSchema = z.object({
     tenant: z.coerce.number().int().min(0),
     bal: z.coerce.number().int().min(0),
     phone: z.coerce.number().int().min(0),
-    unit: z.coerce.number().int().min(0),
-    building: z.coerce.number().int().min(0),
+    unit: z.coerce.number().int().min(0).nullable(),
+    building: z.coerce.number().int().min(0).nullable(),
     code: z.coerce.number().int().min(0).nullable(),
   }),
 });
