@@ -6,15 +6,17 @@ import { useEffect, useRef, useState } from "react";
 import {
   Activity,
   AlertTriangle,
+  Check,
+  ClipboardCopy,
   PhoneCall,
-  Play,
   RotateCcw,
   Square,
   Pause as PauseIcon,
 } from "lucide-react";
 import { label } from "@/lib/domain";
 import { money } from "@/lib/format";
-import { Badge, GlassCard, StatCard } from "@/components/ui";
+import { Badge, Card, StatCard } from "@/components/ui";
+import { useConfirm } from "@/components/Dialog";
 
 type LiveState = {
   status: string;
@@ -36,10 +38,10 @@ type LiveState = {
 };
 
 const REDIAL_BUTTONS: { filter: string; title: string; icon: typeof RotateCcw }[] = [
-  { filter: "no_answer", title: "Redial no answers", icon: RotateCcw },
-  { filter: "busy", title: "Retry busy numbers", icon: PhoneCall },
-  { filter: "callback_due", title: "Run callbacks due", icon: Activity },
-  { filter: "failed", title: "Retry failed calls", icon: AlertTriangle },
+  { filter: "no_answer", title: "List no answers", icon: RotateCcw },
+  { filter: "busy", title: "List busy numbers", icon: PhoneCall },
+  { filter: "callback_due", title: "List callbacks due", icon: Activity },
+  { filter: "failed", title: "List failed calls", icon: AlertTriangle },
 ];
 
 function maskPhone(phone: string) {
@@ -63,7 +65,9 @@ export function LiveCampaign({
   const [state, setState] = useState<LiveState>(initial);
   const [live, setLive] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
-  const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [notice, setNotice] = useState<{ kind: "ok" | "note" | "error"; text: string; csv?: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const confirm = useConfirm();
   const sourceRef = useRef<EventSource | null>(null);
 
   // Stream state changes instead of refreshing the page.
@@ -96,7 +100,15 @@ export function LiveCampaign({
   }, [campaignId]);
 
   async function control(action: "start" | "pause" | "stop") {
-    if (action === "stop" && !window.confirm("Stop this campaign? Dialling ends for all remaining contacts.")) return;
+    if (action === "stop") {
+      const ok = await confirm({
+        title: "Stop this campaign?",
+        body: "Dialling ends for every contact that has not been reached yet. Calls already in progress finish on their own.",
+        confirmLabel: "Stop dialling",
+        kind: "danger",
+      });
+      if (!ok) return;
+    }
     setBusy(action);
     setNotice(null);
     try {
@@ -106,17 +118,18 @@ export function LiveCampaign({
         body: JSON.stringify({ action }),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.message ?? body.error ?? "Request failed");
+      if (!res.ok) throw new Error(body.message ?? "The campaign could not be updated.");
       setNotice({
-        kind: "ok",
-        text:
-          action === "start"
+        kind: body.note ? "note" : "ok",
+        text: body.note
+          ? body.note
+          : action === "start"
             ? `${body.contactsQueued} contacts queued via ${body.provider}.${body.manualStep ? ` ${body.manualStep}` : ""}`
             : `Campaign ${body.status}.`,
       });
       router.refresh();
     } catch (err) {
-      setNotice({ kind: "error", text: err instanceof Error ? err.message : "Request failed" });
+      setNotice({ kind: "error", text: err instanceof Error ? err.message : "The campaign could not be updated." });
     } finally {
       setBusy(null);
     }
@@ -125,7 +138,15 @@ export function LiveCampaign({
   async function redial(filter: string) {
     const count = state.redial[filter] ?? 0;
     if (count === 0) return;
-    if (!window.confirm(`Send ${count} contact${count === 1 ? "" : "s"} to the voice platform as a ${label(filter)} redial batch?`)) return;
+    // "Prepare", not "send": the batch becomes a list to paste, and saying so
+    // in the question is the difference between an operator who pastes it and
+    // one who thinks calls are already going out.
+    const ok = await confirm({
+      title: `Prepare a ${label(filter)} redial list?`,
+      body: `${count} contact${count === 1 ? "" : "s"} go onto a new batch. Nothing is dialled by preparing it \u2014 the batch becomes a list you send.`,
+      confirmLabel: "Prepare the list",
+    });
+    if (!ok) return;
     setBusy(filter);
     setNotice(null);
     try {
@@ -135,16 +156,23 @@ export function LiveCampaign({
         body: JSON.stringify({ filter }),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.message ?? body.error ?? "Redial failed");
-      setNotice({
-        kind: "ok",
-        text: `Redial batch created with ${body.contactCount} contact${body.contactCount === 1 ? "" : "s"} — only the filtered contacts were sent.${body.manualStep ? ` ${body.manualStep}` : ""}`,
-      });
+      if (!res.ok) throw new Error(body.message ?? "The redial list could not be prepared.");
+      setNotice({ kind: "note", text: body.nextStep, csv: body.csv });
       router.refresh();
     } catch (err) {
-      setNotice({ kind: "error", text: err instanceof Error ? err.message : "Redial failed" });
+      setNotice({ kind: "error", text: err instanceof Error ? err.message : "The redial list could not be prepared." });
     } finally {
       setBusy(null);
+    }
+  }
+
+  async function copyList(csv: string) {
+    try {
+      await navigator.clipboard.writeText(csv);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
     }
   }
 
@@ -154,13 +182,13 @@ export function LiveCampaign({
   return (
     <div className="space-y-4">
       {/* control bar */}
-      <GlassCard>
+      <Card>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-2">
               <span
                 className={`h-2 w-2 rounded-full ${
-                  isLive ? "animate-pulse bg-[#35c06f]" : state.status === "failed" ? "bg-[#e57373]" : "bg-ink-3"
+                  isLive ? "pulse-live bg-good" : state.status === "failed" ? "bg-critical" : "bg-ink-3"
                 }`}
               />
               <Badge value={state.status} label={label(state.status)} />
@@ -174,9 +202,10 @@ export function LiveCampaign({
           </div>
           {canControl && (
             <div className="flex flex-wrap items-center gap-2">
-              <button className="btn btn-primary" disabled={busy !== null || isLive} onClick={() => control("start")}>
-                <Play size={13} /> {busy === "start" ? "Starting…" : "Start campaign"}
-              </button>
+              {/* No Start here. Starting a run means sending the dialling list
+                  first, which is step 2 below — a second Start button on this
+                  bar could only either duplicate that or skip the list, and
+                  skipping it starts a run that dials nobody. */}
               <button className="btn" disabled={busy !== null || !isLive} onClick={() => control("pause")}>
                 <PauseIcon size={13} /> Pause
               </button>
@@ -188,7 +217,7 @@ export function LiveCampaign({
         </div>
 
         {state.providerError && (
-          <p className="mt-3 rounded-lg border border-[rgba(208,59,59,0.35)] bg-[rgba(208,59,59,0.08)] px-3 py-2 text-[0.78125rem] text-[#ec8181]">
+          <p className="mt-3 rounded-lg border border-critical/35 bg-critical/8 px-3 py-2 text-[0.78125rem] text-critical">
             Integration error: {state.providerError}
           </p>
         )}
@@ -196,35 +225,57 @@ export function LiveCampaign({
           <p
             className={`mt-3 rounded-lg border px-3 py-2 text-[0.78125rem] ${
               notice.kind === "ok"
-                ? "border-[rgba(12,163,12,0.3)] bg-[rgba(12,163,12,0.08)] text-[#5fc46a]"
-                : "border-[rgba(208,59,59,0.35)] bg-[rgba(208,59,59,0.08)] text-[#ec8181]"
+                ? "border-good/30 bg-good/8 text-good"
+                : notice.kind === "note"
+                  ? // Something the operator has to go and do, not a failure.
+                    "border-line bg-ink/[0.03] text-ink-2"
+                  : "border-critical/35 bg-critical/8 text-critical"
             }`}
           >
             {notice.text}
+            {notice.csv && (
+              <button
+                className="btn mt-2 block"
+                onClick={() => copyList(notice.csv!)}
+                title="Copy the paste table for this batch"
+              >
+                {copied ? <Check size={13} /> : <ClipboardCopy size={13} />}
+                {copied ? "Copied" : "Copy the list"}
+              </button>
+            )}
           </p>
         )}
-      </GlassCard>
+      </Card>
 
-      {/* live KPIs */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
-        <StatCard label="Total contacts" value={String(t.contacts)} />
-        <StatCard label="Calls attempted" value={String(t.attempted)} />
-        <StatCard label="Currently calling" value={String(t.inFlight)} tone={t.inFlight > 0 ? "accent" : undefined} />
-        <StatCard label="Answered" value={String(t.answered)} tone="good" />
-        <StatCard label="No answer" value={String(t.noAnswer)} />
-        <StatCard label="Promises to pay" value={String(state.promises.count)} />
-        <StatCard label="PTP value" value={money(state.promises.value)} tone="good" sub={`${state.promises.kept} kept · ${state.promises.pending} pending · ${state.promises.broken} broken`} />
+      {/* What is happening right now, and only that.
+          Seven counters sat here, four of them repeating the campaign's own
+          totals a few hundred pixels below — the same figure twice, under two
+          names, and one of them stale. These three are the ones that move
+          while somebody is watching. */}
+      <div className="grid grid-cols-3 gap-3">
+        <StatCard
+          label="Currently calling"
+          value={String(t.inFlight)}
+          tone={t.inFlight > 0 ? "accent" : undefined}
+        />
+        <StatCard label="Calls attempted" value={String(t.attempted)} sub={`of ${t.contacts} accounts`} />
+        <StatCard
+          label="Answered"
+          value={String(t.answered)}
+          tone="good"
+          sub={`${t.noAnswer} no answer`}
+        />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
         {/* activity feed */}
-        <GlassCard className="xl:col-span-2" title="Live activity" subtitle="Most recent call events, newest first">
+        <Card className="xl:col-span-2" title="Live activity" subtitle="Most recent call events, newest first">
           {state.activity.length === 0 ? (
             <p className="py-8 text-center text-[0.8125rem] text-ink-3">
               No calls yet. Start the campaign and events will appear here as they happen.
             </p>
           ) : (
-            <ul className="divide-y divide-white/[0.05]">
+            <ul className="divide-y divide-ink/[0.07]">
               {state.activity.map((item) => (
                 <li key={item.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
                   <span className="num text-[0.71875rem] text-ink-3">{timeOf(item.at)}</span>
@@ -234,7 +285,7 @@ export function LiveCampaign({
                   <span className="num text-[0.71875rem] text-ink-3">{maskPhone(item.phone)}</span>
                   <Badge value={item.outcome ?? item.status} label={label(item.outcome ?? item.status)} />
                   {item.promisedAmount != null && (
-                    <span className="num text-[0.78125rem] text-[#5fc46a]">{money(item.promisedAmount)}</span>
+                    <span className="num text-[0.78125rem] text-good">{money(item.promisedAmount)}</span>
                   )}
                   <Link href={`/calls/${item.id}`} className="ml-auto text-[0.6875rem] text-accent hover:underline">
                     open call
@@ -243,11 +294,11 @@ export function LiveCampaign({
               ))}
             </ul>
           )}
-        </GlassCard>
+        </Card>
 
         {/* redial actions */}
         <div className="space-y-4">
-          <GlassCard title="Redial actions" subtitle="Each button sends only its filtered contacts">
+          <Card title="Redial actions" subtitle="Only the filtered contacts">
             <ul className="space-y-2.5">
               {REDIAL_BUTTONS.map(({ filter, title, icon: Icon }) => {
                 const count = state.redial[filter] ?? 0;
@@ -263,19 +314,20 @@ export function LiveCampaign({
                       title={canControl ? title : "Your role cannot redial contacts"}
                     >
                       <Icon size={12} />
-                      {busy === filter ? "Sending…" : title}
+                      {busy === filter ? "Preparing…" : title}
                     </button>
                   </li>
                 );
               })}
             </ul>
             <p className="mt-3 text-[0.65625rem] leading-relaxed text-ink-3">
-              Contacts at the attempt limit, settled accounts, disputes and opt-outs are excluded
-              automatically.
+              Each list carries its own batch code, so its calls come back attributed to it. Paste it
+              into Jobix and start the run there, the same as a first dial. Contacts at the attempt
+              limit, settled accounts, disputes and opt-outs are excluded automatically.
             </p>
-          </GlassCard>
+          </Card>
 
-          <GlassCard title="Outcome breakdown" subtitle="Connected calls only">
+          <Card title="Outcome breakdown" subtitle="Connected calls only">
             {state.outcomes.length === 0 ? (
               <p className="text-[0.8125rem] text-ink-3">No connected calls yet.</p>
             ) : (
@@ -288,10 +340,10 @@ export function LiveCampaign({
                 ))}
               </ul>
             )}
-          </GlassCard>
+          </Card>
 
           {state.batches.length > 0 && (
-            <GlassCard title="Redial batches">
+            <Card title="Redial batches">
               <ul className="space-y-2">
                 {state.batches.map((b) => (
                   <li key={b.id} className="text-[0.78125rem]">
@@ -302,12 +354,12 @@ export function LiveCampaign({
                       <Badge value={b.status} label={label(b.status)} />
                     </div>
                     {b.providerError && (
-                      <p className="mt-0.5 text-[0.6875rem] text-[#ec8181]">{b.providerError}</p>
+                      <p className="mt-0.5 text-[0.6875rem] text-critical">{b.providerError}</p>
                     )}
                   </li>
                 ))}
               </ul>
-            </GlassCard>
+            </Card>
           )}
         </div>
       </div>

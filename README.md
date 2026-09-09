@@ -127,6 +127,181 @@ to Pay (if one was made) → the debtor's timeline and campaign metrics update �
 dashboard work queue picks up the follow-up. Record the payment when it lands and the
 promise resolves to Fulfilled.
 
+## Call analytics (transcript-verified)
+
+`/analytics` classifies every account by whether a **real human conversation** happened, and
+is the screen an operator opens to see who was missed. Guest mode (`/login` → Continue as
+guest) runs the same engine over a 120-account fixture with calling disabled.
+
+### Rules that are easy to get wrong
+
+These were established against live production data; the naive version produces confidently
+wrong numbers, so each is pinned by tests in `src/services/analytics/classify.test.ts`.
+
+- **Reached is decided from transcript content, never platform flags.** The provider's
+  voicemail flag misfires badly (164 false positives in one campaign). An account is reached
+  only if a transcript has a genuine tenant turn; a short machine-sounding utterance
+  (under 15 words matching the machine phrase list) is not a person.
+- **Five mutually exclusive buckets that sum to the account total** (asserted by test):
+  conversation (reached, ≥8 tenant words) · answered, few words (reached, <8) · connected,
+  no conversation (not reached but talk time > 0) · never connected/dead (not reached, every
+  call zero duration) · never called.
+- **Every metric is per account, never per call.** Formulas are shown in each tile's
+  tooltip: penetration = attempted ÷ book · RPC rate = conversations ÷ book · dials per RPC
+  = calls ÷ conversations · **PTP rate = promises ÷ conversations (RPC denominator)** ·
+  data-quality fail = dead numbers ÷ dialled.
+- **Cash committed is a range, never one number.** Commitments with no stated amount carry
+  zero in the floor and their full balance in the ceiling. "Arrears under commitment" is
+  shown separately — conflating it with cash committed overstates pipeline roughly 3×.
+- **Cumulative reach counts unique accounts at first reach.** Summing per-round reached
+  columns double-counts and has already produced a wrong published figure.
+- **Hour-of-day is SAST (UTC+2).** Provider timestamps are UTC. Reach rate by hour varies
+  enormously and is the most actionable thing on the page.
+- **Dead numbers get a repair export, not a call button** — they need new phone numbers,
+  not more attempts.
+
+### Account drawer
+
+Clicking an account name (in either table) opens its full history, so every number on the
+page can be traced to the evidence behind it:
+
+- **Each call carries its own reach verdict and the reasoning** — "Tenant spoke 22 words —
+  a real conversation", "Tenant audio matched a machine greeting (“Please leave”) in only 7
+  words", "No talk time and no transcript — the call never connected". A test asserts these
+  verdicts never disagree with the engine that drives the metrics.
+- **Attempts are numbered by time**, so "attempt 3" is the third call actually made, not the
+  third row the provider returned.
+- **The provider's voicemail flag is shown beside the verdict, never used to produce it.**
+  Seeing the two disagree is the point; the fixture deliberately contains disagreements in
+  both directions and a test requires them.
+- **Transcripts render inline**, tenant turns visually distinct from the agent's, with the
+  call that decided the outcome expanded by default.
+- **Messaging steps (WhatsApp/SMS) come from flow node history.** Those rows carry only
+  `customer_name` — no phone, no account id — so the match is by normalised name and the
+  drawer says so. Where two accounts share a name the events are still shown but flagged
+  `ambiguous`, never presented as belonging to one account.
+
+### Ingestion
+
+`POST /api/ingest` (progress on `GET`). Conversations page cheaply; transcripts are one
+request each, so they are fetched at concurrency 12, checkpointed every 25, cached in
+`JobixTranscript` by conversation uuid and **never re-fetched**. Customers are stale-filtered
+on `_modify_time` and deduped by phone (skipping this produced 5,608 "records" for 660
+phones). Pulled customers are then **persisted**: debtors are matched by phone — the only
+key Jobix reliably puts on a customer — or created with a `JBX-` account number and their
+balance; a confirmed PTP becomes a real PromiseToPay row (unstated amounts stay 0 so the
+floor/ceiling range stays honest, and a date the provider never stated is marked
+`dateStated:false` rather than passed off as debtor-chosen). The provider can escalate a
+debtor's state but never quietly walk it back: do-not-contact is set, never unset, and
+human-owned statuses (legal, hardship, opted-out) are not overwritten by a flag sync.
+A fourth phase pulls flow **node history** (WhatsApp/SMS sends and filter branches)
+when `JOBIX_FLOW_UUID` is set; without a flow there is no endpoint to ask, so the phase is
+skipped and reports zero rather than inventing state. Jobix issues no event id for these, so
+identity is the event's content and a repeat is ignored as the same event seen again.
+
+Ingestion is **blocked by a workspace assertion**: if the expected agent names are absent the
+run aborts with a clear error rather than importing another workspace's data.
+
+The control lives at the top of `/analytics`: phase stepper, live counters (new vs cached vs
+failed transcripts, customers, messaging events), and the last run's outcome. It polls `GET
+/api/ingest` while a run is in flight. Runs are resumable — cached transcripts are never
+re-fetched — so pressing Run after an interrupted run continues rather than restarts, and the
+panel says so. Configuration failures are reported as configuration, not bugs: **501** when
+Jobix credentials are absent from the server, **403** in demo mode, **409** on a workspace
+mismatch. Only the *presence* of credentials is sent to the browser, never a value.
+
+### Authentication — the dashboard API takes sign-ins, not API keys
+
+Established empirically: the profile "API key" is rejected by every `/api/*` endpoint on
+`dashboard.jobix.ai` however it is presented (Bearer or `x-api-key`, either host), and those
+paths do not exist on the write-API host at all. The dashboard API accepts only the
+short-lived session tokens a login mints. So the platform signs in the way the browser does
+— `POST /api/auth/login` with `JOBIX_EMAIL`/`JOBIX_PASSWORD` (captured from the real login
+flow, `reCaptcha` sent empty exactly as the dashboard sends it) — reads the access token
+from the JSON body or the `access_token` cookie, caches it in `ServerSecret` so concurrent
+serverless invocations share one session, re-mints it a minute before its hourly expiry, and
+on a mid-run 401 re-logs-in once before concluding the credentials are wrong. There is no
+refresh-token dance: re-logging-in hourly is simpler and survives token rotation.
+
+### Jobix API traps, encoded as guards
+
+`src/services/jobix/client.ts` + `api.ts` enforce these rather than documenting them:
+
+| Trap | Guard |
+|---|---|
+| `page_size=100` on `/api/conversations` → HTTP 500 | capped at 50 |
+| pages are 1-indexed | pulls start at page 1 |
+| sort order is not reliably newest-first | always sorted client-side by `created_at`; a page-boundary stop needs the *whole* page older than the floor |
+| unknown filters accepted and silently ignored | allow-list (`phone`, `agents`) + post-hoc row assertion that throws if the API ignored it |
+| `/transcription` needs `call_uuid` (same uuid) or 422 | always sent |
+| turn text is in `content` *or* `text` | both handled |
+| empty customer fields render as `"No data available"`; unset units as `{{ attributes.unit_number }}` | unwrapped to `null` (any unresolved placeholder too) |
+| customer records hold the last outcome from *any* campaign | `_modify_time` staleness filter + dedupe by phone |
+| `node_ids=` filter is broken | node history pulled unfiltered and filtered in code |
+| node `status` 13 = success, 98 = failed; socket `_0` = matched | typed as `succeeded` / `failed` / `matchedFilter` |
+| `customer/save` is asynchronous | dispatch waits, then verifies before triggering |
+| endpoints time out under sustained paging | retry with backoff + checkpointing |
+
+### Importing a book, in whatever format the client sent it
+
+**Debtors → Import** accepts a file upload (.xlsx or .csv) alongside the CSV paste. Three
+formats are recognised: the 72-column Jobix import workbook (matched on its own headers),
+the platform template, and any generic client spreadsheet — whose columns are fuzzy-matched
+by name (tenant name, cell no, amount owing, body corporate, unit) with the mapping shown so
+a wrong guess is visible. Every row is validated before anything is written: the preview
+reports what will be created (count and value), what already exists on the platform (matched
+by phone; assigned to the chosen campaign instead of duplicated), duplicates within the
+file, and each invalid row with its reason. Phone numbers normalise to E.164 from any
+format; amounts parse from currency strings; account-number collisions are suffixed rather
+than dropped.
+
+### Launching a campaign, end to end
+
+The campaign page carries a three-step launch panel that replaces the manual Jobix workflow:
+
+1. **Contacts, categorised** — who will be dialled (count and value) and every excluded
+   account with its reason (do-not-contact, disputed, escalated, settled, unusable number,
+   nothing outstanding).
+2. **Send the list** — the platform generates the exact 72-column paste table Jobix's
+   database screen accepts, with this launch's batch code already written into every row's
+   `call` column. Pasting it is the one manual step, and it replaces both the old import and
+   the stamping step, because the flow's entry filter gates on `call`.
+3. **Start the calls** — the platform triggers the flow's Now node. Jobix dials exactly the
+   rows carrying the batch code. The start button stays disabled until the list is confirmed
+   pasted, calling is enabled, the trigger is configured, and the SAST calling window is
+   open — and the server re-checks all four.
+
+Results return through ingestion as usual. The remaining manual paste can be eliminated the
+same way the trigger was: capture the database screen's import request with DevTools and the
+platform can submit the list itself.
+
+### Calling — guarded, trigger confirmed
+
+Calling is last in the build order and off by default (`JOBIX_CALLING_ENABLED=false`).
+Both "call one" and "call all" take one path: filter → stamp a unique batch code via
+`customer/save` → wait and verify → trigger the flow's Now node.
+
+The trigger was captured from the flow builder's own Run button, not guessed:
+`POST {JOBIX_BASE}/api/nodes/now/trigger` with `{ "flowUuid", "nodeUuid" }` — the dashboard
+host, camelCase, and **no audience in the request**. Jobix dials whatever the flow's own
+entry filter matches at run time, so the stamp is the scope: only this batch's accounts get
+the batch code written to their `call` field, and the flow's filter node must gate on that
+field. Configure `JOBIX_FLOW_UUID` and `JOBIX_TRIGGER_NODE_UUID`, confirm the flow filter,
+and only then set `JOBIX_CALLING_ENABLED=true`.
+
+Guardrails, all enforced server-side (a guest session is refused regardless of the UI):
+confirmation of exact account count and value; a hard SAST calling-hours gate
+(Mon–Fri 08:00–19:00, Sat 09:00–13:00, never Sunday — tested); exclusion of do-not-call,
+disputed, escalated, settled, opted-out and live-PTP accounts with the excluded count
+reported; an env deny-list for internal test numbers; and an audit entry for every dispatch
+(who, when, which accounts, which batch code).
+
+**The trigger endpoint is not implemented against a guessed path.** Capture it first:
+open the flow builder → the `Now` node → **Run**, with DevTools → Network recording, and note
+the method, URL and payload (also capture a node filter save). Set `JOBIX_TRIGGER_PATH` to
+that path. Until then a dispatch stamps the batch, verifies it, and reports the exact next
+action rather than pretending a run started.
+
 ## Live Jobix integration (campaign execution)
 
 The platform is the control centre; the voice platform executes the calls. The integration
@@ -278,10 +453,56 @@ analysis → promise/escalation creation → debtor state + risk update → even
 The response returns the extraction result (`outcome`, `promiseId`, `escalationId`,
 `nextAction`).
 
-The demo seed prints a working API key (`aip_demo_k3y_meridian_voice_2026`). Keys are
-stored as SHA-256 hashes; the organization is always derived from the key, never from the
+The demo seed prints a freshly generated API key once — no key value is committed to this
+repository, because a literal one would be a working credential on every deployment seeded
+from it. Keys are stored as SHA-256 hashes; the organization is always derived from the key, never from the
 payload. The endpoint is rate limited per key (120 requests/minute, in-memory — swap for
 Redis when running multiple instances).
+
+## Filling in call results
+
+A dial's outcome reaches the platform one of three ways, in order of preference:
+
+1. **The outcome webhook.** Point the flow's call-completed step at
+   `POST /api/integrations/voice/dial-outcome` and results arrive the moment a call ends.
+   This is the only path that is exact — it carries the `suid` the dial was written with,
+   so there is no guessing about which call is which.
+2. **The panel on screen.** While a dial is open, the call panel polls for it and asks the
+   platform directly every twenty seconds.
+3. **The sweep**, for calls nobody watched — the common case, because people place a call
+   and close the tab.
+
+The sweep is `sweepDialOutcomes()`. It takes dials still sitting at `placed`, asks the
+platform what happened to each, and puts the answer through the same path the webhook uses,
+so an unattended call produces the same call record, analysis and promise to pay as a
+watched one. It runs from two places:
+
+- **On page load.** Opening Calls or an account sweeps up to five dials in the background
+  (`POST /api/calling/sweep`, session-scoped) and refreshes the page if it recovered
+  anything.
+- **On a schedule**, if you want it filled in without anybody opening the app:
+
+  ```
+  GET /api/cron/outcomes
+  Authorization: Bearer $CRON_SECRET
+  ```
+
+  `CRON_SECRET` is **required** — with it unset the endpoint answers 503 rather than running
+  unauthenticated. To have Vercel call it, add a third entry to `vercel.json`:
+
+  ```json
+  { "path": "/api/cron/outcomes", "schedule": "*/10 * * * *" }
+  ```
+
+  It is deliberately not committed: cron count and frequency are capped by plan, and a
+  `vercel.json` your plan will not accept fails the deployment. Add it once you know the
+  plan allows it. Any external scheduler works equally well — it is an ordinary
+  authenticated GET.
+
+A dial the sweep cannot match after three days is recorded as `failed` with the outcome
+`no_outcome_reported`, and the UI says exactly that: the record was written and the flow
+took it, and nothing ever came back. It does not say "no answer", because nobody knows
+whether it was answered.
 
 ## Event architecture
 
@@ -314,17 +535,132 @@ prisma/schema.prisma    # multi-tenant relational model
 prisma/seed.ts          # realistic fictional demo data (clearly mock)
 ```
 
+### Currency and time are formatted deterministically
+
+`src/lib/format.ts` does not delegate ZAR or date formatting to `Intl`. Fixing the locale is
+not enough: Node's ICU groups `en-ZA` thousands with a no-break space and uses a comma for
+cents, Chromium groups with a comma and uses a full stop, so server and client HTML disagreed
+and React discarded the server-rendered tree on load. Times were worse — the server runs in
+UTC, so a 20:30 SAST call rendered as 18:30 until the browser took over. Money is now grouped
+here, and dates are pinned to `Africa/Johannesburg` and assembled from numeric parts. Both
+are pinned by tests in `src/lib/format.test.ts`, including the SAST-midnight rollover.
+
 ## Multi-tenancy & security
 
 - Every entity carries an `organizationId`; every service query is organization-scoped.
   Cross-tenant references (agent on a campaign, debtor on a payment, …) are re-verified
   against the caller's organization before writes.
-- `src/lib/auth.ts` is the single auth entry point — currently a demo-session stub built
-  to swap to NextAuth/JWT without touching the rest of the app.
+- `src/lib/auth.ts` is the single auth entry point: every `organizationId` in the
+  application originates there, so tenancy has one place it can be got wrong. Pages call
+  `getContext()`, which redirects; API routes call `apiContext()`, which throws so a caller
+  gets 401 or 403 instead of a 500 naming Next's internal redirect error.
 - Server-side zod validation on every mutating endpoint; secrets live in environment
   variables only; the Anthropic key and voice API keys never reach the client bundle.
 - Always-on audit log (actor, action, entity — no transcripts/PII in details).
 - Voice agent prompts are referenced (`promptRef`), never stored or displayed.
+
+### Sessions and sign-in
+
+One signed httpOnly cookie carries either a demo session or a real user session. It is
+`base64url(payload).hmac-sha256`, so the holder can read their own user id and expiry but
+cannot alter either — a demo visitor cannot rewrite the payload to claim an account, and
+nobody can extend their own expiry. Verification is constant-time and fails closed: if the
+signing key cannot be read, nobody is signed in.
+
+- **Signing key** — `AUTH_SECRET` when set. When it is not, a key is generated once and
+  stored in `ServerSecret`, because the alternatives are a constant key (forgeable by anyone
+  reading the source) or refusing to start (locking the owner out of their own deployment).
+- **Passwords** — scrypt from `node:crypto` (N=16384, r=8, p=1, 16-byte salt), parameters
+  stored in the hash so they can be raised later without invalidating existing passwords.
+  Minimum 12 characters.
+- **Sign-in failures are uniform.** A wrong password, an unknown email and a user with no
+  password set all return the same message, and an unknown email is still compared against a
+  real hash so the timing does not reveal which accounts exist. Attempts are rate limited per
+  account and per caller.
+- **The sign-in page discloses nothing.** It is reachable without a session, so it names no
+  user, no organization, and carries no pre-filled value or placeholder text. An earlier
+  version suggested the existing admin's address, which printed a real account email on a
+  public page — pinned shut by tests now.
+- **First-run claim.** A database seeded outside `/setup` has users but no passwords. Rather
+  than leave it unreachable, `/login` offers to set the first password — and that window
+  closes permanently the moment any password exists. `/setup` now requires a password up
+  front, so a new deployment never opens the window at all. Use **your own** email: a seeded
+  database contains only fictional demo staff, so an unrecognised address creates a real
+  admin account rather than being refused.
+- **Locked out?** There is no password-reset email, so recovery is a shell command:
+  `npm run password:set -- --list` shows who exists and who can sign in;
+  `npm run password:set -- you@company.co.za 'a new password'` sets one (creating an admin if
+  that address is new). It calls the application's own hashing code, so the stored format
+  cannot drift from what sign-in expects.
+- **Demo sessions see fixtures only.** `getContext()` refuses a guest session outright, so
+  every page and endpoint that resolves a real organization is closed to them, and guest
+  navigation is limited to the one screen that runs on fixtures.
+
+Sign out is server-side — the cookie is httpOnly, so it can only be cleared by the server.
+The control sits in the top bar in both modes ("Sign out" / "Leave demo").
+
+## Team and multi-tenancy
+
+Members join by invitation. An admin creates an invite in **Settings → Team** (name, email,
+role); the app shows the link exactly once — no email service is involved, the admin sends it
+through whatever channel the team uses — and the invitee sets their own password on that
+link. Tokens are stored as SHA-256 only, expire after seven days, and are single use. Roles
+(admin, manager, collector, viewer) can be changed and members removed from the same card;
+the last admin can be neither demoted nor removed, and every mutation is audited.
+
+The data model is tenant-scoped throughout (every entity carries `organizationId`, and every
+query derives it from the session), verified by integration tests that create two
+organizations and assert nothing crosses: journeys, analytics, team listings, invites and
+ingestion progress. Three boundaries are enforced explicitly because the provider
+integration is deployment-global:
+
+- The signed Jobix webhook refuses to process events when more than one organization exists —
+  a deployment-wide HMAC secret cannot identify a tenant. Multi-organization deployments use
+  per-organization API keys instead.
+- Ingestion and outbound calling refuse to run on a multi-organization deployment, because a
+  deployment-global Jobix connection would pull the same workspace into every tenant.
+- Provider-event idempotency and transcript caching are unique per organization, so one
+  tenant can neither suppress another's webhook events nor collide with its transcript rows.
+
+## Moving from the demo book to a real one
+
+`/setup` can seed a complete fictional organization so the platform can be seen working. When
+it is time for real data, **Settings → Clear demo data** (admin only) removes it:
+
+- **Deleted** — debtors, debt accounts, campaigns, campaign contacts, redial batches, voice
+  agents, calls, call analyses, promises, payments, escalations, reports, insights, platform
+  events, provider events, the audit history of demo activity, every API key, and every user
+  account other than your own.
+- **Kept** — your sign-in, compliance settings, integration settings, and anything ingested
+  from the voice provider (the seed never creates that, so it is real by definition). A
+  checkbox removes the ingested data too, for a from-scratch re-ingest.
+- **Guarded** — a preview lists exact row counts on both sides before anything runs, and the
+  organization's name must be typed character for character. The confirmation is re-checked
+  server-side. The acting admin is never deleted: wiping the users table would lock the
+  operator out of the deployment they just cleaned.
+- Deletion is explicit and child-first rather than relying on cascade order, so a schema
+  change cannot silently start orphaning rows.
+
+Afterwards the organization can be renamed in the same step, one placeholder voice agent is
+left behind so campaigns have something to point at, and the reset becomes the first entry in
+the audit log of the real book. Import the book at **Debtors → Import** and issue a fresh
+webhook key in Settings — clearing revokes the old ones, so anything posting to the webhook
+stops until you do.
+
+The same thing from a shell, dry-run by default:
+
+```bash
+npm run data:clear-demo                     # prints what would go, deletes nothing
+npm run data:clear-demo -- --confirm 'Meridian Recoveries' --rename 'Your Company'
+```
+
+Its invariants are covered by integration tests against a real database. They truncate what
+they run against, so they are opt-in and refuse any `DATABASE_URL` that is not obviously
+disposable:
+
+```bash
+DATABASE_URL=$SCRATCH TEST_DATABASE_RESET=1 npm test
+```
 
 ## Compliance guardrails
 

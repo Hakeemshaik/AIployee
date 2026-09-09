@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
-import { mapOutcome, mapStatus, pick, toDate } from "@/services/voice/jobix/mapping";
+import { mapOutcome, mapStatus, pick, toDate } from "@/services/integrations/outcome-mapping";
 import { processCallCompleted } from "@/services/integrations/voice";
 
 // ---------------------------------------------------------------------------

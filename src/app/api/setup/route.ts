@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getSetupStatus, runSetup, SetupLockedError, setupSchema } from "@/services/bootstrap";
+import {
+  getSetupStatus,
+  runSetup,
+  SetupLockedError,
+  setupSchema,
+  WeakPasswordError,
+} from "@/services/bootstrap";
+import { startUserSession } from "@/lib/session";
+import { db } from "@/lib/db";
 
 // First-run bootstrap. Inert once an organization exists.
 
@@ -28,8 +36,17 @@ export async function POST(request: Request) {
       );
     }
     const result = await runSetup(parsed.data);
+    // Sign the new admin straight in — they just chose the password.
+    const admin = await db.user.findFirst({
+      where: { email: parsed.data.adminEmail.trim().toLowerCase() },
+      select: { id: true },
+    });
+    if (admin) await startUserSession(admin.id);
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
+    if (err instanceof WeakPasswordError) {
+      return NextResponse.json({ error: "weak_password", message: err.message }, { status: 422 });
+    }
     if (err instanceof SetupLockedError) {
       return NextResponse.json({ error: "already_set_up", message: err.message }, { status: 403 });
     }

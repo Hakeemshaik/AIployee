@@ -1,9 +1,7 @@
-import { createHash } from "crypto";
 import { db } from "@/lib/db";
+import { JobixError, resolveJobixEnv } from "@/services/jobix/client";
 import { audit } from "@/lib/audit";
 import { emitEvent } from "@/lib/events";
-import { getVoiceProvider } from "@/services/voice";
-import { ProviderError, type ProviderContact } from "@/services/voice";
 
 // ---------------------------------------------------------------------------
 // Campaign execution control.
@@ -27,14 +25,9 @@ export type StartResult = {
   providerCampaignId: string | null;
   contactsQueued: number;
   provider: string;
-  /** Present when the provider needs an operator step (paste workflow). */
+  /** What the operator does next, straight from the launch path. */
   manualStep?: string;
 };
-
-function idempotencyKey(campaignId: string, debtorIds: string[]): string {
-  const digest = createHash("sha256").update(debtorIds.slice().sort().join(",")).digest("hex").slice(0, 16);
-  return `${campaignId}:${digest}`;
-}
 
 /**
  * Materialise campaign membership. Debtors assigned to the campaign become
@@ -90,25 +83,6 @@ export async function eligibleContacts(
   });
 }
 
-type EligibleContact = Awaited<ReturnType<typeof eligibleContacts>>[number];
-
-export function toProviderContacts(contacts: EligibleContact[]): ProviderContact[] {
-  return contacts.map((c) => {
-    const balance = c.debtor.accounts.reduce((s, a) => s + a.currentBalance, 0);
-    const daysOverdue = Math.max(0, ...c.debtor.accounts.map((a) => a.daysOverdue));
-    return {
-      reference: c.id,
-      name: `${c.debtor.firstName} ${c.debtor.lastName}`.trim(),
-      phone: c.debtor.phone,
-      email: c.debtor.email,
-      accountNumber: c.debtor.accountNumber,
-      amountDue: Math.round(balance),
-      creditorName: c.debtor.accounts[0]?.creditorName ?? null,
-      metadata: { days_overdue: daysOverdue, attempt: c.attempts + 1 },
-    };
-  });
-}
-
 export async function startCampaign(
   organizationId: string,
   userId: string,
@@ -116,11 +90,11 @@ export async function startCampaign(
 ): Promise<StartResult> {
   const campaign = await db.campaign.findFirst({
     where: { id: campaignId, organizationId },
-    include: { agent: true, organization: { select: { timezone: true } } },
+    select: { id: true, status: true, maxAttempts: true },
   });
   if (!campaign) throw new Error("Campaign not found");
   if (["running", "active", "queued"].includes(campaign.status)) {
-    throw new ProviderError("This campaign is already running.", "rejected");
+    throw new JobixError("This campaign is already running.", "rejected");
   }
 
   await syncCampaignContacts(organizationId, campaignId);
@@ -128,110 +102,35 @@ export async function startCampaign(
     maxAttempts: campaign.maxAttempts,
   });
   if (contacts.length === 0) {
-    throw new ProviderError(
+    throw new JobixError(
       "No contacts are eligible to dial. Assign debtors to this campaign, or check that they have valid numbers, outstanding balances and are not suppressed.",
       "rejected",
     );
   }
 
-  const { provider, reason } = await getVoiceProvider(organizationId);
-  const key = campaign.idempotencyKey ?? idempotencyKey(campaignId, contacts.map((c) => c.debtorId));
-
-  // queued first: if the provider call throws, the campaign is visibly mid-flight
-  // rather than silently "draft".
-  await db.campaign.update({
-    where: { id: campaignId },
-    data: { status: "queued", providerError: null, idempotencyKey: key },
-  });
-
-  try {
-    const providerCampaignId =
-      campaign.providerCampaignId ??
-      (
-        await provider.createCampaign({
-          name: campaign.name,
-          agentExternalId: campaign.agent?.externalId ?? null,
-          callingHoursStart: campaign.callingHoursStart,
-          callingHoursEnd: campaign.callingHoursEnd,
-          maxAttempts: campaign.maxAttempts,
-          retryIntervalHours: campaign.retryIntervalHours,
-          timezone: campaign.organization.timezone,
-          idempotencyKey: key,
-        })
-      ).providerCampaignId;
-
-    await provider.addContacts(providerCampaignId, toProviderContacts(contacts));
-
-    let status = "queued";
-    let manualStep: string | undefined;
-    if (provider.capabilities.has("startCampaign")) {
-      const ref = await provider.startCampaign(providerCampaignId);
-      status = "running";
-      manualStep = ref.manualStep;
-    } else {
-      const ref = await provider.getCampaign(providerCampaignId);
-      manualStep =
-        ref.manualStep ??
-        "Start the run in the voice platform dashboard — this integration cannot start it by API.";
-    }
-
-    await db.campaign.update({
-      where: { id: campaignId },
-      data: {
-        status,
-        providerCampaignId,
-        providerStartedAt: new Date(),
-        providerError: null,
-        startDate: campaign.startDate ?? new Date(),
-      },
-    });
-    await emitEvent({
-      type: "campaign.started",
-      organizationId,
-      entityType: "campaign",
-      entityId: campaignId,
-      payload: { provider: provider.name, providerCampaignId, contacts: contacts.length },
-    });
-    await audit({
-      organizationId,
-      actorType: "user",
-      actorId: userId,
-      action: "campaign.started",
-      entityType: "campaign",
-      entityId: campaignId,
-      detail: { provider: provider.name, contacts: contacts.length, providerCampaignId },
-    });
-
-    return {
-      status,
-      providerCampaignId,
-      contactsQueued: contacts.length,
-      provider: `${provider.name} — ${reason}`,
-      manualStep,
-    };
-  } catch (err) {
-    const detail =
-      err instanceof ProviderError
-        ? `${err.message}${err.detail ? ` (${err.detail})` : ""}`
-        : err instanceof Error
-          ? err.message
-          : "Unknown integration error";
-    await db.campaign.update({
-      where: { id: campaignId },
-      data: { status: "failed", providerError: detail.slice(0, 500) },
-    });
-    await audit({
-      organizationId,
-      actorType: "user",
-      actorId: userId,
-      action: "campaign.start_failed",
-      entityType: "campaign",
-      entityId: campaignId,
-      detail: { provider: provider.name },
-    });
-    console.error("[campaign-control] start failed:", err);
-    throw err;
+  // There is one way to start a run: send the dialling list, then trigger the
+  // flow. What used to be here was a provider abstraction whose Jobix
+  // implementation expected a REST campaign API that does not exist, so it
+  // fell through to a paste stub and answered "contacts queued" while nothing
+  // left the platform. Without a connection the honest answer is that there is
+  // nothing to start.
+  const signIn = await resolveJobixEnv();
+  if (!signIn?.email || !signIn?.password) {
+    throw new JobixError(
+      "No voice platform is connected, so a run cannot be started. Set the sign-in under Settings, then send this campaign's dialling list.",
+      "not_configured",
+    );
   }
+
+  const { startCampaignCalls } = await import("@/services/campaign-launch");
+  const started = await startCampaignCalls(organizationId, userId, campaignId, { confirmed: true });
+  return {
+    status: "running",
+    providerCampaignId: started.batchCode,
+    contactsQueued: contacts.length,
+    provider: "Jobix — dashboard sign-in, flow trigger",
+    manualStep: started.message,
+  };
 }
 
 async function transition(
@@ -239,57 +138,115 @@ async function transition(
   userId: string,
   campaignId: string,
   action: "pause" | "stop",
-): Promise<{ status: string }> {
+): Promise<{ status: string; note?: string }> {
   const campaign = await db.campaign.findFirst({ where: { id: campaignId, organizationId } });
   if (!campaign) throw new Error("Campaign not found");
 
-  const { provider } = await getVoiceProvider(organizationId);
-  const capability = action === "pause" ? "pauseCampaign" : "stopCampaign";
   const nextStatus = action === "pause" ? "paused" : "stopped";
+  await db.campaign.update({
+    where: { id: campaignId },
+    data: { status: nextStatus, providerError: null },
+  });
 
-  try {
-    if (campaign.providerCampaignId && provider.capabilities.has(capability)) {
-      if (action === "pause") await provider.pauseCampaign(campaign.providerCampaignId);
-      else await provider.stopCampaign(campaign.providerCampaignId);
-    } else if (campaign.providerCampaignId) {
-      // No API for it — record locally and tell the operator plainly.
-      await db.campaign.update({
-        where: { id: campaignId },
-        data: {
-          status: nextStatus,
-          providerError: `Marked ${nextStatus} in AIployee. The voice platform integration cannot ${action} by API — ${action} the run in its dashboard too.`,
-        },
-      });
-      return { status: nextStatus };
-    }
-    await db.campaign.update({
-      where: { id: campaignId },
-      data: { status: nextStatus, providerError: null },
-    });
-    if (action === "stop") {
-      await emitEvent({
-        type: "campaign.completed",
-        organizationId,
-        entityType: "campaign",
-        entityId: campaignId,
-        payload: { reason: "stopped_by_operator" },
-      });
-    }
-    await audit({
+  if (action === "stop") {
+    await emitEvent({
+      type: "campaign.completed",
       organizationId,
-      actorType: "user",
-      actorId: userId,
-      action: `campaign.${action}d`,
       entityType: "campaign",
       entityId: campaignId,
+      payload: { reason: "stopped_by_operator" },
     });
-    return { status: nextStatus };
-  } catch (err) {
-    const detail = err instanceof ProviderError ? err.message : "Integration error";
-    await db.campaign.update({ where: { id: campaignId }, data: { providerError: detail } });
-    throw err;
   }
+  await audit({
+    organizationId,
+    actorType: "user",
+    actorId: userId,
+    action: `campaign.${action}d`,
+    entityType: "campaign",
+    entityId: campaignId,
+  });
+
+  // Stopping means disarming the run on the platform.
+  //
+  // "stopped" in this platform's own status column stops nothing — the voice
+  // platform has never heard of it. What does stop a run is the `call` column
+  // that started it: a record with an empty one is not matched by the flow's
+  // entry filter, so it is not dialled. So a stop clears the flag on this
+  // batch's records, and says what that does and does not cover.
+  let note: string | undefined;
+  if (campaign.providerCampaignId) {
+    if (action === "stop") {
+      try {
+        const { stopBatch } = await import("@/services/jobix/push");
+        const stopped = await stopBatch(organizationId, userId, campaign.providerCampaignId);
+        note = stopped.message;
+      } catch (err) {
+        // The local status still moves — an operator who pressed Stop should
+        // not find the campaign still running here — but the reason the
+        // platform could not be disarmed is theirs to see.
+        note = `Marked stopped here, but the run could not be disarmed on the voice platform: ${
+          err instanceof Error ? err.message : "unknown error"
+        } Clear the call column in Jobix, or nothing stops.`;
+      }
+    } else {
+      note =
+        "Marked paused here. Pausing does not exist on the voice platform — to hold a run, stop it, which clears the dialling flag from its accounts.";
+    }
+  }
+
+  return { status: nextStatus, note };
 }
 
 export const pauseCampaign = (org: string, user: string, id: string) => transition(org, user, id, "pause");
 export const stopCampaign = (org: string, user: string, id: string) => transition(org, user, id, "stop");
+
+/**
+ * Delete a campaign.
+ *
+ * The accounts survive: they are the book, and they belong to the organization
+ * rather than to a run. What goes is the campaign, its contact rows and its
+ * redial batches, and every account it held is released back to no campaign.
+ *
+ * Refused while a run is live, because deleting the record that holds the batch
+ * code would leave accounts armed on the platform with nothing here able to
+ * name them — unstoppable from this side. Stop it first.
+ */
+export async function deleteCampaign(
+  organizationId: string,
+  userId: string,
+  campaignId: string,
+): Promise<{ deleted: true; releasedAccounts: number; name: string }> {
+  const campaign = await db.campaign.findFirst({
+    where: { id: campaignId, organizationId },
+    select: { id: true, name: true, status: true, providerCampaignId: true },
+  });
+  if (!campaign) throw new Error("Campaign not found");
+
+  if (["running", "active", "queued"].includes(campaign.status) && campaign.providerCampaignId) {
+    throw new JobixError(
+      `This campaign has a live run (batch ${campaign.providerCampaignId}). Stop it first — deleting it now would leave its accounts armed on the voice platform with nothing here able to disarm them.`,
+      "rejected",
+    );
+  }
+
+  const released = await db.debtor.count({ where: { organizationId, campaignId } });
+  await db.debtor.updateMany({
+    where: { organizationId, campaignId },
+    data: { campaignId: null },
+  });
+  await db.campaignContact.deleteMany({ where: { organizationId, campaignId } });
+  await db.redialBatch.deleteMany({ where: { organizationId, campaignId } });
+  await db.campaign.delete({ where: { id: campaign.id } });
+
+  await audit({
+    organizationId,
+    actorType: "user",
+    actorId: userId,
+    action: "campaign.deleted",
+    entityType: "campaign",
+    entityId: campaign.id,
+    detail: { name: campaign.name, releasedAccounts: released, batchCode: campaign.providerCampaignId },
+  });
+
+  return { deleted: true, releasedAccounts: released, name: campaign.name };
+}

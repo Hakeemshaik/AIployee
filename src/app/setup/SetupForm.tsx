@@ -29,20 +29,21 @@ export function SetupForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mode,
+          adminEmail: form.get("adminEmail") || undefined,
+          adminPassword: form.get("adminPassword") ?? "",
           ...(mode === "clean"
             ? {
                 orgName: form.get("orgName") || undefined,
                 adminName: form.get("adminName") || undefined,
-                adminEmail: form.get("adminEmail") || undefined,
               }
             : {}),
         }),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.message ?? body.error ?? "Setup failed");
+      if (!res.ok) throw new Error(body.message ?? "Setup could not be completed.");
       setResult(body);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Setup failed");
+      setError(err instanceof Error ? err.message : "Setup could not be completed.");
     } finally {
       setBusy(false);
     }
@@ -52,8 +53,8 @@ export function SetupForm() {
     const webhookUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/api/integrations/voice/call-completed`;
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-3 rounded-lg border border-[rgba(12,163,12,0.3)] bg-[rgba(12,163,12,0.08)] p-4">
-          <Check size={18} className="shrink-0 text-[#5fc46a]" />
+        <div className="flex items-center gap-3 rounded-lg border border-good/30 bg-good/8 p-4">
+          <Check size={18} className="shrink-0 text-good" />
           <p className="text-[0.875rem] text-ink">
             <span className="font-semibold">{result.orgName}</span> is set up
             {result.mode === "demo" ? " with the demo dataset loaded" : ""}.
@@ -62,10 +63,10 @@ export function SetupForm() {
 
         <div>
           <p className="mb-1.5 text-[0.71875rem] font-medium uppercase tracking-[0.07em] text-ink-3">
-            Your Jobix webhook key — shown only once, copy it now
+            Jobix webhook key — shown once, copy it now
           </p>
           <div className="flex items-center gap-2">
-            <code className="num flex-1 truncate rounded-lg border border-line bg-black/30 px-3 py-2.5 text-[0.78125rem] text-ink">
+            <code className="num flex-1 truncate rounded-lg border border-line bg-ink/[0.05] px-3 py-2.5 text-[0.78125rem] text-ink">
               {result.apiKey}
             </code>
             <button
@@ -87,7 +88,7 @@ export function SetupForm() {
           <p className="mb-1.5 text-[0.71875rem] font-medium uppercase tracking-[0.07em] text-ink-3">
             Configure Jobix to send completed calls to
           </p>
-          <code className="num block truncate rounded-lg border border-line bg-black/30 px-3 py-2.5 text-[0.71875rem] text-ink-2">
+          <code className="num block truncate rounded-lg border border-line bg-ink/[0.05] px-3 py-2.5 text-[0.71875rem] text-ink-2">
             POST {webhookUrl}
           </code>
           <p className="mt-1.5 text-[0.71875rem] text-ink-3">
@@ -111,8 +112,8 @@ export function SetupForm() {
           onClick={() => setMode("demo")}
           className={`rounded-xl border p-4 text-left transition-colors ${
             mode === "demo"
-              ? "border-[rgba(57,135,229,0.5)] bg-accent-soft"
-              : "border-line bg-white/[0.02] hover:bg-white/[0.04]"
+              ? "border-accent/50 bg-accent-soft"
+              : "border-line bg-ink/[0.025] hover:bg-ink/[0.04]"
           }`}
         >
           <p className="flex items-center gap-2 text-[0.875rem] font-semibold text-ink">
@@ -128,44 +129,67 @@ export function SetupForm() {
           onClick={() => setMode("clean")}
           className={`rounded-xl border p-4 text-left transition-colors ${
             mode === "clean"
-              ? "border-[rgba(57,135,229,0.5)] bg-accent-soft"
-              : "border-line bg-white/[0.02] hover:bg-white/[0.04]"
+              ? "border-accent/50 bg-accent-soft"
+              : "border-line bg-ink/[0.025] hover:bg-ink/[0.04]"
           }`}
         >
           <p className="flex items-center gap-2 text-[0.875rem] font-semibold text-ink">
             <Rocket size={15} className="text-accent" /> Start clean
           </p>
-          <p className="mt-1 text-[0.75rem] leading-relaxed text-ink-2">
-            Empty platform ready for your real book — import debtors via CSV and point Jobix at the
-            webhook.
-          </p>
+          <p className="mt-1 text-[0.75rem] text-ink-2">Empty, ready for your real book.</p>
         </button>
       </div>
 
       {mode === "clean" && (
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="orgName">Organization name</label>
-            <input id="orgName" name="orgName" className="field w-full" placeholder="Your company name" />
+            <input id="orgName" name="orgName" className="field w-full" />
           </div>
           <div>
             <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="adminName">Your name</label>
-            <input id="adminName" name="adminName" className="field w-full" placeholder="Hakeem Shaik" />
-          </div>
-          <div>
-            <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="adminEmail">Your email</label>
-            <input id="adminEmail" name="adminEmail" type="email" className="field w-full" placeholder="you@company.co.za" />
+            <input id="adminName" name="adminName" className="field w-full" />
           </div>
         </div>
       )}
 
-      {error && <p className="text-[0.78125rem] text-[#ec8181]">{error}</p>}
+      {/* Admin sign-in. Set here so the deployment is never left open. */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="adminEmail">
+            Your email
+          </label>
+          <input
+            id="adminEmail"
+            name="adminEmail"
+            type="email"
+            required
+            autoComplete="username"
+            className="field w-full"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-[0.71875rem] font-medium text-ink-2" htmlFor="adminPassword">
+            Password
+          </label>
+          <input
+            id="adminPassword"
+            name="adminPassword"
+            type="password"
+            required
+            minLength={12}
+            autoComplete="new-password"
+            className="field w-full"
+          />
+          <p className="mt-1 text-[0.6875rem] text-ink-3">At least 12 characters.</p>
+        </div>
+      </div>
+
+      {error && <p className="text-[0.78125rem] text-critical">{error}</p>}
       <button type="submit" disabled={busy} className="btn btn-primary">
-        {busy ? "Setting up…" : mode === "demo" ? "Set up with demo data" : "Set up clean"}
+        {busy ? "Setting up…" : mode === "demo" ? "Set up with demo data" : "Set up empty platform"}
       </button>
-      <p className="text-[0.6875rem] leading-relaxed text-ink-3">
-        This page only works once — after setup it locks itself and every setup request is refused.
-      </p>
+      <p className="text-[0.6875rem] text-ink-3">This page works once, then locks itself.</p>
     </form>
   );
 }

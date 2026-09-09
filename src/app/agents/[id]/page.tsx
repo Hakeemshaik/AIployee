@@ -5,7 +5,8 @@ import { getContext } from "@/lib/auth";
 import { label } from "@/lib/domain";
 import { formatDateTime, money, percent } from "@/lib/format";
 import { getAgent } from "@/services/agents";
-import { BackLink, Badge, GlassCard, Meta, PageHeader, StatCard } from "@/components/ui";
+import { Badge, Card, Meta, PageHeader, StatCard } from "@/components/ui";
+import { BackLink } from "@/components/BackLink";
 import { HBarChart } from "@/components/charts";
 
 export const dynamic = "force-dynamic";
@@ -37,14 +38,14 @@ export default async function AgentDetailPage({
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <StatCard label="Calls today" value={String(performance.callsToday)} />
         <StatCard label="Calls total" value={String(performance.callsTotal)} />
-        <StatCard label="Connection rate" value={percent(performance.connectionRate, 0)} />
+        <StatCard label="Connect rate" value={percent(performance.connectionRate, 0)} />
         <StatCard label="Promise rate" value={percent(performance.promiseRate, 0)} sub="promises per connected call" />
-        <StatCard label="Recovery value" value={money(performance.recoveryValue)} tone="good" sub="from this agent's promises" />
+        <StatCard label="Recovery value" value={money(performance.recoveryValue)} tone="good" sub="from promises" />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
         <div className="space-y-4 xl:col-span-2">
-          <GlassCard title="Call outcomes" subtitle="All analysed calls handled by this agent">
+          <Card title="Call outcomes" subtitle="All analysed calls">
             {Object.keys(outcomes).length === 0 ? (
               <p className="text-[0.8125rem] text-ink-3">No analysed calls yet.</p>
             ) : (
@@ -55,8 +56,8 @@ export default async function AgentDetailPage({
                   .map(([o, n]) => ({ label: label(o), value: n }))}
               />
             )}
-          </GlassCard>
-          <GlassCard title="Recent calls" pad={false}>
+          </Card>
+          <Card title="Recent calls" pad={false}>
             {recentCalls.length === 0 ? (
               <p className="p-6 text-center text-[0.8125rem] text-ink-3">No calls yet.</p>
             ) : (
@@ -89,36 +90,31 @@ export default async function AgentDetailPage({
                 </table>
               </div>
             )}
-          </GlassCard>
+          </Card>
         </div>
 
         <div className="space-y-4">
-          <GlassCard title="Voice configuration" subtitle="Managed on the voice platform">
+          <Card title="Voice configuration" subtitle="Managed on the voice platform">
             <dl>
               <Meta label="External agent ID"><span className="num text-[0.71875rem]">{agent.externalId ?? "—"}</span></Meta>
               <Meta label="Voice">{voice?.voice ?? "—"}</Meta>
               <Meta label="Language">{voice?.language ?? "—"}</Meta>
               <Meta label="Speaking rate">{voice?.speakingRate ?? "—"}</Meta>
             </dl>
-            <p className="mt-3 text-[0.6875rem] leading-relaxed text-ink-3">
-              Telephony, voices and dialling behaviour are configured on the external voice platform;
-              this platform only references them.
-            </p>
-          </GlassCard>
-          <GlassCard title="Prompt configuration">
-            <div className="flex items-start gap-3 rounded-lg border border-line bg-white/[0.03] p-3">
+          </Card>
+          <Card title="Prompt configuration">
+            <div
+              className="flex items-start gap-3 rounded-lg border border-line bg-ink/[0.03] p-3"
+              title="System prompts are never stored or displayed in this dashboard — only a reference to the prompt version on the voice platform."
+            >
               <Lock size={15} className="mt-0.5 shrink-0 text-ink-3" />
               <div>
                 <p className="text-[0.78125rem] font-medium text-ink">Prompt stored on the voice platform</p>
                 <p className="num mt-0.5 break-all text-[0.6875rem] text-ink-3">{agent.promptRef ?? "Not linked"}</p>
-                <p className="mt-2 text-[0.6875rem] leading-relaxed text-ink-3">
-                  System prompts are never stored or displayed in this dashboard — only a reference to
-                  the prompt version on the voice platform.
-                </p>
               </div>
             </div>
-          </GlassCard>
-          <GlassCard title="Campaign assignments">
+          </Card>
+          <Card title="Campaign assignments">
             {agent.campaigns.length === 0 ? (
               <p className="text-[0.8125rem] text-ink-3">Not assigned to any campaign.</p>
             ) : (
@@ -133,7 +129,7 @@ export default async function AgentDetailPage({
                 ))}
               </ul>
             )}
-          </GlassCard>
+          </Card>
         </div>
       </div>
     </div>

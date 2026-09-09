@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { verifySignature } from "@/services/integrations/jobix-webhook";
-import { mapOutcome, mapStatus } from "@/services/voice/jobix/mapping";
+import { mapOutcome, mapStatus } from "@/services/integrations/outcome-mapping";
 
 // ---------------------------------------------------------------------------
 // Redial selection is the platform's most important guarantee: a redial batch

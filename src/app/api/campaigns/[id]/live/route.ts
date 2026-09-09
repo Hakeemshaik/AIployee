@@ -1,4 +1,4 @@
-import { getContext } from "@/lib/auth";
+import { apiContext } from "@/lib/auth";
 import { getCampaignLiveState } from "@/services/campaign-live";
 
 // GET /api/campaigns/:id/live
@@ -8,7 +8,7 @@ import { getCampaignLiveState } from "@/services/campaign-live";
 // does a full reload. Falls back gracefully: any client can also GET
 // ?snapshot=1 for a single JSON payload.
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const ctx = await getContext();
+  const ctx = await apiContext();
   const { id } = await params;
   const url = new URL(request.url);
 

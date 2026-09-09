@@ -25,6 +25,7 @@ const DAY_LABELS: Record<string, string> = {
   mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun",
 };
 
+// A hint only where the label does not already say it.
 function Toggle({
   checked,
   onChange,
@@ -34,19 +35,21 @@ function Toggle({
   checked: boolean;
   onChange: (value: boolean) => void;
   label: string;
-  hint: string;
+  hint?: string;
 }) {
   return (
-    <label className="flex cursor-pointer items-start justify-between gap-4 rounded-lg border border-line-2 bg-white/[0.02] p-3">
+    <label className="flex cursor-pointer items-start justify-between gap-4 rounded-lg border border-line-2 bg-ink/[0.025] p-3">
       <span>
         <span className="block text-[0.8125rem] font-medium text-ink">{text}</span>
-        <span className="mt-0.5 block text-[0.6875rem] leading-relaxed text-ink-3">{hint}</span>
+        {hint && (
+          <span className="mt-0.5 block text-[0.6875rem] leading-relaxed text-ink-3">{hint}</span>
+        )}
       </span>
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="mt-1 h-4 w-4 accent-[#3987e5]"
+        className="mt-1 h-4 w-4 accent-[#16b3a2]"
       />
     </label>
   );
@@ -112,8 +115,8 @@ export function ComplianceForm({ initial }: { initial: Compliance }) {
                 onClick={() => toggleDay(d)}
                 className={`rounded-md border px-2 py-1 text-[0.6875rem] transition-colors ${
                   days.includes(d)
-                    ? "border-[rgba(57,135,229,0.4)] bg-accent-soft text-ink"
-                    : "border-line bg-white/[0.03] text-ink-3 hover:text-ink-2"
+                    ? "border-accent/40 bg-accent-soft text-ink"
+                    : "border-line bg-ink/[0.03] text-ink-3 hover:text-ink-2"
                 }`}
               >
                 {DAY_LABELS[d]}
@@ -145,25 +148,23 @@ export function ComplianceForm({ initial }: { initial: Compliance }) {
       </div>
 
       <div className="grid gap-2.5 sm:grid-cols-2">
-        <Toggle checked={form.recordingConsentRequired} onChange={(v) => set("recordingConsentRequired", v)} label="Recording consent required" hint="The agent must disclose recording at the start of every call." />
-        <Toggle checked={form.honourOptOut} onChange={(v) => set("honourOptOut", v)} label="Honour opt-outs" hint="A debtor who opts out is suppressed from all AI dialling." />
-        <Toggle checked={form.escalateOnDispute} onChange={(v) => set("escalateOnDispute", v)} label="Escalate disputes" hint="Disputed accounts route straight to a human collector." />
-        <Toggle checked={form.freezeContactOnDispute} onChange={(v) => set("freezeContactOnDispute", v)} label="Freeze contact on dispute" hint="No further AI contact while a dispute is open." />
-        <Toggle checked={form.escalateOnHardship} onChange={(v) => set("escalateOnHardship", v)} label="Escalate financial hardship" hint="Hardship signals route to an affordability review." />
-        <Toggle checked={form.escalateOnVulnerable} onChange={(v) => set("escalateOnVulnerable", v)} label="Escalate vulnerable customers" hint="Vulnerability signals always require a human." />
+        <Toggle checked={form.recordingConsentRequired} onChange={(v) => set("recordingConsentRequired", v)} label="Recording consent required" />
+        <Toggle checked={form.honourOptOut} onChange={(v) => set("honourOptOut", v)} label="Honour opt-outs" />
+        <Toggle checked={form.escalateOnDispute} onChange={(v) => set("escalateOnDispute", v)} label="Escalate disputes" />
+        <Toggle checked={form.freezeContactOnDispute} onChange={(v) => set("freezeContactOnDispute", v)} label="Freeze contact on dispute" />
+        <Toggle checked={form.escalateOnHardship} onChange={(v) => set("escalateOnHardship", v)} label="Escalate financial hardship" hint="Routes to an affordability review." />
+        <Toggle checked={form.escalateOnVulnerable} onChange={(v) => set("escalateOnVulnerable", v)} label="Escalate vulnerable customers" />
       </div>
 
       <div className="flex items-center gap-3">
         <button onClick={save} disabled={busy} className="btn btn-primary">
           {busy ? "Saving…" : "Save guardrails"}
         </button>
-        {saved && <span className="text-[0.75rem] text-[#5fc46a]">Saved.</span>}
-        {error && <span className="text-[0.75rem] text-[#ec8181]">Save failed — try again.</span>}
+        {saved && <span className="text-[0.75rem] text-good">Changes saved</span>}
+        {error && <span className="text-[0.75rem] text-critical">Changes could not be saved.</span>}
       </div>
       <p className="text-[0.6875rem] leading-relaxed text-ink-3">
-        These guardrails are configuration, not legal advice — set them to match your organization&apos;s
-        regulatory obligations and mandates. They are enforced against campaigns and passed to the
-        voice platform as dialling constraints.
+        Configuration, not legal advice — match your organization&apos;s obligations and mandates.
       </p>
     </div>
   );

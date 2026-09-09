@@ -6,7 +6,11 @@ import { label } from "@/lib/domain";
 import { formatDate, formatDateTime, money, relativeDays } from "@/lib/format";
 import { getDebtorProfile, listCampaignOptions } from "@/services/debtors";
 import { promiseDisplayStatus } from "@/services/promises";
-import { BackLink, Badge, GlassCard, Meta, PageHeader } from "@/components/ui";
+import { Badge, Card, Meta, PageHeader } from "@/components/ui";
+import { BackLink } from "@/components/BackLink";
+import { OutcomeCatchUp } from "@/components/OutcomeCatchUp";
+import { CallResult } from "@/components/CallResult";
+import { listDialAttempts } from "@/services/dial-attempts";
 import { DebtorActions } from "./DebtorActions";
 
 export const dynamic = "force-dynamic";
@@ -27,9 +31,10 @@ export default async function DebtorProfilePage({
 }) {
   const { id } = await params;
   const ctx = await getContext();
-  const [profile, campaigns] = await Promise.all([
+  const [profile, campaigns, dials] = await Promise.all([
     getDebtorProfile(ctx.organizationId, id),
     listCampaignOptions(ctx.organizationId),
+    listDialAttempts(ctx.organizationId, { debtorId: id, limit: 5 }),
   ]);
   if (!profile) notFound();
   const { debtor, stats, timeline } = profile;
@@ -39,6 +44,7 @@ export default async function DebtorProfilePage({
   return (
     <div className="page-in">
       <BackLink href="/debtors" label="All debtors" />
+      <OutcomeCatchUp />
       <PageHeader
         title={`${debtor.firstName} ${debtor.lastName}`}
         description={`Account ${debtor.accountNumber}${account ? ` · ${account.creditorName}` : ""}`}
@@ -55,13 +61,15 @@ export default async function DebtorProfilePage({
               }}
               campaigns={campaigns}
               currentCampaignId={debtor.campaignId}
+              outstanding={stats.outstanding}
+              hasOpenPromise={stats.openPromise !== null}
             />
           </div>
         }
       />
 
       <div className="mb-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <GlassCard title="Identity">
+        <Card title="Identity">
           <dl>
             <Meta label="Full name">{debtor.firstName} {debtor.lastName}</Meta>
             <Meta label="Account number"><span className="num">{debtor.accountNumber}</span></Meta>
@@ -69,17 +77,17 @@ export default async function DebtorProfilePage({
             <Meta label="Email">{debtor.email ?? "—"}</Meta>
             <Meta label="Location">{debtor.city ? `${debtor.city}, ${debtor.province}` : "—"}</Meta>
           </dl>
-        </GlassCard>
-        <GlassCard title="Debt">
+        </Card>
+        <Card title="Debt">
           <dl>
             <Meta label="Original balance"><span className="num">{money(stats.originalBalance)}</span></Meta>
             <Meta label="Current balance"><span className="num font-semibold">{money(stats.outstanding)}</span></Meta>
-            <Meta label="Amount paid"><span className="num text-[#5fc46a]">{money(stats.amountPaid)}</span></Meta>
+            <Meta label="Amount paid"><span className="num text-good">{money(stats.amountPaid)}</span></Meta>
             <Meta label="Days overdue"><span className="num">{stats.daysOverdue}</span></Meta>
             <Meta label="Original due date">{formatDate(stats.dueDate)}</Meta>
           </dl>
-        </GlassCard>
-        <GlassCard title="Collection status">
+        </Card>
+        <Card title="Collection status">
           <dl>
             <Meta label="Contact attempts"><span className="num">{stats.contactAttempts}</span></Meta>
             <Meta label="Successful contacts"><span className="num">{stats.successfulContacts}</span></Meta>
@@ -97,8 +105,8 @@ export default async function DebtorProfilePage({
               )}
             </Meta>
           </dl>
-        </GlassCard>
-        <GlassCard title="Promise to pay">
+        </Card>
+        <Card title="Promise to pay">
           {openPromise ? (
             <dl>
               <Meta label="Promised amount"><span className="num font-semibold">{money(openPromise.amount)}</span></Meta>
@@ -106,17 +114,31 @@ export default async function DebtorProfilePage({
                 {formatDate(openPromise.promisedDate)}{" "}
                 <span className="text-ink-3">({relativeDays(openPromise.promisedDate)})</span>
               </Meta>
+              <Meta label="Paying by">
+                {openPromise.method ? label(openPromise.method) : "Not said"}
+                {openPromise.bank && <span className="text-ink-3"> · {openPromise.bank}</span>}
+              </Meta>
               <Meta label="Payment plan">
-                {openPromise.paymentPlan
-                  ? (() => {
-                      const plan = JSON.parse(openPromise.paymentPlan!) as {
-                        installments: number;
-                        amount_per_installment: number;
-                        frequency: string;
-                      };
-                      return `${plan.installments} × ${money(plan.amount_per_installment)} ${plan.frequency}`;
-                    })()
-                  : "Single payment"}
+                {(() => {
+                  if (!openPromise.paymentPlan) return "Single payment";
+                  // Two shapes live in this column: an instalment plan from a
+                  // call, and a note typed by whoever captured the promise.
+                  // Reading one as the other used to throw and blank the card.
+                  try {
+                    const plan = JSON.parse(openPromise.paymentPlan) as Partial<{
+                      installments: number;
+                      amount_per_installment: number;
+                      frequency: string;
+                      note: string;
+                    }>;
+                    if (plan.installments && plan.amount_per_installment) {
+                      return `${plan.installments} × ${money(plan.amount_per_installment)} ${plan.frequency ?? ""}`.trim();
+                    }
+                    return plan.note ?? "Single payment";
+                  } catch {
+                    return "Single payment";
+                  }
+                })()}
               </Meta>
               <Meta label="Status">
                 <Badge
@@ -130,10 +152,20 @@ export default async function DebtorProfilePage({
               No open promise. {debtor.promises.length > 0 ? `${debtor.promises.length} historical promise${debtor.promises.length === 1 ? "" : "s"} in the timeline.` : ""}
             </p>
           )}
-        </GlassCard>
+        </Card>
       </div>
 
-      <GlassCard title="Timeline" subtitle="Every interaction on this account, most recent first">
+      {dials.length > 0 && (
+        <Card className="mb-4" title="Dials from here">
+          <div className="space-y-2.5">
+            {dials.map((dial) => (
+              <CallResult key={dial.id} attemptId={dial.id} initial={dial} />
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <Card title="Timeline" subtitle="Most recent first">
         {timeline.length === 0 ? (
           <p className="py-6 text-center text-[0.8125rem] text-ink-3">No interactions recorded yet.</p>
         ) : (
@@ -173,7 +205,7 @@ export default async function DebtorProfilePage({
             })}
           </ol>
         )}
-      </GlassCard>
+      </Card>
     </div>
   );
 }

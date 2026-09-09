@@ -5,7 +5,8 @@ import { getContext } from "@/lib/auth";
 import { label } from "@/lib/domain";
 import { duration, formatDate, formatDateTime, formatTime, money } from "@/lib/format";
 import { getCall } from "@/services/calls";
-import { BackLink, Badge, GlassCard, Meta, PageHeader } from "@/components/ui";
+import { Badge, Card, Meta, PageHeader } from "@/components/ui";
+import { BackLink } from "@/components/BackLink";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Call" };
@@ -56,7 +57,7 @@ export default async function CallDetailPage({
       <div className="grid gap-4 xl:grid-cols-3">
         <div className="space-y-4 xl:col-span-2">
           {/* AI summary + extraction */}
-          <GlassCard
+          <Card
             title="AI analysis"
             subtitle={analysis ? `Analysed by ${analysis.provider === "claude" ? "Claude" : "the built-in engine"}` : undefined}
           >
@@ -93,7 +94,7 @@ export default async function CallDetailPage({
                   <summary className="cursor-pointer text-[0.71875rem] text-ink-3 hover:text-ink-2">
                     Structured extraction (JSON)
                   </summary>
-                  <pre className="scroll-x mt-2 rounded-lg border border-line bg-black/30 p-3 text-[0.6875rem] leading-relaxed text-ink-2">
+                  <pre className="scroll-x mt-2 rounded-lg border border-line bg-ink/[0.05] p-3 text-[0.6875rem] leading-relaxed text-ink-2">
                     {JSON.stringify(extraction, null, 2)}
                   </pre>
                 </details>
@@ -101,10 +102,10 @@ export default async function CallDetailPage({
             ) : (
               <p className="text-[0.8125rem] text-ink-3">This call has not been analysed.</p>
             )}
-          </GlassCard>
+          </Card>
 
           {/* Transcript */}
-          <GlassCard title="Transcript">
+          <Card title="Transcript">
             {call.transcript ? (
               <div className="space-y-3">
                 {call.transcript.split("\n").filter(Boolean).map((line, i) => {
@@ -117,8 +118,8 @@ export default async function CallDetailPage({
                       <div
                         className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-[0.8125rem] leading-relaxed ${
                           isAgent
-                            ? "rounded-tl-sm border border-line bg-white/[0.04] text-ink-2"
-                            : "rounded-tr-sm border border-[rgba(57,135,229,0.25)] bg-[rgba(57,135,229,0.1)] text-ink"
+                            ? "rounded-tl-sm border border-line bg-ink/[0.04] text-ink-2"
+                            : "rounded-tr-sm border border-accent/25 bg-accent/10 text-ink"
                         }`}
                       >
                         {speaker && (
@@ -137,11 +138,11 @@ export default async function CallDetailPage({
                 No transcript for this call{call.status !== "completed" ? ` — the call was not answered (${label(call.status).toLowerCase()}).` : "."}
               </p>
             )}
-          </GlassCard>
+          </Card>
         </div>
 
         <div className="space-y-4">
-          <GlassCard title="Call metadata">
+          <Card title="Call metadata">
             <dl>
               <Meta label="Debtor">
                 <Link href={`/debtors/${call.debtor.id}`} className="text-accent hover:underline">
@@ -165,11 +166,11 @@ export default async function CallDetailPage({
               <Meta label="Duration"><span className="num">{duration(call.durationSeconds)}</span></Meta>
               <Meta label="External call ID"><span className="num text-[0.71875rem]">{call.externalCallId ?? "—"}</span></Meta>
             </dl>
-          </GlassCard>
+          </Card>
 
-          <GlassCard title="Recording">
-            <div className="flex items-center gap-3 rounded-lg border border-line bg-white/[0.03] p-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-white/[0.04]">
+          <Card title="Recording">
+            <div className="flex items-center gap-3 rounded-lg border border-line bg-ink/[0.03] p-3">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-ink/[0.04]">
                 <AudioLines size={16} className="text-ink-2" />
               </span>
               <div className="min-w-0 flex-1">
@@ -177,16 +178,13 @@ export default async function CallDetailPage({
                   {call.recordingUrl ? "Recording available on the voice platform" : "No recording attached"}
                 </p>
                 <p className="truncate text-[0.6875rem] text-ink-3">
-                  {call.recordingUrl ?? "The voice platform can attach a recordingUrl via the integration API."}
+                  {call.recordingUrl ?? "No recording attached"}
                 </p>
               </div>
             </div>
-            <p className="mt-2 text-[0.6875rem] leading-relaxed text-ink-3">
-              Playback stays on the voice platform in this MVP — recordings are referenced, never copied.
-            </p>
-          </GlassCard>
+          </Card>
 
-          <GlassCard title="Other calls with this debtor">
+          <Card title="Other calls with this debtor">
             {related.length === 0 ? (
               <p className="text-[0.8125rem] text-ink-3">This is the only call on record.</p>
             ) : (
@@ -204,7 +202,7 @@ export default async function CallDetailPage({
                 ))}
               </ul>
             )}
-          </GlassCard>
+          </Card>
         </div>
       </div>
     </div>

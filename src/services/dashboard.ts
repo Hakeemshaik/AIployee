@@ -1,6 +1,8 @@
 import { db } from "@/lib/db";
 import { startOfDay } from "@/lib/format";
 import { getLatestInsight } from "@/services/insights";
+import { claimCalls } from "@/services/analytics/live";
+import { isReached } from "@/services/analytics/classify";
 
 // ---------------------------------------------------------------------------
 // Dashboard service — top metrics, 30-day chart series, and the latest
@@ -10,7 +12,18 @@ import { getLatestInsight } from "@/services/insights";
 export async function getDashboardData(organizationId: string) {
   const since = new Date(Date.now() - 30 * 86_400_000);
 
-  const [accounts, payments, calls, promises, activeCampaigns, campaignsWithMetrics, analyses, insight] =
+  const [
+    accounts,
+    payments,
+    calls,
+    voiceCalls,
+    debtorIdentities,
+    promises,
+    activeCampaigns,
+    campaignsWithMetrics,
+    analyses,
+    insight,
+  ] =
     await Promise.all([
       db.debtAccount.findMany({
         where: { organizationId },
@@ -23,6 +36,24 @@ export async function getDashboardData(organizationId: string) {
       db.call.findMany({
         where: { organizationId, startedAt: { gte: since } },
         select: { status: true, startedAt: true, debtorId: true },
+      }),
+      // Calls imported from the voice platform. These are where the real
+      // volume lives: ingestion writes JobixConversation, never Call, so a
+      // dashboard reading only Call reports nobody was contacted however many
+      // thousand calls have been imported.
+      db.jobixConversation.findMany({
+        where: { organizationId, startedAt: { gte: since } },
+        select: {
+          startedAt: true,
+          phone: true,
+          contactUuid: true,
+          durationSeconds: true,
+          transcript: { select: { userTurns: true, userWords: true, userText: true } },
+        },
+      }),
+      db.debtor.findMany({
+        where: { organizationId },
+        select: { id: true, phone: true, providerContactUuid: true },
       }),
       db.promiseToPay.findMany({
         where: { organizationId },
@@ -50,12 +81,27 @@ export async function getDashboardData(organizationId: string) {
   const totalRecovered = payments.reduce((s, p) => s + p.amount, 0);
   const openPromises = promises.filter((p) => p.status === "pending");
 
+  // --- who was contacted, from BOTH sources and on one definition ---------
+  //
+  // Reach is read from the transcript, never from a status flag: the provider's
+  // own "completed" is not evidence a person spoke. Platform-native calls have
+  // no transcript, so their status is all there is for those.
+  const voiceByDebtor = claimCalls(debtorIdentities, voiceCalls);
+  const contactedIds = new Set<string>(calls.map((c) => c.debtorId));
+  const reachedIds = new Set<string>(
+    calls.filter((c) => c.status === "completed").map((c) => c.debtorId),
+  );
+  for (const [debtorId, list] of voiceByDebtor) {
+    contactedIds.add(debtorId);
+    if (list.some((call) => call.transcript && isReached(call.transcript))) reachedIds.add(debtorId);
+  }
+
   const metrics = {
     totalOutstanding,
     totalRecovered,
     recoveryRate: totalOutstanding + totalRecovered > 0 ? totalRecovered / (totalOutstanding + totalRecovered) : 0,
-    debtorsContacted: new Set(calls.map((c) => c.debtorId)).size,
-    successfulContacts: new Set(calls.filter((c) => c.status === "completed").map((c) => c.debtorId)).size,
+    debtorsContacted: contactedIds.size,
+    successfulContacts: reachedIds.size,
     promisesOpen: openPromises.length,
     promiseValue: openPromises.reduce((s, p) => s + p.amount, 0),
     paymentsReceived: payments.filter((p) => p.paidAt >= since).length,
@@ -84,10 +130,13 @@ export async function getDashboardData(organizationId: string) {
   const contactSeries = days.map((day) => {
     const next = new Date(day.getTime() + 86_400_000);
     const dayCalls = calls.filter((c) => c.startedAt >= day && c.startedAt < next);
-    const connected = dayCalls.filter((c) => c.status === "completed").length;
+    const dayVoice = voiceCalls.filter((c) => c.startedAt >= day && c.startedAt < next);
+    const connected =
+      dayCalls.filter((c) => c.status === "completed").length +
+      dayVoice.filter((c) => c.transcript && isReached(c.transcript)).length;
     return {
       date: day.toISOString().slice(0, 10),
-      attempts: dayCalls.length,
+      attempts: dayCalls.length + dayVoice.length,
       connected,
     };
   });
@@ -227,4 +276,114 @@ export async function getWorkQueue(organizationId: string) {
     .slice(0, 5);
 
   return { duePromises, escalations, callbacks: pendingCallbacks };
+}
+
+
+// ---------------------------------------------------------------------------
+// What just happened.
+//
+// The dashboard answered "how is it going" and "what needs me", but not "what
+// happened while I was away" — the first question anybody opening the app in
+// the morning actually has. This is that: the most recent calls, promises and
+// payments, one stream, newest first.
+// ---------------------------------------------------------------------------
+
+export type ActivityEntry = {
+  key: string;
+  kind: "call" | "promise" | "payment";
+  at: Date;
+  who: string;
+  /** One line saying what happened, readable without the icon. */
+  what: string;
+  amount: number | null;
+  href: string;
+  /** Feeds the Badge component; null renders nothing. */
+  badge: { value: string; label: string } | null;
+};
+
+export async function getLatestActivity(organizationId: string, limit = 8): Promise<ActivityEntry[]> {
+  // Each source over-fetches to the full limit so a burst of one kind cannot
+  // hide the others entirely, then the merged stream is cut to size.
+  const [calls, promises, payments] = await Promise.all([
+    db.call.findMany({
+      where: { organizationId },
+      orderBy: { startedAt: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        startedAt: true,
+        status: true,
+        outcome: true,
+        debtor: { select: { id: true, firstName: true, lastName: true } },
+      },
+    }),
+    db.promiseToPay.findMany({
+      where: { organizationId },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        createdAt: true,
+        amount: true,
+        promisedDate: true,
+        debtor: { select: { id: true, firstName: true, lastName: true } },
+      },
+    }),
+    db.payment.findMany({
+      where: { organizationId, status: "completed" },
+      orderBy: { paidAt: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        paidAt: true,
+        amount: true,
+        method: true,
+        debtor: { select: { id: true, firstName: true, lastName: true } },
+      },
+    }),
+  ]);
+
+  const name = (d: { firstName: string; lastName: string }) => `${d.firstName} ${d.lastName}`;
+
+  const entries: ActivityEntry[] = [
+    ...calls.map((c): ActivityEntry => ({
+      key: `call-${c.id}`,
+      kind: "call",
+      at: c.startedAt,
+      who: name(c.debtor),
+      what:
+        c.status === "completed"
+          ? c.outcome
+            ? "answered a call"
+            : "answered — being analysed"
+          : c.status === "voicemail"
+            ? "went to voicemail"
+            : "did not answer",
+      amount: null,
+      href: `/calls/${c.id}`,
+      badge: c.outcome ? { value: c.outcome, label: c.outcome } : null,
+    })),
+    ...promises.map((p): ActivityEntry => ({
+      key: `promise-${p.id}`,
+      kind: "promise",
+      at: p.createdAt,
+      who: name(p.debtor),
+      what: "promised to pay",
+      amount: p.amount,
+      href: `/debtors/${p.debtor.id}`,
+      badge: null,
+    })),
+    ...payments.map((p): ActivityEntry => ({
+      key: `payment-${p.id}`,
+      kind: "payment",
+      at: p.paidAt,
+      who: name(p.debtor),
+      what: "paid",
+      amount: p.amount,
+      href: `/debtors/${p.debtor.id}`,
+      badge: null,
+    })),
+  ];
+
+  return entries.sort((a, b) => b.at.getTime() - a.at.getTime()).slice(0, limit);
 }

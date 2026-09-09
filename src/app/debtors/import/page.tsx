@@ -1,7 +1,9 @@
 import { getContext } from "@/lib/auth";
 import { listCampaignOptions } from "@/services/debtors";
-import { BackLink, GlassCard, PageHeader } from "@/components/ui";
+import { Card, PageHeader } from "@/components/ui";
+import { BackLink } from "@/components/BackLink";
 import { ImportForm } from "./ImportForm";
+import { BookImporter } from "@/components/BookImporter";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Import debtors" };
@@ -15,11 +17,16 @@ export default async function ImportDebtorsPage() {
       <BackLink href="/debtors" label="All debtors" />
       <PageHeader
         title="Import debtors"
-        description="Upload a CSV of accounts. Rows are validated individually — valid rows import, problems are reported per row."
+        description="Upload the client's book in any format"
       />
-      <GlassCard>
-        <ImportForm campaigns={campaigns} />
-      </GlassCard>
+      <div className="space-y-4">
+        <Card title="Upload a file" subtitle="Jobix workbook, platform template, or any client spreadsheet">
+          <BookImporter campaigns={campaigns} />
+        </Card>
+        <Card title="Paste CSV">
+          <ImportForm campaigns={campaigns} />
+        </Card>
+      </div>
     </div>
   );
 }

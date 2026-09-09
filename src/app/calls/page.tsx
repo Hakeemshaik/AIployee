@@ -4,7 +4,11 @@ import { CALL_OUTCOMES, CALL_STATUSES, label } from "@/lib/domain";
 import { duration, formatDateTime, money } from "@/lib/format";
 import { listCalls } from "@/services/calls";
 import { listCampaignOptions } from "@/services/debtors";
-import { Badge, EmptyState, GlassCard, PageHeader } from "@/components/ui";
+import { Badge, EmptyState, Card, PageHeader } from "@/components/ui";
+import { CollectionsTabs } from "@/components/shell/CollectionsTabs";
+import { OutcomeCatchUp } from "@/components/OutcomeCatchUp";
+import { Pager } from "@/components/Pager";
+import { pageParam, paginate } from "@/lib/paginate";
 import { ParamSelect } from "@/components/actions/ParamSelect";
 
 export const dynamic = "force-dynamic";
@@ -25,14 +29,19 @@ export default async function CallsPage({
     }),
     listCampaignOptions(ctx.organizationId),
   ]);
+  // Fifty at a time. The stats above count everything; these are the rows
+  // on this page.
+  const callsPage = paginate(calls, pageParam(params.page));
 
   return (
     <div className="page-in">
+      <CollectionsTabs />
+      <OutcomeCatchUp />
       <PageHeader
         title="Calls"
-        description={`${calls.length} most recent call attempts across all campaigns.`}
+        description={`${callsPage.total} recent call attempt${callsPage.total === 1 ? "" : "s"} across all campaigns.`}
       />
-      <div className="glass-subtle mb-4 flex flex-wrap items-center gap-2 p-3">
+      <div className="card-2 mb-4 flex flex-wrap items-center gap-2 p-3">
         <ParamSelect
           param="status"
           placeholder="All call statuses"
@@ -49,7 +58,7 @@ export default async function CallsPage({
           options={campaigns.map((c) => ({ value: c.id, label: c.name }))}
         />
       </div>
-      <GlassCard pad={false}>
+      <Card pad={false}>
         {calls.length === 0 ? (
           <div className="p-5">
             <EmptyState
@@ -74,7 +83,7 @@ export default async function CallsPage({
                 </tr>
               </thead>
               <tbody>
-                {calls.map((c) => (
+                {callsPage.rows.map((c) => (
                   <tr key={c.id}>
                     <td>
                       <Link href={`/calls/${c.id}`} className="font-medium text-ink hover:text-accent">
@@ -101,7 +110,15 @@ export default async function CallsPage({
             </table>
           </div>
         )}
-      </GlassCard>
+      </Card>
+      <Pager
+        page={callsPage.page}
+        pageCount={callsPage.pageCount}
+        total={callsPage.total}
+        from={callsPage.from}
+        to={callsPage.to}
+        noun="calls"
+      />
     </div>
   );
 }

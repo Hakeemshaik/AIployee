@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { CheckCircle2, FileUp, Upload } from "lucide-react";
+import { Select } from "@/components/Select";
 
 const TEMPLATE = `firstName,lastName,accountNumber,phone,email,city,province,creditorName,originalBalance,currentBalance,dueDate
-Nomsa,Khanyile,EDG-5001,0821234567,nomsa.khanyile@gmail.com,Durban,KwaZulu-Natal,Edgars Retail Credit,4850,4850,2026-06-15
-Dawie,Kruger,EDG-5002,+27835551234,,Pretoria,Gauteng,Edgars Retail Credit,12400,11150,2026-05-30`;
+Jane,Doe,ACC-1001,+27821234567,jane.doe@example.com,Johannesburg,Gauteng,Example Retail Credit,4850,4850,2026-06-15
+John,Smith,ACC-1002,+27835551234,,Pretoria,Gauteng,Example Retail Credit,12400,11150,2026-05-30`;
 
 type ImportResult = { created: number; skipped: { row: number; reason: string }[] };
 
@@ -41,11 +42,11 @@ export function ImportForm({ campaigns }: { campaigns: { id: string; name: strin
         body: JSON.stringify({ csv, ...(campaignId ? { campaignId } : {}) }),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.message ?? body.error ?? "Import failed");
+      if (!res.ok) throw new Error(body.message ?? "The import could not be completed.");
       setResult(body);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Import failed");
+      setError(err instanceof Error ? err.message : "The import could not be completed.");
     } finally {
       setBusy(false);
     }
@@ -56,8 +57,8 @@ export function ImportForm({ campaigns }: { campaigns: { id: string; name: strin
   if (result) {
     return (
       <div>
-        <div className="mb-4 flex items-center gap-3 rounded-lg border border-[rgba(12,163,12,0.3)] bg-[rgba(12,163,12,0.08)] p-4">
-          <CheckCircle2 size={18} className="shrink-0 text-[#5fc46a]" />
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-good/30 bg-good/8 p-4">
+          <CheckCircle2 size={18} className="shrink-0 text-good" />
           <p className="text-[0.875rem] text-ink">
             <span className="font-semibold">{result.created} debtor{result.created === 1 ? "" : "s"} imported</span>
             {campaignId ? " and assigned to the campaign" : ""}.
@@ -94,7 +95,7 @@ export function ImportForm({ campaigns }: { campaigns: { id: string; name: strin
         <p className="mb-2 text-[0.71875rem] font-medium text-ink-2">
           1 · Prepare a CSV with these columns
         </p>
-        <pre className="scroll-x rounded-lg border border-line bg-black/30 p-3 text-[0.65625rem] leading-relaxed text-ink-2">{TEMPLATE}</pre>
+        <pre className="scroll-x rounded-lg border border-line bg-ink/[0.05] p-3 text-[0.65625rem] leading-relaxed text-ink-2">{TEMPLATE}</pre>
         <div className="mt-2 flex items-center gap-3">
           <button
             className="btn btn-ghost text-[0.71875rem]"
@@ -120,7 +121,7 @@ export function ImportForm({ campaigns }: { campaigns: { id: string; name: strin
           <button
             type="button"
             onClick={() => fileInput.current?.click()}
-            className="flex h-full min-h-[110px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-white/[0.02] p-4 text-ink-3 transition-colors hover:border-[rgba(57,135,229,0.5)] hover:text-ink-2"
+            className="flex h-full min-h-[110px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-ink/[0.025] p-4 text-ink-3 transition-colors hover:border-accent/50 hover:text-ink-2"
           >
             <FileUp size={18} />
             <span className="text-[0.75rem]">{fileName ?? "Choose a .csv file"}</span>
@@ -144,15 +145,19 @@ export function ImportForm({ campaigns }: { campaigns: { id: string; name: strin
 
       <div>
         <p className="mb-2 text-[0.71875rem] font-medium text-ink-2">3 · Assign to a campaign (optional)</p>
-        <select className="field min-w-[260px]" value={campaignId} onChange={(e) => setCampaignId(e.target.value)}>
-          <option value="">Leave unassigned</option>
-          {campaigns.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
+        <Select
+          className="min-w-[260px]"
+          value={campaignId}
+          onChange={setCampaignId}
+          aria-label="Campaign"
+          options={[
+            { value: "", label: "Leave unassigned" },
+            ...campaigns.map((c) => ({ value: c.id, label: c.name })),
+          ]}
+        />
       </div>
 
-      {error && <p className="text-[0.78125rem] text-[#ec8181]">{error}</p>}
+      {error && <p className="text-[0.78125rem] text-critical">{error}</p>}
       <button onClick={submit} disabled={busy || !csv.trim()} className="btn btn-primary">
         <Upload size={14} />
         {busy ? "Importing…" : rowCount > 0 ? `Import ${rowCount} row${rowCount === 1 ? "" : "s"}` : "Import"}

@@ -9,10 +9,13 @@
  * Invoked by `npm run db:seed` locally and by the first-run /setup page on a
  * fresh deployment.
  */
-import { createHash } from "crypto";
+import { createHash, randomBytes } from "crypto";
+import { formatDate } from "@/lib/format";
 import { db } from "@/lib/db";
 import { mockProvider } from "@/services/ai/mock";
 import { buildCollectionSnapshot } from "@/services/insights";
+import { normalizePhone } from "@/services/debtors";
+import { denyList } from "@/services/jobix/calling";
 
 // --- deterministic RNG -------------------------------------------------------
 function mulberry32(seed: number) {
@@ -179,9 +182,20 @@ const SUMMARIES: Record<Outcome, (name: string, amt: string, date: string) => st
 export type DemoSeedResult = {
   counts: Record<string, number>;
   demoKey: string;
+  /** The one real number in the seed, when DEMO_TEST_PHONE was set. */
+  testLine: { name: string; phone: string; accountNumber: string } | null;
 };
 
 export async function seedDemoData(): Promise<DemoSeedResult> {
+  // This wipes every tenant table unconditionally, so it must never run on a
+  // deployment that already has an organization. Its legitimate callers (the
+  // CLI seed and first-run setup) satisfy this by definition.
+  const existing = await db.organization.count();
+  if (existing > 0 && process.env.ALLOW_DESTRUCTIVE_SEED !== "true") {
+    throw new Error(
+      "seedDemoData refused: an organization already exists. Set ALLOW_DESTRUCTIVE_SEED=true to override deliberately.",
+    );
+  }
   const now = new Date();
   const daysAgo = (d: number) => new Date(now.getTime() - d * 86_400_000);
   const daysAhead = (d: number) => new Date(now.getTime() + d * 86_400_000);
@@ -229,7 +243,10 @@ export async function seedDemoData(): Promise<DemoSeedResult> {
 
   await db.complianceSettings.create({ data: { organizationId: orgId } });
 
-  const demoKey = "aip_demo_k3y_meridian_voice_2026";
+  // Generated, never hardcoded. A literal here ships a working credential in
+  // the source tree, and every deployment seeded from it would accept webhook
+  // posts from anyone who read the repository.
+  const demoKey = `aip_demo_${randomBytes(18).toString("base64url")}`;
   await db.apiKey.create({
     data: {
       organizationId: orgId,
@@ -770,7 +787,7 @@ export async function seedDemoData(): Promise<DemoSeedResult> {
         type: spec.type,
         title: `${
           { executive_summary: "Executive Summary", weekly: "Weekly Collection Report", daily: "Daily Collection Report", ptp: "Promise-to-Pay Report", recovery: "Recovery Report" }[spec.type]
-        } — ${now.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}`,
+        } — ${formatDate(now)}`,
         periodStart: daysAgo(spec.periodDays),
         periodEnd: now,
         status: "ready",
@@ -779,6 +796,77 @@ export async function seedDemoData(): Promise<DemoSeedResult> {
         generatedAt: now,
       },
     });
+  }
+
+  // --- the test line ---------------------------------------------------------
+  //
+  // Every other number in this seed is invented, so a demo deployment can be
+  // dialled all day and nobody real is ever called. That also means there is
+  // nothing to test a live call against. Set DEMO_TEST_PHONE to your own
+  // number and one clean, dialable account is added carrying it.
+  //
+  // Clean on purpose: no escalation, no dispute, no open promise, not opted
+  // out. Every one of those is a reason the platform refuses to dial, and a
+  // test account that cannot be dialled teaches nothing.
+  const testPhoneRaw = process.env.DEMO_TEST_PHONE?.trim();
+  let testLine: { name: string; phone: string; accountNumber: string } | null = null;
+  if (testPhoneRaw) {
+    const phone = normalizePhone(testPhoneRaw);
+    if (!phone) {
+      console.warn(
+        `DEMO_TEST_PHONE ("${testPhoneRaw}") is not a usable number — no test account was added.`,
+      );
+    } else {
+      const name = (process.env.DEMO_TEST_NAME ?? "Test Line").trim().split(/\s+/);
+      const first = name[0] || "Test";
+      const last = name.slice(1).join(" ") || "Line";
+      const firstCampaign = await db.campaign.findFirstOrThrow({
+        where: { organizationId: orgId },
+        orderBy: { createdAt: "asc" },
+      });
+      const debtor = await db.debtor.create({
+        data: {
+          organizationId: orgId,
+          firstName: first,
+          lastName: last,
+          accountNumber: "TEST-0001",
+          phone,
+          city: "Johannesburg",
+          province: "Gauteng",
+          campaignId: firstCampaign.id,
+          status: "active",
+          riskScore: 50,
+        },
+      });
+      await db.debtAccount.create({
+        data: {
+          organizationId: orgId,
+          debtorId: debtor.id,
+          reference: `TEST/${now.getFullYear()}/0001`,
+          creditorName: "Test Creditor",
+          originalBalance: 1500,
+          currentBalance: 1500,
+          daysOverdue: 45,
+          dueDate: new Date(now.getTime() - 45 * 864e5),
+        },
+      });
+      await db.campaignContact.create({
+        data: {
+          organizationId: orgId,
+          campaignId: firstCampaign.id,
+          debtorId: debtor.id,
+        },
+      });
+      testLine = { name: `${first} ${last}`, phone, accountNumber: "TEST-0001" };
+
+      // The deny-list is checked at dial time, so a number on it looks like a
+      // silent failure rather than a refusal you asked for. Say so now.
+      if (denyList().some((entry) => phone.endsWith(entry.replace(/^\+?27/, "").slice(-9)))) {
+        console.warn(
+          `${phone} is on JOBIX_DENY_LIST, so the platform will refuse to dial it. Remove it there to test a real call.`,
+        );
+      }
+    }
   }
 
   const counts = {
@@ -791,5 +879,10 @@ export async function seedDemoData(): Promise<DemoSeedResult> {
     events: await db.platformEvent.count(),
   };
   console.log("Demo seed complete:", counts, `sms events: ${smsCount}`);
-  return { counts, demoKey };
+  if (testLine) {
+    console.log(
+      `Test account: ${testLine.name} · ${testLine.phone} · ${testLine.accountNumber} — R1 500 owing, clean and dialable.`,
+    );
+  }
+  return { counts, demoKey, testLine };
 }

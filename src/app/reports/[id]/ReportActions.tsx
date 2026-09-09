@@ -17,7 +17,7 @@ export function ReportActions({ reportId }: { reportId: string }) {
       if (!res.ok) throw new Error();
       router.refresh();
     } catch {
-      setNote("Regeneration failed — try again.");
+      setNote("The report could not be regenerated.");
     } finally {
       setBusy(false);
     }
@@ -35,7 +35,7 @@ export function ReportActions({ reportId }: { reportId: string }) {
       </button>
       <button
         onClick={() => {
-          setNote("Secure share links are coming soon — export a PDF in the meantime.");
+          setNote("Share links are not yet available. Use Export PDF.");
           setTimeout(() => setNote(null), 3500);
         }}
         className="btn btn-ghost"

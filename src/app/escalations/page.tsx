@@ -3,7 +3,10 @@ import { getContext } from "@/lib/auth";
 import { ESCALATION_PRIORITIES, ESCALATION_REASONS, ESCALATION_STATUSES, label } from "@/lib/domain";
 import { formatDate } from "@/lib/format";
 import { getEscalationStats, listEscalations, listUsers } from "@/services/escalations";
-import { Badge, EmptyState, GlassCard, PageHeader, StatCard } from "@/components/ui";
+import { Badge, EmptyState, Card, PageHeader, StatCard } from "@/components/ui";
+import { CollectionsTabs } from "@/components/shell/CollectionsTabs";
+import { Pager } from "@/components/Pager";
+import { pageParam, paginate } from "@/lib/paginate";
 import { ParamSelect } from "@/components/actions/ParamSelect";
 import { EscalationControls } from "./Controls";
 
@@ -26,12 +29,16 @@ export default async function EscalationsPage({
     }),
     listUsers(ctx.organizationId),
   ]);
+  // Fifty at a time. The stats above count everything; these are the rows
+  // on this page.
+  const escalationsPage = paginate(escalations, pageParam(params.page));
 
   return (
     <div className="page-in">
+      <CollectionsTabs />
       <PageHeader
         title="Escalations"
-        description="Cases the AI has handed off for human judgement — disputes, hardship, vulnerability and authority limits."
+        description="Cases handed to a person"
       />
       <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-5">
         <StatCard label="Open" value={String(stats.open)} tone={stats.open > 0 ? "critical" : undefined} />
@@ -41,18 +48,18 @@ export default async function EscalationsPage({
         <StatCard label="Urgent unresolved" value={String(stats.urgent)} tone={stats.urgent > 0 ? "critical" : undefined} />
       </div>
 
-      <div className="glass-subtle mb-4 flex flex-wrap items-center gap-2 p-3">
+      <div className="card-2 mb-4 flex flex-wrap items-center gap-2 p-3">
         <ParamSelect param="status" placeholder="All statuses" options={ESCALATION_STATUSES.map((s) => ({ value: s, label: label(s) }))} />
         <ParamSelect param="priority" placeholder="All priorities" options={ESCALATION_PRIORITIES.map((p) => ({ value: p, label: label(p) }))} />
         <ParamSelect param="reason" placeholder="All reasons" options={ESCALATION_REASONS.map((r) => ({ value: r, label: label(r) }))} />
       </div>
 
-      <GlassCard pad={false}>
+      <Card pad={false}>
         {escalations.length === 0 ? (
           <div className="p-5">
             <EmptyState
               title="No escalations match"
-              hint="The AI raises escalations automatically when a call needs human handling."
+              hint="Raised automatically when a call needs a person."
             />
           </div>
         ) : (
@@ -70,7 +77,7 @@ export default async function EscalationsPage({
                 </tr>
               </thead>
               <tbody>
-                {escalations.map((e) => (
+                {escalationsPage.rows.map((e) => (
                   <tr key={e.id}>
                     <td><Badge value={e.priority} label={label(e.priority)} /></td>
                     <td>
@@ -106,7 +113,15 @@ export default async function EscalationsPage({
             </table>
           </div>
         )}
-      </GlassCard>
+      </Card>
+      <Pager
+        page={escalationsPage.page}
+        pageCount={escalationsPage.pageCount}
+        total={escalationsPage.total}
+        from={escalationsPage.from}
+        to={escalationsPage.to}
+        noun="escalations"
+      />
     </div>
   );
 }

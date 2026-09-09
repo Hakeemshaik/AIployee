@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getSetupStatus } from "@/services/bootstrap";
-import { GlassCard } from "@/components/ui";
+import { Card } from "@/components/ui";
 import { SetupForm } from "./SetupForm";
 
 export const dynamic = "force-dynamic";
@@ -17,20 +17,20 @@ export default async function SetupPage() {
   return (
     <div className="page-in mx-auto mt-10 max-w-2xl">
       <h1 className="mb-1 text-xl font-semibold tracking-tight text-ink">
-        {status?.needsSetup ? "Welcome — let's set up AIployee" : "Setup"}
+        {status?.needsSetup ? "Set up AIployee" : "Setup"}
       </h1>
       <p className="mb-6 text-[0.8125rem] text-ink-2">
         {status === null
           ? "The database is not reachable."
           : status.needsSetup
-            ? "One step: choose how to initialise this deployment. Takes a few seconds."
+            ? "Choose how to initialise this deployment."
             : "This deployment is already configured."}
       </p>
-      <GlassCard>
+      <Card>
         {status === null ? (
           <p className="text-[0.8125rem] leading-relaxed text-ink-2">
-            The app could not connect to PostgreSQL. On Vercel: Project → Storage → create/connect a
-            Neon database, then redeploy and reload this page.
+            The database is not reachable. Connect a PostgreSQL database (on Vercel: Project →
+            Storage), then redeploy and reload this page.
           </p>
         ) : status.needsSetup ? (
           <SetupForm />
@@ -43,7 +43,7 @@ export default async function SetupPage() {
             <Link href="/" className="btn btn-primary mt-4 inline-flex">Open the dashboard</Link>
           </div>
         )}
-      </GlassCard>
+      </Card>
     </div>
   );
 }

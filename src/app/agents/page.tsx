@@ -4,7 +4,7 @@ import { getContext } from "@/lib/auth";
 import { label } from "@/lib/domain";
 import { money, percent } from "@/lib/format";
 import { listAgents } from "@/services/agents";
-import { Badge, EmptyState, GlassCard, PageHeader } from "@/components/ui";
+import { Badge, EmptyState, Card, PageHeader } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Agents" };
@@ -16,18 +16,18 @@ export default async function AgentsPage() {
   return (
     <div className="page-in">
       <PageHeader
-        title="AI Agents"
-        description="Voice agents from your calling platform and their collection performance."
+        title="AI agents"
+        description="Voice agents and their collection performance."
       />
       {agents.length === 0 ? (
         <EmptyState
           title="No agents registered"
-          hint="Agents are registered against your external voice platform and appear here once linked."
+          hint="Agents appear here once linked on the voice platform."
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {agents.map(({ agent, performance }) => (
-            <GlassCard key={agent.id} className="transition-transform duration-150 hover:-translate-y-0.5">
+            <Card key={agent.id} className="transition-transform duration-150 hover:-translate-y-0.5">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-accent-soft">
@@ -51,7 +51,7 @@ export default async function AgentsPage() {
                 {[
                   ["Calls today", String(performance.callsToday)],
                   ["Calls total", String(performance.callsTotal)],
-                  ["Connection rate", percent(performance.connectionRate, 0)],
+                  ["Connect rate", percent(performance.connectionRate, 0)],
                   ["Promise rate", percent(performance.promiseRate, 0)],
                   ["Recovery value", money(performance.recoveryValue)],
                 ].map(([k, v]) => (
@@ -61,7 +61,7 @@ export default async function AgentsPage() {
                   </div>
                 ))}
               </div>
-            </GlassCard>
+            </Card>
           ))}
         </div>
       )}

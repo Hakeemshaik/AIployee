@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { authFailure } from "@/lib/api-errors";
 import { z } from "zod";
-import { getContext } from "@/lib/auth";
+import { apiContext } from "@/lib/auth";
 import { csvToObjects } from "@/lib/csv";
 import { importDebtors } from "@/services/debtors";
 
@@ -32,7 +33,7 @@ const HEADER_MAP: Record<string, string> = {
 // POST /api/debtors/import — CSV import with per-row validation results.
 export async function POST(request: Request) {
   try {
-    const ctx = await getContext();
+    const ctx = await apiContext();
     const body = await request.json();
     const parsed = bodySchema.safeParse(body);
     if (!parsed.success) {
@@ -65,6 +66,8 @@ export async function POST(request: Request) {
     const result = await importDebtors(ctx.organizationId, ctx.userId, rows, parsed.data.campaignId);
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
+    const denied = authFailure(err);
+    if (denied) return denied;
     const message = err instanceof Error ? err.message : "internal_error";
     const status = message.includes("not found") ? 404 : 500;
     if (status === 500) console.error("[debtors] import failed:", err);

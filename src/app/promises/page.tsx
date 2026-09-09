@@ -4,12 +4,15 @@ import { label, PROMISE_DISPLAY_STATUSES } from "@/lib/domain";
 import { formatDate, money, percent } from "@/lib/format";
 import { listCampaignOptions } from "@/services/debtors";
 import { getPromiseStats, listPromises } from "@/services/promises";
-import { Badge, EmptyState, GlassCard, PageHeader, StatCard } from "@/components/ui";
+import { Badge, EmptyState, Card, PageHeader, StatCard } from "@/components/ui";
+import { CollectionsTabs } from "@/components/shell/CollectionsTabs";
+import { Pager } from "@/components/Pager";
+import { pageParam, paginate } from "@/lib/paginate";
 import { ParamSelect } from "@/components/actions/ParamSelect";
 import { CancelPromiseButton, SweepButton } from "./Actions";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Promises to Pay" };
+export const metadata = { title: "Promises to pay" };
 
 export default async function PromisesPage({
   searchParams,
@@ -23,12 +26,16 @@ export default async function PromisesPage({
     listPromises(ctx.organizationId, { status: params.status, campaignId: params.campaign }),
     listCampaignOptions(ctx.organizationId),
   ]);
+  // Fifty at a time. The stats above count everything; these are the rows
+  // on this page.
+  const promisesPage = paginate(rows, pageParam(params.page));
 
   return (
     <div className="page-in">
+      <CollectionsTabs />
       <PageHeader
-        title="Promises to Pay"
-        description="Every commitment captured on calls, tracked to fulfilment."
+        title="Promises to pay"
+        description="Commitments captured on calls"
         actions={<SweepButton />}
       />
       <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
@@ -40,7 +47,7 @@ export default async function PromisesPage({
         <StatCard label="Fulfilment rate" value={percent(stats.fulfilmentRate, 0)} sub="of resolved promises" />
       </div>
 
-      <div className="glass-subtle mb-4 flex flex-wrap items-center gap-2 p-3">
+      <div className="card-2 mb-4 flex flex-wrap items-center gap-2 p-3">
         <ParamSelect
           param="status"
           placeholder="All statuses"
@@ -53,7 +60,7 @@ export default async function PromisesPage({
         />
       </div>
 
-      <GlassCard pad={false}>
+      <Card pad={false}>
         {rows.length === 0 ? (
           <div className="p-5">
             <EmptyState
@@ -70,6 +77,7 @@ export default async function PromisesPage({
                   <th className="text-right">Promised amount</th>
                   <th className="text-right">Paid towards</th>
                   <th>Promise date</th>
+                  <th>Paying by</th>
                   <th>Status</th>
                   <th className="text-right">Days overdue</th>
                   <th>Campaign</th>
@@ -77,7 +85,7 @@ export default async function PromisesPage({
                 </tr>
               </thead>
               <tbody>
-                {rows.map((p) => (
+                {promisesPage.rows.map((p) => (
                   <tr key={p.id}>
                     <td>
                       <Link href={`/debtors/${p.debtorId}`} className="font-medium text-ink hover:text-accent">
@@ -88,6 +96,12 @@ export default async function PromisesPage({
                     <td className="num text-right font-medium text-ink">{money(p.amount)}</td>
                     <td className="num text-right">{p.paidTowards > 0 ? money(p.paidTowards) : "—"}</td>
                     <td>{formatDate(p.promisedDate)}</td>
+                    {/* How the money is coming, so a follow-up knows which
+                        account to check rather than asking again. */}
+                    <td className="text-ink-3">
+                      {p.method ? label(p.method) : "—"}
+                      {p.bank && <span className="ml-1.5 text-ink-2">· {p.bank}</span>}
+                    </td>
                     <td><Badge value={p.displayStatus} label={label(p.displayStatus)} /></td>
                     <td className="num text-right">{p.daysOverdue > 0 ? p.daysOverdue : "—"}</td>
                     <td className="max-w-[180px] truncate text-ink-3">{p.campaignName ?? "—"}</td>
@@ -104,7 +118,15 @@ export default async function PromisesPage({
             </table>
           </div>
         )}
-      </GlassCard>
+      </Card>
+      <Pager
+        page={promisesPage.page}
+        pageCount={promisesPage.pageCount}
+        total={promisesPage.total}
+        from={promisesPage.from}
+        to={promisesPage.to}
+        noun="promises"
+      />
     </div>
   );
 }

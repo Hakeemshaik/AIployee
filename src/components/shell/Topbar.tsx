@@ -1,64 +1,81 @@
+import Link from "next/link";
 import { db } from "@/lib/db";
-import { Sparkles } from "lucide-react";
-import { CommandPalette } from "./CommandPalette";
+import { getSession } from "@/lib/session";
+import { AccountMenu } from "./AccountMenu";
+import { TopNav } from "./TopNav";
+import { BrandLockup } from "@/components/Brand";
+
+// ---------------------------------------------------------------------------
+// The bar carries three things: which organisation's data is on screen, the
+// way to search it, and who is signed in.
+//
+// The analysis-engine chip that used to sit here has gone: it is configuration,
+// it never changes while anybody is looking at it, and it is stated where it
+// matters — on the insight itself and in Settings.
+// ---------------------------------------------------------------------------
 
 export async function Topbar() {
+  const session = await getSession();
+  const guest = session?.kind === "guest";
+
   let orgName = "—";
   let userName = "";
   let userRole = "";
-  try {
-    const org = await db.organization.findFirst({
-      orderBy: { createdAt: "asc" },
-      include: { users: { orderBy: { createdAt: "asc" }, take: 1 } },
-    });
-    if (org && org.users[0]) {
-      orgName = org.name;
-      userName = org.users[0].name;
-      userRole = org.users[0].role;
+
+  if (guest) {
+    orgName = "Demo organization";
+    userName = "Guest";
+    userRole = "read-only demo";
+  } else if (session) {
+    try {
+      const user = await db.user.findUnique({
+        where: { id: session.userId },
+        include: { organization: { select: { name: true } } },
+      });
+      if (user) {
+        orgName = user.organization.name;
+        userName = user.name;
+        userRole = user.role;
+      }
+    } catch {
+      // Database unreachable — the pages surface the guidance.
     }
-  } catch {
-    // Database unreachable — the pages surface the guidance.
   }
-  const aiLive = process.env.AI_PROVIDER === "claude" && !!process.env.ANTHROPIC_API_KEY;
+
   const initials = userName
     .split(" ")
     .map((p) => p[0])
     .slice(0, 2)
     .join("");
 
+  // Two rows on a laptop and one on a wide screen: brand, who you are and
+  // where you are up top, and the navigation as a pill row beneath it. The bar
+  // is glass, but opaque enough to read against — at 45% the content scrolling
+  // beneath showed through the blur and collided with the text.
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-base/70 backdrop-blur-xl">
-      <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center justify-between gap-4 px-4 pl-14 sm:px-6 lg:pl-8 lg:pr-8">
-        <div className="min-w-0">
-          <p className="truncate text-[0.8125rem] text-ink-2">
-            <span className="text-ink-3">Organization</span>{" "}
-            <span className="font-medium text-ink">{orgName}</span>
-          </p>
+    <header className="sticky top-0 z-30 border-b border-ink/[0.08] bg-base/80 backdrop-blur-2xl">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2.5 sm:px-6 lg:px-8">
+        <Link href="/" className="shrink-0" aria-label="AIployee Command Centre">
+          <BrandLockup />
+        </Link>
+
+        {/* Its own row, centred. Sharing one with the account cluster was tight
+            at 1440 and the More button ended up under the organisation name;
+            centred, the dock reads as one object rather than a row of links
+            trailing off the brand. */}
+        <div className="scroll-x order-last flex w-full min-w-0 justify-center pb-1 pt-0.5">
+          <TopNav guest={guest} />
         </div>
-        <div className="flex items-center gap-3">
-          <CommandPalette />
-          <span
-            className="hidden items-center gap-1.5 rounded-full border border-line bg-white/[0.04] px-2.5 py-1 text-[0.6875rem] text-ink-2 sm:inline-flex"
-            title={
-              aiLive
-                ? "AI analysis and reporting served by Claude"
-                : "Running on the built-in analysis engine — set AI_PROVIDER=claude and ANTHROPIC_API_KEY to enable Claude"
-            }
-          >
-            <Sparkles size={12} className={aiLive ? "text-accent" : "text-ink-3"} />
-            {aiLive ? "Claude connected" : "AI: built-in engine"}
-          </span>
-          {userName && (
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-gradient-to-b from-white/[0.09] to-white/[0.03] text-[0.6875rem] font-semibold text-ink">
-                {initials}
-              </span>
-              <div className="hidden leading-tight md:block">
-                <p className="text-[0.8125rem] font-medium text-ink">{userName}</p>
-                <p className="text-[0.6875rem] capitalize text-ink-3">{userRole}</p>
-              </div>
-            </div>
-          )}
+
+        <div className="ml-auto flex shrink-0 items-center gap-3">
+          <p className="hidden min-w-0 items-center gap-2 text-[0.8125rem] sm:flex">
+            <span className="pulse-live h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
+            <span className="max-w-[14rem] truncate font-medium text-ink">{orgName}</span>
+          </p>
+          {/* Who you are and everything you change about the place, in one
+              control. The separate sign-out button beside it was a permanent
+              destructive-looking thing in the corner of every screen. */}
+          <AccountMenu name={userName} role={userRole} initials={initials} guest={guest} />
         </div>
       </div>
     </header>

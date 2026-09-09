@@ -1,103 +1,265 @@
 @import "tailwindcss";
 
 /*
- * AIployee — dark, glass-panel design system.
- * The product deliberately commits to a single dark look; every surface and
- * ink is painted explicitly. Chart series colors come from the validated
- * dark-mode data-viz palette.
+ * AIployee — the Mafadi house style, dark.
+ *
+ * Navy ground, teal accent, cream for the one thing on a screen worth reading
+ * first, amber for anything asking to be acted on. Every surface and ink is
+ * painted explicitly: the product commits to a single look rather than
+ * inheriting the viewer's.
+ *
+ * Chart series are the same three hues stepped down for the navy surface and
+ * validated against it (lightness band, chroma floor, colour-vision separation
+ * on every pair, contrast) — not the accent reused as data.
  */
 
 @theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  /* surfaces */
-  --color-base: #08090c;
-  --color-plane: #0d0f14;
-  --color-panel: #12151c;
-  --color-raised: #1a1e27;
+  /* surfaces — light. The ground is a soft off-white the pastel washes sit in;
+     panels are white, which is what glass frosts. */
+  --color-base: #f4f5fa;
+  --color-plane: #fbfbfe;
+  --color-panel: #ffffff;
+  --color-raised: #ffffff;
 
-  /* ink */
-  --color-ink: #eef1f6;
-  --color-ink-2: #9aa3b2;
-  --color-ink-3: #667080;
+  /* ink — the Mafadi navy, its body grey and its label grey */
+  --color-ink: #15202e;
+  --color-ink-2: #5a6472;
+  --color-ink-3: #97a3b0;
 
-  /* hairlines */
-  --color-line: rgba(255, 255, 255, 0.08);
-  --color-line-2: rgba(255, 255, 255, 0.05);
+  /* hairlines: the ink at low alpha, so a rule is the same colour as the text
+     it separates rather than a grey of its own */
+  --color-line: rgba(21, 32, 46, 0.1);
+  --color-line-2: rgba(21, 32, 46, 0.055);
 
-  /* accent */
-  --color-accent: #3987e5;
-  --color-accent-soft: rgba(57, 135, 229, 0.14);
+  /* accent — Mafadi teal, stepped down for a white ground so it carries text
+     as well as fills */
+  --color-accent: #0e9e90;
+  --color-accent-lift: #12b3a2;
+  --color-accent-ink: #0b7f74;
+  --color-accent-soft: rgba(14, 158, 144, 0.1);
 
-  /* validated dark-mode chart series */
-  --color-series-1: #3987e5;
-  --color-series-2: #d95926;
-  --color-series-3: #199e70;
-  --color-series-4: #c98500;
-  --color-series-5: #d55181;
+  /* Card washes. A number lives on one of these, never on a colour of its own:
+     the tint says which card, the ink stays ink. */
+  --color-mint: #e6f5f2;
+  --color-cream: #fdf5e4;
+  --color-lilac: #efedfb;
+  --color-peach: #fdece5;
+  --color-sky: #e9f1fb;
 
-  /* status (reserved — never used as series colors) */
-  --color-good: #0ca30c;
-  --color-warning: #fab219;
-  --color-serious: #ec835a;
-  --color-critical: #d03b3b;
+  /* status. Reserved: never a chart series, and never carried alone — each of
+     them ships beside a word. Stepped for contrast on white. */
+  --color-good: #14855a;
+  --color-warning: #9d6a0b;
+  --color-serious: #bd4f1f;
+  --color-critical: #bd2f38;
+
+  /* chart series — validated on white, every pair:
+     lightness 0.43–0.77 · chroma >= 0.1 · CVD dE 13.5 worst · contrast >= 3:1.
+     Charts sit on white cards only: over a tinted wash the same three drop to
+     2.9:1, which the method allows only with labels doing the work instead. */
+  --color-series-1: #0e9e90; /* teal */
+  --color-series-2: #c97a0f; /* gold */
+  --color-series-3: #6c5ce0; /* violet */
 
   /* chart chrome */
-  --color-grid: #232630;
-  --color-axis: #3a3f4c;
+  --color-grid: #e9ebf2;
+  --color-axis: #c8cddb;
+
+  /* motion */
+  --ease-out-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* A touch of overshoot. Used only where something arrives or is pressed —
+     never on a colour, and never on anything that repeats. */
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
+  position: relative;
   background-color: var(--color-base);
+  /* Two washes, not four. Glass needs something behind it to bend or it reads
+     as grey plastic, but four coloured lights plus five card tints turned the
+     page into a swatch book — you cannot tell which colour on the screen means
+     something. So: teal at the top left, one cool counterweight at the top
+     right, both weak enough that no text ever sits on a tint you can name.
+     Everything with a colour you can name is now a fact: a status, a figure
+     that is good or bad, the page you are on. */
   background-image:
-    radial-gradient(1200px 500px at 15% -10%, rgba(57, 135, 229, 0.09), transparent 60%),
-    radial-gradient(900px 420px at 95% 0%, rgba(122, 92, 220, 0.06), transparent 55%);
+    radial-gradient(1200px 560px at 4% -12%, rgba(14, 158, 144, 0.1), transparent 64%),
+    radial-gradient(1000px 640px at 96% -8%, rgba(108, 92, 224, 0.07), transparent 64%);
   background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-sans);
-  font-feature-settings: "cv02", "cv11";
   -webkit-font-smoothing: antialiased;
 }
 
-::selection {
-  background: rgba(57, 135, 229, 0.35);
+/* One slow-moving light behind the glass.
+   Glass with nothing moving behind it is just a translucent panel; one pale
+   teal shape drifting on a ninety-second loop is what makes a blurred surface
+   look like it is in front of something. It is a single composited transform
+   on a fixed layer, so it costs nothing to run and nothing to read — and it
+   stops entirely for anyone who asked for less motion. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -25%;
+  z-index: -1;
+  pointer-events: none;
+  /* One slow light, at a strength you notice only if you sit and look. It is
+     what stops the background being a flat fill; it is not a colour. */
+  background: radial-gradient(40% 44% at 26% 34%, rgba(14, 158, 144, 0.07), transparent 70%);
+  animation: drift 90s linear infinite;
+}
+@keyframes drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, 3%, 0) scale(1.08);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
 }
 
-/* --- glass panels --- */
+::selection {
+  background: rgba(14, 158, 144, 0.2);
+}
+
+/* A visible focus ring on everything reachable by keyboard, in one place.
+   In the base layer so a component that turns its own outline off — a search
+   field inside a dialog that draws its own — still wins. Unlayered, this rule
+   beat every utility and drew a teal rounded rectangle around the command
+   palette's input. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 10px;
+  }
+}
+
+/* --- surfaces: glass ------------------------------------------------------
+   Three layers and nothing else: a card, a quieter card for things inside it,
+   and a floating one for dialogs — plus five pastel washes a card can wear.
+
+   Each layer is translucent over a blurred, lightly saturated backdrop, with a
+   white hairline along the top edge where light would catch and a soft ink one
+   underneath. That top edge is what separates glass from "a panel with some
+   transparency": it reads as a physical edge rather than a border. The blur is
+   what makes the washes behind the page bend as content scrolls over them.
+
+   Every layer still paints real white underneath the transparency, so a
+   browser without backdrop-filter shows a solid card rather than text sitting
+   on the page's gradients. */
+
+.card {
+  position: relative;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--color-panel) 72%, transparent),
+    color-mix(in oklab, var(--color-panel) 86%, transparent)
+  );
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 20px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(21, 32, 46, 0.04),
+    0 18px 40px -24px rgba(21, 32, 46, 0.22);
+}
+
+.card-2 {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.5));
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 16px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 2px rgba(21, 32, 46, 0.03);
+}
+
+/* Dialogs sit over live content, so they are the least transparent of the
+   three: readable first, glass second. */
+.card-float {
+  background: color-mix(in oklab, var(--color-raised) 94%, transparent);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 22px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 30px 70px -26px rgba(21, 32, 46, 0.32);
+}
+
+/* --- card washes ----------------------------------------------------------
+   A tint says which card you are looking at, so a person finds the one they
+   want by colour before reading a word of it. The ink never changes: the tint
+   is the card's, not the number's.
+
+   A chart never sits on one. The series colours are validated against white
+   and drop to 2.9:1 over a wash, which the method allows only when labels do
+   the work instead — so tinted cards carry figures and lists, white cards
+   carry plots. */
+
+.tint-mint {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2)),
+    var(--color-mint);
+}
+.tint-cream {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2)),
+    var(--color-cream);
+}
+.tint-lilac {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2)),
+    var(--color-lilac);
+}
+.tint-peach {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2)),
+    var(--color-peach);
+}
+.tint-sky {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2)),
+    var(--color-sky);
+}
+
+/* The old glass names, pointing at the new surfaces, so a screen that still
+   carries one is not left unstyled. */
 .glass {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02));
-  border: 1px solid var(--color-line);
+  background: color-mix(in oklab, var(--color-panel) 80%, transparent);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 20px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 18px 40px -24px rgba(21, 32, 46, 0.22);
+}
+.glass-subtle {
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border-radius: 14px;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.04) inset,
-    0 10px 30px -18px rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 16px;
 }
-
-/* Opaque variant for floating dialogs — keeps the glass edge treatment but
-   stays readable over busy content. */
 .glass-solid {
-  background: linear-gradient(180deg, rgba(30, 34, 44, 0.97), rgba(19, 22, 30, 0.97));
-  border: 1px solid var(--color-line);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-radius: 14px;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.05) inset,
-    0 24px 60px -24px rgba(0, 0, 0, 0.9);
-}
-
-.glass-subtle {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--color-line-2);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-radius: 12px;
+  background: color-mix(in oklab, var(--color-raised) 94%, transparent);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 22px;
+  box-shadow: 0 30px 70px -26px rgba(21, 32, 46, 0.32);
 }
 
 /* --- data tables --- */
@@ -106,28 +268,35 @@ body {
   border-collapse: collapse;
   font-size: 0.8125rem;
 }
-.data-table thead th {
-  text-align: left;
-  font-weight: 500;
-  font-size: 0.6875rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-ink-3);
-  padding: 0.625rem 0.875rem;
-  border-bottom: 1px solid var(--color-line);
-  white-space: nowrap;
-}
-.data-table tbody td {
-  padding: 0.6875rem 0.875rem;
-  border-bottom: 1px solid var(--color-line-2);
-  color: var(--color-ink-2);
-  white-space: nowrap;
+/* These two are in @layer components on purpose, and it is the same Tailwind v4
+   trap the focus ring hit: unlayered CSS beats layered utilities. An unlayered
+   `text-align: left` here silently overrode every `className="text-right"` on a
+   column header, so every right-aligned column in the app had its heading on
+   the left, sitting above numbers that ended on the right. */
+@layer components {
+  .data-table thead th {
+    text-align: left;
+    font-weight: 500;
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-ink-3);
+    padding: 0.625rem 0.875rem;
+    border-bottom: 1px solid var(--color-line);
+    white-space: nowrap;
+  }
+  .data-table tbody td {
+    padding: 0.6875rem 0.875rem;
+    border-bottom: 1px solid var(--color-line-2);
+    color: var(--color-ink-2);
+    white-space: nowrap;
+  }
 }
 .data-table tbody tr {
-  transition: background-color 120ms ease;
+  transition: background-color 140ms var(--ease-out-soft);
 }
 .data-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.025);
+  background: rgba(14, 158, 144, 0.05);
 }
 .data-table tbody tr:last-child td {
   border-bottom: none;
@@ -136,111 +305,538 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* --- form controls --- */
+/* --- form controls ---------------------------------------------------------
+   Pills. A single-line input and a button are the same object at this size —
+   a small, tappable, fully rounded piece of glass — and giving them the same
+   silhouette is what stops a toolbar looking like a form. Anything that holds
+   more than one line keeps a corner radius, because a pill around a paragraph
+   is a lozenge nobody can read. */
+
 .field {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--color-line);
-  border-radius: 9px;
+  /* A shade of the ink rather than more white: on a white card a white field
+     is invisible, and an input has to look like somewhere you can type. */
+  background: linear-gradient(180deg, rgba(21, 32, 46, 0.05), rgba(21, 32, 46, 0.025));
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 2px 5px rgba(21, 32, 46, 0.05);
+  border: 1px solid rgba(21, 32, 46, 0.1);
+  border-radius: 999px;
   color: var(--color-ink);
   font-size: 0.8125rem;
-  padding: 0.4375rem 0.625rem;
+  padding: 0.5625rem 0.9375rem;
   outline: none;
-  transition: border-color 120ms ease, background-color 120ms ease;
+  transition: border-color 180ms var(--ease-out-soft), background 180ms var(--ease-out-soft),
+    box-shadow 180ms var(--ease-out-soft), transform 180ms var(--ease-spring);
+}
+textarea.field,
+select[multiple].field {
+  border-radius: 18px;
+  padding: 0.625rem 0.875rem;
 }
 .field:hover {
-  background: rgba(255, 255, 255, 0.055);
+  border-color: rgba(21, 32, 46, 0.18);
+  background: linear-gradient(180deg, rgba(21, 32, 46, 0.035), rgba(21, 32, 46, 0.015));
 }
 .field:focus {
-  border-color: rgba(57, 135, 229, 0.55);
-  background: rgba(57, 135, 229, 0.07);
+  border-color: var(--color-accent);
+  background: #ffffff;
+  /* A halo rather than a hard ring: the control lights up, it does not get
+     outlined. */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 0 0 4px rgba(14, 158, 144, 0.14),
+    0 6px 18px -10px rgba(14, 158, 144, 0.5);
+}
+.field:focus-visible {
+  outline: none;
 }
 select.field option {
-  background: var(--color-raised);
+  background: #ffffff;
   color: var(--color-ink);
 }
 .field::placeholder {
   color: var(--color-ink-3);
 }
-input.field[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(0.7);
-}
 
-/* --- buttons --- */
+/* --- buttons ---------------------------------------------------------------
+   Four of them: solid teal for the action a screen is for, glass for
+   everything else, bare for tertiary, red-lettered for destructive. Same
+   height, same pill, and a press that takes the tap.
+
+   The primary one has a sheen — a soft white band lying across the top third,
+   plus one that sweeps left to right when the pointer arrives. It is the one
+   piece of deliberate fun in the system, and it is on the one control a screen
+   most wants you to press. */
+
 .btn {
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  border-radius: 9px;
+  justify-content: center;
+  gap: 0.4375rem;
+  border-radius: 999px;
   font-size: 0.8125rem;
   font-weight: 500;
-  padding: 0.4375rem 0.875rem;
-  border: 1px solid var(--color-line);
+  line-height: 1;
+  padding: 0.5625rem 1.0625rem;
+  border: 1px solid rgba(21, 32, 46, 0.08);
   color: var(--color-ink);
-  background: rgba(255, 255, 255, 0.05);
-  transition: background-color 130ms ease, border-color 130ms ease, transform 80ms ease;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.72));
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 1px 2px rgba(21, 32, 46, 0.05),
+    0 6px 16px -12px rgba(21, 32, 46, 0.35);
+  transition: background 200ms var(--ease-out-soft), border-color 200ms var(--ease-out-soft),
+    color 200ms var(--ease-out-soft), transform 180ms var(--ease-spring),
+    box-shadow 200ms var(--ease-out-soft);
   cursor: pointer;
   white-space: nowrap;
 }
 .btn:hover {
-  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(21, 32, 46, 0.16);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 10px 24px -12px rgba(21, 32, 46, 0.4);
 }
 .btn:active {
-  transform: translateY(1px);
+  transform: translateY(0) scale(0.97);
+  transition-duration: 70ms;
 }
 .btn:disabled {
-  opacity: 0.45;
+  /* Desaturated rather than faded: at 45% opacity a teal gradient goes pale
+     mint and reads as broken instead of unavailable. */
+  opacity: 0.6;
+  filter: saturate(0.45);
+  box-shadow: none;
   cursor: default;
   transform: none;
 }
+.btn:disabled::after {
+  display: none;
+}
+
 .btn-primary {
-  background: linear-gradient(180deg, #3f8de9, #2d6fc4);
-  border-color: rgba(97, 160, 235, 0.6);
-  color: #fff;
+  background: linear-gradient(170deg, #21c2b0 0%, var(--color-accent) 55%, #0b8a7e 100%);
+  border-color: rgba(11, 138, 126, 0.9);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+    0 8px 22px -10px rgba(14, 158, 144, 0.65);
+}
+/* The light lying across it. */
+.btn-primary::before {
+  content: "";
+  position: absolute;
+  inset: 1px 1px 45% 1px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+/* And the one that sweeps across when the pointer arrives. */
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -60%;
+  width: 45%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.38), transparent);
+  transform: skewX(-18deg);
+  pointer-events: none;
+  transition: left 620ms var(--ease-out-soft);
+}
+.btn-primary:hover::after {
+  left: 130%;
 }
 .btn-primary:hover {
-  background: linear-gradient(180deg, #4d97ee, #3579cf);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 14px 30px -10px rgba(14, 158, 144, 0.7);
 }
+
 .btn-ghost {
   border-color: transparent;
   background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
   color: var(--color-ink-2);
 }
 .btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(21, 32, 46, 0.05);
+  border-color: transparent;
   color: var(--color-ink);
+  box-shadow: none;
 }
+
 .btn-danger {
-  border-color: rgba(208, 59, 59, 0.4);
-  color: #f0908f;
+  border-color: rgba(189, 47, 56, 0.28);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 240, 240, 0.8));
+  color: var(--color-critical);
 }
 .btn-danger:hover {
-  background: rgba(208, 59, 59, 0.12);
+  background: rgba(189, 47, 56, 0.08);
+  border-color: rgba(189, 47, 56, 0.45);
+}
+
+.btn-sm {
+  padding: 0.4375rem 0.8125rem;
+  font-size: 0.75rem;
+}
+
+/* --- the dock --------------------------------------------------------------
+   The navigation, as one piece of glass floating in the header rather than a
+   row of loose links. Its active pill is white and lit; the rest are holes in
+   the glass until the pointer finds them. */
+
+.dock {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3125rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.55));
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 1px 2px rgba(21, 32, 46, 0.04),
+    0 14px 34px -20px rgba(21, 32, 46, 0.35);
+}
+
+.dock-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  border-radius: 999px;
+  padding: 0.4375rem 0.8125rem;
+  font-size: 0.8125rem;
+  color: var(--color-ink-2);
+  white-space: nowrap;
+  transition: background-color 180ms var(--ease-out-soft), color 180ms var(--ease-out-soft),
+    box-shadow 220ms var(--ease-out-soft), transform 180ms var(--ease-spring);
+}
+/* The pointer's own glass. When the bubble is running it is the hover state,
+   so the flat wash below would double up under it — it stays only as the
+   fallback for a dock the script has not reached (and for touch, where there
+   is no pointer to follow). */
+.dock:not([data-bubble="on"]) .dock-item:hover {
+  background: rgba(21, 32, 46, 0.05);
+}
+.dock-item:hover {
+  color: var(--color-ink);
+}
+.dock-item[aria-current="page"] {
+  color: var(--color-ink);
+  background: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 1px 2px rgba(21, 32, 46, 0.08),
+    0 8px 18px -10px rgba(14, 158, 144, 0.55);
+}
+.dock-icon {
+  padding: 0.4375rem;
+}
+.dock-divider {
+  width: 1px;
+  height: 1.125rem;
+  margin: 0 0.25rem;
+  background: rgba(21, 32, 46, 0.1);
+}
+
+/* The bubble itself: one lens of glass that slides between the items as the
+   pointer crosses them, the way the icons under a cursor on a Mac dock hand
+   the highlight along rather than each lighting up on its own. It is a single
+   element the script moves, so what you see is one object travelling, not a
+   row of hovers switching on and off.
+
+   It sits behind the labels (the items are z-1 against it) and it is inert to
+   the pointer, so it can never eat a click meant for a link. */
+.dock-bubble {
+  position: absolute;
+  top: 0.3125rem;
+  left: 0;
+  height: calc(100% - 0.625rem);
+  border-radius: 999px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(var(--x, 0px), 0, 0) scale(0.86);
+  width: var(--w, 0px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.7));
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 0 rgba(21, 32, 46, 0.04),
+    0 1px 2px rgba(21, 32, 46, 0.06),
+    0 10px 22px -12px rgba(14, 158, 144, 0.5);
+  transition:
+    transform 380ms var(--ease-spring),
+    width 380ms var(--ease-spring),
+    opacity 200ms var(--ease-out-soft);
+}
+.dock-bubble[data-shown="true"] {
+  opacity: 1;
+  transform: translate3d(var(--x, 0px), 0, 0) scale(1);
+}
+/* While the bubble is over an item, that item's own resting pill would show
+   through it. The active one keeps its colour, loses its glass. */
+.dock[data-bubble="on"][data-riding="true"] .dock-item[aria-current="page"] {
+  background: transparent;
+  box-shadow: none;
+}
+.dock[data-bubble="on"] .dock-item {
+  position: relative;
+  z-index: 1;
 }
 
 /* --- misc --- */
+/* Careful with this one. CSS says that when one overflow axis is not `visible`
+   the other computes to `auto` as well, so `overflow-x: auto` here also clips
+   vertically. A popover positioned below something inside a .scroll-x wrapper
+   is cut off at the wrapper's edge and never appears — which is exactly what
+   happened to the navigation's "More" menu, and looked for months like a dead
+   click handler. Anything that has to escape its container goes through
+   <Overlay> instead. */
 .scroll-x {
   overflow-x: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+  scrollbar-color: rgba(21, 32, 46, 0.18) transparent;
 }
+
+/* --- motion ----------------------------------------------------------------
+   Everything here is short, one-directional, and happens on arrival or under
+   the pointer. Nothing loops, nothing moves on its own, and nothing shifts the
+   layout — a page that keeps moving is a page you cannot read.
+
+   `--i` staggers a row: style={{ "--i": 2 }} delays that card by two steps.
+
+   Every entrance below fills BACKWARDS, never `both`, and this is load-bearing
+   rather than a preference. `both` leaves the final keyframe applied for ever,
+   and a final keyframe of `transform: none` computes to an identity matrix —
+   which still makes the element a containing block for `position: fixed`
+   descendants. The page wrapper carries `.page-in`, so with `both` every
+   drawer, modal and sticky bar inside a page was being sized against the page
+   instead of the window: a 3900px-tall "full screen" sheet hanging off the top
+   of the viewport. `backwards` fills only during the delay, which is all the
+   stagger needs, and leaves nothing behind when the animation ends. */
+
 .page-in {
-  animation: page-in 260ms ease both;
+  animation: rise-in 340ms var(--ease-out-soft) backwards;
 }
-@keyframes page-in {
+.rise-in {
+  animation: rise-in 420ms var(--ease-spring) backwards;
+  animation-delay: calc(var(--i, 0) * 50ms);
+}
+@keyframes rise-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(8px) scale(0.994);
   }
   to {
     opacity: 1;
     transform: none;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .page-in {
-    animation: none;
+
+/* A number arriving: it fades up from under its own label rather than being
+   there before the eye reaches it. Used on the figures a page opens with. */
+.value-in {
+  animation: value-in 520ms var(--ease-out-soft) backwards;
+  animation-delay: calc(120ms + var(--i, 0) * 60ms);
+}
+@keyframes value-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
   }
 }
+
+/* A card that responds to the pointer without moving the layout: it rises,
+   its edge catches the accent, and the light along its top gets brighter. */
+.lift {
+  transition: border-color 200ms var(--ease-out-soft), background-color 200ms var(--ease-out-soft),
+    transform 220ms var(--ease-spring), box-shadow 220ms var(--ease-out-soft);
+}
+.lift:hover {
+  transform: translateY(-3px);
+  border-color: rgba(14, 158, 144, 0.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 24px 48px -24px rgba(21, 32, 46, 0.28),
+    0 0 0 1px rgba(14, 158, 144, 0.14);
+}
+
+/* A row in a list: the pointer lights the glass under it and nudges it along
+   the reading direction. */
+.row-hover {
+  transition: background-color 160ms var(--ease-out-soft), padding-left 200ms var(--ease-out-soft);
+  border-radius: 10px;
+}
+.row-hover:hover {
+  background: rgba(14, 158, 144, 0.06);
+  padding-left: 0.75rem;
+}
+
+/* The teal rule marking the active nav item, and the sheen that sweeps a
+   primary button once when it appears. */
+.nav-mark {
+  transition: opacity 220ms var(--ease-out-soft), transform 220ms var(--ease-spring);
+}
+
+/* A live indicator: one slow pulse, only where something is genuinely
+   happening right now. */
+.pulse-live {
+  animation: pulse-live 2.4s var(--ease-out-soft) infinite;
+}
+/* Asking a question: the page behind goes soft, and the panel arrives from
+   slightly under and slightly small — near enough to instant that it reads as
+   the page responding rather than something being loaded. */
+.scrim-in {
+  animation: scrim-in 220ms var(--ease-out-soft) backwards;
+}
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+  to {
+    opacity: 1;
+  }
+}
+.pop-in {
+  animation: pop-in 280ms var(--ease-spring) backwards;
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.965);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A side sheet arriving: it slides in from the edge it is anchored to rather
+   than fading in place, so it reads as a panel being pulled out of the screen. */
+.sheet-in {
+  animation: sheet-in 320ms var(--ease-out-soft) backwards;
+}
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateX(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The search capsule lifting out of the bar: it grows rightward from the icon
+   it detached from, so the motion says where it came from and where Escape
+   puts it back. */
+.island-in {
+  animation: island-in 340ms var(--ease-spring) backwards;
+  transform-origin: left center;
+}
+@keyframes island-in {
+  from {
+    opacity: 0;
+    transform: scaleX(0.12);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A menu opening from its own button: it grows out of the top edge rather
+   than fading in over the page. */
+.menu-in {
+  animation: menu-in 180ms var(--ease-out-soft) backwards;
+  transform-origin: var(--origin, top left);
+}
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pulse-live {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(14, 158, 144, 0.45);
+  }
+  50% {
+    opacity: 0.7;
+    box-shadow: 0 0 0 5px rgba(14, 158, 144, 0);
+  }
+}
+
+/* Nothing above survives this. A single query, so a new animation cannot be
+   added without being covered by it. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+  .lift:hover,
+  .btn:hover,
+  .btn:active {
+    transform: none;
+  }
+  .row-hover:hover {
+    padding-left: 0;
+  }
+  .dock-bubble {
+    transition-duration: 1ms !important;
+  }
+}
+
+.skeleton {
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    rgba(21, 32, 46, 0.05) 25%,
+    rgba(21, 32, 46, 0.09) 50%,
+    rgba(21, 32, 46, 0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
 /* --- print (report export) --- */
 @media print {
   :root {
@@ -248,13 +844,13 @@ input.field[type="date"]::-webkit-calendar-picker-indicator {
     --color-plane: #ffffff;
     --color-panel: #ffffff;
     --color-raised: #f4f4f2;
-    --color-ink: #111111;
-    --color-ink-2: #333333;
-    --color-ink-3: #666666;
-    --color-line: rgba(0, 0, 0, 0.18);
-    --color-line-2: rgba(0, 0, 0, 0.09);
-    --color-accent: #1c5cab;
-    --color-accent-soft: rgba(28, 92, 171, 0.08);
+    --color-ink: #15202e;
+    --color-ink-2: #5a6472;
+    --color-ink-3: #97a3b0;
+    --color-line: rgba(21, 32, 46, 0.18);
+    --color-line-2: rgba(21, 32, 46, 0.09);
+    --color-accent: #0f8578;
+    --color-accent-soft: rgba(15, 133, 120, 0.08);
   }
   html {
     color-scheme: light;
@@ -262,7 +858,7 @@ input.field[type="date"]::-webkit-calendar-picker-indicator {
   body {
     background: #ffffff !important;
     background-image: none !important;
-    color: #111111 !important;
+    color: #15202e !important;
   }
   aside,
   header,
@@ -274,26 +870,23 @@ input.field[type="date"]::-webkit-calendar-picker-indicator {
     max-width: 100% !important;
     padding: 0 !important;
   }
+  .card,
+  .card-2,
   .glass,
-  .glass-subtle {
+  .glass-subtle,
+  .tint-mint,
+  .tint-cream,
+  .tint-lilac,
+  .tint-peach,
+  .tint-sky {
     background: #ffffff !important;
-    box-shadow: none !important;
     backdrop-filter: none !important;
+    border-color: rgba(21, 32, 46, 0.18) !important;
+    box-shadow: none !important;
     break-inside: avoid;
   }
-  .page-in {
+  .page-in,
+  .rise-in {
     animation: none;
-  }
-}
-
-.skeleton {
-  border-radius: 8px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.04) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s infinite linear;
-}
-@keyframes shimmer {
-  to {
-    background-position: -200% 0;
   }
 }

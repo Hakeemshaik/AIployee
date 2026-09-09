@@ -3,12 +3,12 @@ import { getContext } from "@/lib/auth";
 import { label } from "@/lib/domain";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { getLatestInsight } from "@/services/insights";
-import { Badge, EmptyState, GlassCard, PageHeader } from "@/components/ui";
+import { Badge, EmptyState, Card, PageHeader } from "@/components/ui";
 import { RefreshInsightsButton } from "@/components/actions/RefreshInsights";
 import type { InsightFinding, RecommendedAction } from "@/services/ai";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "AI Insights" };
+export const metadata = { title: "AI insights" };
 
 function FindingList({ items }: { items: InsightFinding[] }) {
   if (!items?.length) return <p className="text-[0.8125rem] text-ink-3">Nothing notable in this period.</p>;
@@ -30,19 +30,19 @@ export default async function InsightsPage() {
   return (
     <div className="page-in">
       <PageHeader
-        title="AI Insights"
-        description="Structured analysis of outcomes, behaviour, risk and campaign performance across the last 30 days."
+        title="AI insights"
+        description="AI analysis of the last 30 days"
         actions={<RefreshInsightsButton scope="insights" />}
       />
 
       {!insight ? (
         <EmptyState
           title="No analysis yet"
-          hint="Generate insights once there is collection activity to analyse."
+          hint="Needs collection activity to analyse."
         />
       ) : (
         <>
-          <GlassCard
+          <Card
             className="mb-4"
             title="Collection summary"
             subtitle={`Generated ${formatDateTime(insight.generatedAt)} · ${insight.provider === "claude" ? "Claude" : "built-in engine"}`}
@@ -54,17 +54,17 @@ export default async function InsightsPage() {
             <p className="max-w-4xl text-[0.8125rem] leading-relaxed text-ink-2">
               {insight.content.collectionSummary}
             </p>
-          </GlassCard>
+          </Card>
 
           <div className="mb-4 grid gap-4 lg:grid-cols-2">
-            <GlassCard title="Key findings"><FindingList items={insight.content.keyFindings} /></GlassCard>
-            <GlassCard title="Risk trends"><FindingList items={insight.content.riskTrends} /></GlassCard>
-            <GlassCard title="Debtor behaviour"><FindingList items={insight.content.debtorBehaviour} /></GlassCard>
-            <GlassCard title="Campaign performance"><FindingList items={insight.content.campaignPerformance} /></GlassCard>
+            <Card title="Key findings"><FindingList items={insight.content.keyFindings} /></Card>
+            <Card title="Risk trends"><FindingList items={insight.content.riskTrends} /></Card>
+            <Card title="Debtor behaviour"><FindingList items={insight.content.debtorBehaviour} /></Card>
+            <Card title="Campaign performance"><FindingList items={insight.content.campaignPerformance} /></Card>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <GlassCard title="Recommended actions">
+            <Card title="Recommended actions">
               <ul className="space-y-3">
                 {insight.content.recommendedActions.map((a: RecommendedAction, i: number) => (
                   <li key={i} className="flex items-start gap-3">
@@ -75,13 +75,12 @@ export default async function InsightsPage() {
                   </li>
                 ))}
               </ul>
-            </GlassCard>
-            <GlassCard title="Anomalies"><FindingList items={insight.content.anomalies} /></GlassCard>
+            </Card>
+            <Card title="Anomalies"><FindingList items={insight.content.anomalies} /></Card>
           </div>
 
           <p className="mt-4 text-[0.71875rem] text-ink-3">
-            Analysis window: {formatDate(insight.content ? insight.generatedAt : null)} — based on call
-            outcomes, promise fulfilment, payments, contact rates, aging and sentiment. No debtor
+            Analysed to {formatDate(insight.content ? insight.generatedAt : null)} · no debtor
             personal information is sent to the AI provider.
           </p>
         </>

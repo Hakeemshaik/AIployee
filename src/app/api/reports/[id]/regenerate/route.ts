@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { authFailure } from "@/lib/api-errors";
 import { db } from "@/lib/db";
-import { getContext } from "@/lib/auth";
+import { apiContext } from "@/lib/auth";
 import { generateReport, type generateReportSchema } from "@/services/reports";
 import type { z } from "zod";
 
@@ -10,7 +11,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const ctx = await getContext();
+    const ctx = await apiContext();
     const { id } = await params;
     const existing = await db.report.findFirst({
       where: { id, organizationId: ctx.organizationId },
@@ -29,6 +30,8 @@ export async function POST(
     );
     return NextResponse.json({ id: report.id });
   } catch (err) {
+    const denied = authFailure(err);
+    if (denied) return denied;
     console.error("[reports] regeneration failed:", err);
     return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
