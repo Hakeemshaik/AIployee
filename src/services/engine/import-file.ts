@@ -1,6 +1,8 @@
+import { randomUUID } from "node:crypto";
 import * as XLSX from "xlsx";
 import { db } from "@/lib/db";
-import { engineBatchStamp } from "./rounds";
+import { callColumnValue, loadFlowConfig } from "@/services/flow-config";
+import { engineBatchStamp, evaluateEligibility } from "./rounds";
 
 // ---------------------------------------------------------------------------
 // The Jobix import workbook, written back out.
@@ -10,6 +12,23 @@ import { engineBatchStamp } from "./rounds";
 // operators still want that artifact: to upload by hand, to archive what was
 // sent, or to run on a workspace this platform is not connected to. Same
 // columns, same cleaning, generated from the campaign's book in one click.
+//
+// THE SUID IS MINTED HERE, FRESH, EVERY TIME.
+//
+// On an insert-started flow only an INSERT dials. Jobix upserts on the suid,
+// so a file carrying the account's stable suid uploads as an UPDATE: the
+// platform reports success, says "update", and no phone rings. That is not a
+// Jobix quirk to work around later, it is the mechanism — so every row of
+// every download gets an identifier that has never existed, and the person
+// downloading never has to know any of this.
+//
+// Two shapes come out of here:
+//
+//   the book      — everyone, `call` left empty. For the archive, or for an
+//                   operator who arms the rows themselves.
+//   the redial    — only the accounts still owed a call, `call` already
+//                   carrying the flow flag. Upload it and those phones ring.
+//                   This is the list that used to be built by hand.
 // ---------------------------------------------------------------------------
 
 // The 72-column list lives in one place — the debtor-path exporter — and is
@@ -18,38 +37,76 @@ import { JOBIX_COLUMNS as IMPORT_COLUMNS } from "@/services/jobix-export";
 
 const PHONE_COLUMNS = new Set(["Phone", "phone"]);
 
-function batchLabel(campaignName: string, now = new Date()): string {
+function batchLabel(campaignName: string, now = new Date(), suffix?: string): string {
   const stem = campaignName
     .toUpperCase()
     .replace(/[^A-Z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "")
     .slice(0, 24) || "BOOK";
-  return `${stem}_${engineBatchStamp(now)}`;
+  return [stem, engineBatchStamp(now), suffix].filter(Boolean).join("_");
 }
+
+export type ImportFileOptions = {
+  /**
+   * "book" is everyone; "redial" is only those still owed a call, decided by
+   * the same rule the next round uses — so the file and the engine can never
+   * disagree about who is finished.
+   */
+  list?: "book" | "redial";
+  /**
+   * Fill the `call` column with the configured flow flag. An armed row on an
+   * insert-started flow rings as it lands, which is the point of the redial
+   * file and a hazard for anything else — so it is never the default.
+   */
+  armed?: boolean;
+};
 
 /** The campaign's book as a 72-column Jobix import workbook (.xlsx buffer). */
 export async function jobixImportWorkbook(
   organizationId: string,
   campaignId: string,
-): Promise<{ buffer: Buffer; filename: string; accounts: number }> {
+  options: ImportFileOptions = {},
+): Promise<{ buffer: Buffer; filename: string; accounts: number; armed: boolean }> {
   const campaign = await db.campaign.findFirstOrThrow({
     where: { id: campaignId, organizationId },
-    select: { name: true },
   });
-  const accounts = await db.engineAccount.findMany({
+  const all = await db.engineAccount.findMany({
     where: { campaignId, organizationId },
     orderBy: { totalDue: "desc" },
   });
-  if (accounts.length === 0) {
+  if (all.length === 0) {
     throw new Error("The book is empty — load it before downloading the import file.");
   }
 
-  const batch = batchLabel(campaign.name);
+  const wantRedial = options.list === "redial";
+  const accounts = wantRedial ? evaluateEligibility(campaign, all).eligible : all;
+  if (accounts.length === 0) {
+    throw new Error(
+      "Nobody is owed another call — every account is resolved, out of attempts, or has no usable number.",
+    );
+  }
+
+  // The flag the flow's entry filter matches. Resolved through the shared
+  // config so this file and the in-app dialler always write the same value.
+  let callFlag: string | undefined;
+  if (options.armed) {
+    callFlag = callColumnValue(await loadFlowConfig(organizationId), undefined);
+    if (!callFlag) {
+      throw new Error(
+        "No call flag is configured, so an armed file would not match the flow. Set it under Settings first.",
+      );
+    }
+  }
+
+  const batch = batchLabel(campaign.name, undefined, wantRedial ? "REDIAL" : undefined);
   const rows = accounts.map((account) => {
     const row: Record<string, string | number | null> = {};
     for (const column of IMPORT_COLUMNS) row[column] = null;
-    row["SUID"] = account.suid;
-    row["suid"] = account.suid;
+    // Never the account's own suid: that is a known identifier, and a known
+    // identifier is an update, and an update does not dial.
+    const fresh = randomUUID();
+    row["SUID"] = fresh;
+    row["suid"] = fresh;
     row["Name"] = account.fullName;
     row["name"] = account.fullName;
     row["full_name"] = account.fullName;
@@ -68,8 +125,9 @@ export async function jobixImportWorkbook(
     row["building_name"] = account.buildingName;
     row["batch"] = batch;
     row["language"] = "English";
-    // "call" stays empty on purpose: an armed import dials the moment a
-    // trigger fires. Arming is a decision the operator makes on the platform.
+    // Armed only when asked for. `batch` stays the attribution key either way:
+    // the flow never writes to it, so results still come back to this run.
+    if (callFlag) row["call"] = callFlag;
     return row;
   });
 
@@ -94,5 +152,10 @@ export async function jobixImportWorkbook(
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, sheet, "Sheet1");
   const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }) as Buffer;
-  return { buffer, filename: `Jobix_Import_${batch}.xlsx`, accounts: accounts.length };
+  return {
+    buffer,
+    filename: `Jobix_${wantRedial ? "Redial" : "Import"}_${batch}.xlsx`,
+    accounts: accounts.length,
+    armed: Boolean(callFlag),
+  };
 }

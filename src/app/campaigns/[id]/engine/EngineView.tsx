@@ -388,9 +388,22 @@ export function EngineView({ initial, campaignId }: { initial: EngineState; camp
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <a href={`/api/engine/${campaignId}/import-file`} className="btn">
+            <a
+              href={`/api/engine/${campaignId}/import-file`}
+              className="btn"
+              title="The whole book, call column left empty. Every row carries a fresh suid, so an upload inserts rather than updates."
+            >
               <Download size={14} /> Jobix import (.xlsx)
             </a>
+            {state.campaign.currentRound > 0 && (
+              <a
+                href={`/api/engine/${campaignId}/import-file?list=redial&armed=1`}
+                className="btn"
+                title="Only the accounts still owed a call, armed with the flow flag. Uploading it rings those phones."
+              >
+                <Download size={14} /> Redial list, armed
+              </a>
+            )}
             <p className="text-[0.6875rem] text-ink-3">For a manual upload or the archive</p>
           </div>
 
@@ -673,9 +686,18 @@ export function EngineView({ initial, campaignId }: { initial: EngineState; camp
                     <span className="text-ink-3"> · {money(resync.redialArrears)}</span>
                   )}
                 </button>
+                {resync.redialable > 0 && (
+                  <a
+                    href={`/api/engine/${campaignId}/import-file?list=redial&armed=1`}
+                    className="rounded-full border border-line bg-white/60 px-3 py-1.5 text-[0.75rem] text-ink-2 transition-all hover:border-accent/45 hover:bg-white hover:text-ink"
+                    title="The same accounts as a 72-column import file, armed with the flow flag and fresh suids"
+                  >
+                    <Download size={12} className="mr-1 inline" /> Download as an import file
+                  </a>
+                )}
                 {resync.redialable > 0 && status === "between_rounds" && (
                   <span className="text-[0.71875rem] text-ink-2">
-                    Build round {state.campaign.currentRound + 1} above to call these back.
+                    …or build round {state.campaign.currentRound + 1} above and let the engine dial them.
                   </span>
                 )}
                 {resync.redialable === 0 && (
