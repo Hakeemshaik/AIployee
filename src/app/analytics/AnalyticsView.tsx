@@ -258,14 +258,15 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
           PTP figures below are a floor, not a result — say so on the screen
           rather than letting an understated number pass as final. */}
       {missingTranscripts > 0 && (
-        <div className="rounded-lg border border-warning/30 bg-warning/7 px-3.5 py-2.5">
+        <div
+          className="rounded-lg border border-warning/30 bg-warning/7 px-3.5 py-2.5"
+          title="Reach is verified by reading the transcript, so a call without one counts as not reached. Import again with Numbers only switched off to fetch them."
+        >
           <p className="text-[0.78125rem] font-medium text-warning">
             {count(missingTranscripts)} of {count(payload.transcripts!.total)} calls have no transcript yet
           </p>
-          <p className="mt-1 text-[0.71875rem] leading-relaxed text-ink-2">
-            Reach is verified by reading the transcript, so those calls count as not reached. Every figure
-            below is a floor until they are fetched — import again with &ldquo;Numbers only&rdquo; switched off
-            to complete them.
+          <p className="mt-1 text-[0.71875rem] text-ink-2">
+            They count as not reached, so every figure below is a floor.
           </p>
         </div>
       )}
@@ -277,14 +278,14 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
           label="Contact rate"
           value={percent(a.contactRate)}
           meter={a.contactRate}
-          sub={`${count(a.contactAccounts)} of ${count(a.attempted)} attempted accounts answered`}
+          sub={`${count(a.contactAccounts)} of ${count(a.attempted)} answered`}
         />
         <StatCard
           i={1}
           label="Promises to pay"
           value={count(a.commitments.count)}
           tone={a.commitments.count > 0 ? "good" : undefined}
-          sub={`${percent(a.ptpRate)} of right-party conversations commit`}
+          sub={`${percent(a.ptpRate)} of right-party talks`}
         />
         <StatCard
           i={2}
@@ -292,8 +293,8 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
           value={cash}
           sub={
             a.commitments.withoutStatedAmount > 0
-              ? `${count(a.commitments.withoutStatedAmount)} promise${a.commitments.withoutStatedAmount === 1 ? "" : "s"} with no stated amount`
-              : `across ${count(a.commitments.count)} commitment${a.commitments.count === 1 ? "" : "s"}`
+              ? `${count(a.commitments.withoutStatedAmount)} with no amount stated`
+              : `${count(a.commitments.count)} commitment${a.commitments.count === 1 ? "" : "s"}`
           }
         />
         <StatCard
@@ -301,13 +302,13 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
           label="Book worked"
           value={percent(a.penetration)}
           meter={a.penetration}
-          sub={`${count(a.attempted)} of ${count(a.accounts)} accounts dialled${a.dialsPerRpc > 0 ? ` · ${a.dialsPerRpc.toFixed(1)} dials per right-party talk` : ""}`}
+          sub={`${count(a.attempted)} of ${count(a.accounts)} dialled${a.dialsPerRpc > 0 ? ` · ${a.dialsPerRpc.toFixed(1)} dials per talk` : ""}`}
         />
       </div>
 
       {/* --- 2 · where the book stands --------------------------------------- */}
       <div className="grid items-start gap-4 xl:grid-cols-2">
-        <Card title="The funnel" subtitle="How many people, at each step from book to promise">
+        <Card title="The funnel">
           <div className="space-y-3.5">
             <FunnelStep label="Book" count={a.accounts} total={a.accounts} />
             <FunnelStep label="Attempted" count={a.attempted} previous={a.accounts} total={a.accounts} dropReason="never called" />
@@ -335,10 +336,7 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
           </div>
         </Card>
 
-        <Card
-          title="Where the money sits"
-          subtitle="Arrears by how reachable the account holder is"
-        >
+        <Card title="Where the money sits" subtitle="Arrears by reachability">
           <div className="space-y-3.5">
             {BUCKET_ORDER.map((bucket, index) => {
               const value = moneyByBucket.sums[bucket];
@@ -369,11 +367,14 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
             })}
           </div>
           {moneyByBucket.sums.never_connected > 0 && (
-            <p className="mt-4 text-[0.71875rem] leading-relaxed text-ink-3">
+            <p
+              className="mt-4 text-[0.71875rem] text-ink-3"
+              title="Redialling cannot reach it; new numbers can."
+            >
               <span className="font-medium text-warning">
                 {money(moneyByBucket.sums.never_connected)}
               </span>{" "}
-              sits behind numbers that never connect — redialling cannot reach it, new numbers can.
+              sits behind numbers that never connect
             </p>
           )}
         </Card>
@@ -381,10 +382,7 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
 
       {/* --- 3 · when calls land --------------------------------------------- */}
       <div className="grid items-start gap-4 xl:grid-cols-2">
-        <Card
-          title="Reach by time of day"
-          subtitle="South African time — reached calls ÷ attempted calls, per hour"
-        >
+        <Card title="Reach by time of day" subtitle="Reached ÷ attempted per hour, SAST">
           {a.reachByHour.length === 0 ? (
             <p className="py-10 text-center text-[0.8125rem] text-ink-3">No call data yet.</p>
           ) : (
@@ -393,7 +391,7 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
         </Card>
         <Card
           title="Reach by attempt"
-          subtitle="Unique accounts counted at their first reach — when does another round stop paying?"
+          subtitle="Unique accounts at first reach"
         >
           {a.reachByAttempt.length === 0 ? (
             <p className="py-10 text-center text-[0.8125rem] text-ink-3">No attempts yet.</p>
@@ -407,17 +405,18 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
           Three rows, each a decision already made: who to ring again, whose
           numbers to replace, who needs a person. The counts are the same
           accounts the table below shows — the button just takes you there. */}
-      <Card title="What to do next" subtitle="The book, sorted into the three moves available">
+      <Card title="What to do next">
         <div className="divide-y divide-line-2">
-          <div className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0">
+          <div
+            className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0"
+            title="Answered before but no real conversation yet — another attempt has a fair chance."
+          >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/12">
               <PhoneForwarded size={16} className="text-accent" />
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-[0.8125rem] font-medium text-ink">Ring again</p>
-              <p className="text-[0.71875rem] leading-relaxed text-ink-2">
-                Answered before but no real conversation yet — another attempt has a fair chance.
-              </p>
+              <p className="text-[0.71875rem] text-ink-2">Answered, no conversation yet</p>
             </div>
             <span className="num text-right text-[0.8125rem] text-ink">
               {count(ringAgain.length)} <span className="text-ink-3">· {money(sum(ringAgain))}</span>
@@ -427,15 +426,16 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0">
+          <div
+            className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0"
+            title="Every attempt had zero talk time — these need contact repair, not more dialling."
+          >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-warning/12">
               <PhoneOff size={16} className="text-warning" />
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-[0.8125rem] font-medium text-ink">Get new numbers</p>
-              <p className="text-[0.71875rem] leading-relaxed text-ink-2">
-                Every attempt had zero talk time — these need contact repair, not more dialling.
-              </p>
+              <p className="text-[0.71875rem] text-ink-2">Zero talk time on every attempt</p>
             </div>
             <span className="num text-right text-[0.8125rem] text-ink">
               {count(deadRows.length)} <span className="text-ink-3">· {money(sum(deadRows))}</span>
@@ -450,15 +450,16 @@ export function AnalyticsView({ payload, canCall }: { payload: AnalyticsPayload;
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0">
+          <div
+            className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0"
+            title="Disputed or escalated — the AI is done here, and dialling them again causes harm."
+          >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-critical/10">
               <UserRound size={16} className="text-critical" />
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-[0.8125rem] font-medium text-ink">Hand to a person</p>
-              <p className="text-[0.71875rem] leading-relaxed text-ink-2">
-                Disputed or escalated — the AI is done here, and dialling them again causes harm.
-              </p>
+              <p className="text-[0.71875rem] text-ink-2">Disputed or escalated</p>
             </div>
             <span className="num text-right text-[0.8125rem] text-ink">
               {count(needsPerson.length)} <span className="text-ink-3">· {money(sum(needsPerson))}</span>

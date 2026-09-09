@@ -154,7 +154,7 @@ export default async function AnalyticsPage() {
       )}
       <PageHeader
         title="Call analytics"
-        description={`${payload.campaignName} · Workspace ${payload.workspace}. Every account classified by whether a real human conversation happened.`}
+        description={`${payload.campaignName} · ${payload.workspace}`}
       />
       <IngestionPanel
         initial={ingestion.initial}

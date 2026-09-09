@@ -59,7 +59,7 @@ export function CreateKeyButton() {
     return (
       <div className="mt-3 rounded-xl border border-good/35 bg-good/[0.07] p-3">
         <p className="text-[0.75rem] font-medium text-ink">
-          Your webhook key — copy it now, it is shown once and never again:
+          Your webhook key — copy it now, it is shown once:
         </p>
         <div className="mt-2 flex items-center gap-2">
           <code className="num min-w-0 flex-1 truncate rounded-lg border border-line bg-white/80 px-2.5 py-1.5 text-[0.71875rem] text-ink">
@@ -70,10 +70,12 @@ export function CreateKeyButton() {
             {copied ? "Copied" : "Copy"}
           </button>
         </div>
-        <p className="mt-2 text-[0.6875rem] leading-relaxed text-ink-2">
+        <p
+          className="mt-2 text-[0.6875rem] leading-relaxed text-ink-2"
+          title="Only its hash is stored here, so if it is lost, create a new one."
+        >
           Paste it into the Jobix webhook node as{" "}
           <code className="rounded bg-ink/[0.06] px-1">Authorization: Bearer &lt;key&gt;</code>.
-          Only its hash is stored here, so if it is lost, create a new one.
         </p>
       </div>
     );
@@ -81,7 +83,12 @@ export function CreateKeyButton() {
 
   return (
     <div className="mt-3">
-      <button className="btn" onClick={mint} disabled={busy}>
+      <button
+        className="btn"
+        onClick={mint}
+        disabled={busy}
+        title="Keys are stored as SHA-256 hashes; the full key is shown once, at creation."
+      >
         {busy ? <Loader2 size={13} className="animate-spin" /> : <KeyRound size={13} />}
         {busy ? "Creating…" : "Create a webhook key"}
       </button>

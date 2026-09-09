@@ -438,22 +438,25 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
               </div>
             ) : (
               <div className="space-y-2">
-                <p className="text-[0.75rem] leading-relaxed text-ink-2">
-                  <span className="num font-medium text-ink">{count(list.rowCount)}</span> rows. Batch{" "}
-                  <span className="num text-ink">{list.batchCode}</span> is in the{" "}
-                  <span className="num">batch</span> column, which is how results come back to this campaign.
+                <p
+                  className="text-[0.75rem] text-ink-2"
+                  title="The batch column is how results come back to this campaign. The call column is what the flow's entry filter must look for."
+                >
+                  <span className="num font-medium text-ink">{count(list.rowCount)}</span> rows · batch{" "}
+                  <span className="num text-ink">{list.batchCode}</span>
                   {list.callFlag && (
                     <>
                       {" "}
-                      The <span className="num">call</span> column carries{" "}
-                      <span className="num text-ink">{list.callFlag}</span> — that is what the flow&apos;s
-                      entry filter must look for.
-                      {list.callFlag === list.batchCode
-                        ? " Because it is this run's code, the filter has to name it, which means editing the flow before every run. Set JOBIX_CALL_FLAG to a fixed word and the filter can be written once and left alone."
-                        : " It is the same every run, so the flow is configured once and never edited again."}
+                      · call <span className="num text-ink">{list.callFlag}</span>
                     </>
                   )}
                 </p>
+                {list.callFlag && list.callFlag === list.batchCode && (
+                  <p className="text-[0.6875rem] text-warning">
+                    The flow filter has to name this run&apos;s code. Set JOBIX_CALL_FLAG to a fixed word
+                    and it can be written once.
+                  </p>
+                )}
                 <div className="flex flex-wrap items-center gap-2">
                   <button className="btn btn-primary" onClick={sendList} disabled={busy !== null}>
                     {busy === "send" ? (
@@ -484,9 +487,8 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                       )}
                       Find what Jobix rejected
                     </button>
-                    <span className="text-[0.6875rem] leading-relaxed text-ink-3">
-                      Writes one account several ways, without the dialling flag, to find which
-                      field is being refused. Nobody is called.
+                    <span className="text-[0.6875rem] text-ink-3">
+                      Writes one account several ways to find the refused field. Nobody is called.
                     </span>
                   </div>
                 )}
@@ -753,10 +755,11 @@ export function LaunchPanel({ campaignId, canLaunch }: { campaignId: string; can
                       Schedule
                     </button>
                   </div>
-                  <p className="mt-2 text-[0.6875rem] leading-relaxed text-ink-3">
-                    A scheduled run dials the batch code on the list above, under the same rules as starting
-                    now: inside calling hours, calling enabled, trigger configured. Keep this page open and it
-                    fires on the minute; unattended firing needs CRON_SECRET set and the scheduler running.
+                  <p
+                    className="mt-2 text-[0.6875rem] text-ink-3"
+                    title="Same guards as starting now: inside calling hours, calling enabled, trigger configured. Unattended firing needs CRON_SECRET set and the scheduler running."
+                  >
+                    Keep this page open, or set CRON_SECRET for unattended runs.
                   </p>
                 </div>
               </div>

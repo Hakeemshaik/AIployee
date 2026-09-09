@@ -37,7 +37,8 @@ export default async function EnginePage({ params }: { params: Promise<{ id: str
       <BackLink href={`/campaigns/${id}`} label={campaign.name} />
       <PageHeader
         title="Campaign engine"
-        description={`${campaign.name} — paste the book, call it in rounds, and close it with the report. Nothing here dials outside 06:00–21:00 SAST, on a Sunday, or on a public holiday.`}
+        description={campaign.name}
+        meta="06:00–21:00 SAST · no Sundays or public holidays"
       />
       <EngineView initial={JSON.parse(JSON.stringify(state))} campaignId={id} />
     </div>

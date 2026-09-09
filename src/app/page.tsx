@@ -104,7 +104,7 @@ export default async function DashboardPage() {
     <div className="page-in">
       <PageHeader
         title="Dashboard"
-        description="Where the book stands, and what needs a person today. Last 30 days unless stated."
+        description="Where the book stands today"
       />
 
       {/* Only while there is something left to do — a finished setup does not
@@ -330,12 +330,12 @@ export default async function DashboardPage() {
             </ul>
           )}
         </Card>
-        <Card i={1} title="Reach" subtitle="Connected calls as a share of attempts">
+        <Card i={1} title="Reach" subtitle="Connected calls, share of attempts">
           <div className="pt-2">
             <Gauge
               value={attempts > 0 ? connected / attempts : 0}
               label={`${count(connected)} of ${count(attempts)} attempts`}
-              caption="Last 30 days. A reached call is one a person answered."
+              caption="Last 30 days"
             />
           </div>
         </Card>

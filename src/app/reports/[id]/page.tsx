@@ -61,7 +61,7 @@ export default async function ReportDetailPage({
           </div>
 
           <div className="mb-4 grid gap-4 lg:grid-cols-2">
-            <Card title="Collection outcomes" subtitle="Connected-call outcomes in the period">
+            <Card title="Collection outcomes">
               {Object.keys(snap.outcomes).length === 0 ? (
                 <p className="text-[0.8125rem] text-ink-3">No analysed calls in this period.</p>
               ) : (

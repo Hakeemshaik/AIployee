@@ -68,10 +68,7 @@ export function PlaceCallCard() {
   const ready = name.trim().length > 1 && /^\+\d{8,15}$/.test(phone.trim().replace(/\s+/g, ""));
 
   return (
-    <Card
-      title="Place one call"
-      subtitle="One customer written, one call — the same mechanism a form submit uses"
-    >
+    <Card title="Place one call" subtitle="One customer written, one call">
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
           <span className="mb-1 block text-[0.71875rem] text-ink-2">Name</span>
@@ -100,9 +97,11 @@ export function PlaceCallCard() {
         {busy ? <Loader2 size={13} className="animate-spin" /> : <PhoneOutgoing size={13} />}
         {busy ? "Writing the customer…" : "Call this number"}
       </button>
-      <p className="mt-2 text-[0.6875rem] leading-relaxed text-ink-3">
-        Full international form. The record is written with the configured call flag, so the flow dials it
-        as it lands — inside calling hours only, and never a number on the deny list.
+      <p
+        className="mt-2 text-[0.6875rem] leading-relaxed text-ink-3"
+        title="The record is written with the configured call flag, so the flow dials it as it lands."
+      >
+        Full international form. Calling hours and the deny list still apply.
       </p>
 
       {error && (

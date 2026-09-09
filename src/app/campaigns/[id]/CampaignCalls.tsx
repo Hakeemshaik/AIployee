@@ -145,14 +145,10 @@ export function CampaignCalls({
             )}
           </div>
 
-          <p className="text-[0.6875rem] leading-relaxed text-ink-3">
-            Click any call to read the conversation. Reach is decided by reading the transcript, never from
-            the platform&apos;s voicemail flag, and a call is tied to this campaign through the account it
-            belongs to — by the voice platform&apos;s own customer identifier where the record carries one,
-            otherwise by phone number.
+          <p className="text-[0.6875rem] text-ink-3">
             {log.batchSentAt
-              ? " Calls before this batch was sent belong to an earlier run and are excluded."
-              : " Without a sent batch every call to these accounts is listed, whenever it happened."}
+              ? "Calls before this batch belong to an earlier run and are excluded."
+              : "No batch sent, so every call to these accounts is listed."}
           </p>
         </div>
 
@@ -173,8 +169,12 @@ export function CampaignCalls({
                   <th className="text-right">Attempt</th>
                   <th className="text-right">Talk time</th>
                   <th>Agent</th>
-                  <th>Outcome</th>
-                  <th>Basis</th>
+                  <th title="Read from the transcript, never from the platform's voicemail flag">
+                    Outcome
+                  </th>
+                  <th title="How the call was tied to this campaign: the platform's customer id where the record carries one, otherwise the phone number">
+                    Basis
+                  </th>
                   <th />
                 </tr>
               </thead>

@@ -124,7 +124,6 @@ export function TeamCard({ selfId }: { selfId: string }) {
   return (
     <Card
       title="Team"
-      subtitle="Members, roles and invitations"
       actions={
         <button className="btn" onClick={() => setShowForm((value) => !value)}>
           {showForm ? <X size={13} /> : <UserPlus size={13} />}
@@ -145,7 +144,7 @@ export function TeamCard({ selfId }: { selfId: string }) {
             Invite created for {inviteLink.email}
           </p>
           <p className="mt-1 text-[0.6875rem] leading-relaxed text-ink-3">
-            This link is shown once and expires in seven days. Send it to them directly.
+            Shown once, expires in seven days. Send it to them directly.
           </p>
           <div className="mt-2 flex items-center gap-2">
             <code className="num flex-1 truncate rounded-lg border border-line bg-ink/[0.05] px-3 py-2 text-[0.71875rem] text-ink">

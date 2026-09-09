@@ -101,7 +101,7 @@ export function FlowCard({ initial, canEdit }: { initial: FlowConfig; canEdit: b
   return (
     <Card
       title="Dialling flow"
-      subtitle="Which flow the platform starts, and what arms an account for it"
+      subtitle="Which flow the platform starts"
       actions={
         canEdit ? (
           <button className="btn btn-primary" disabled={busy !== null} onClick={save}>
@@ -122,10 +122,10 @@ export function FlowCard({ initial, canEdit }: { initial: FlowConfig; canEdit: b
           <AlertTriangle size={14} className="mt-0.5 shrink-0" />
         )}
         {start === "insert"
-          ? "This flow runs when a customer is written, so no trigger node is needed — sending a dialling list starts the calls."
+          ? "Runs when a customer is written — sending the list starts the calls."
           : config.triggerReady
-            ? "The flow and its trigger node are set, so the platform can start a run itself."
-            : "Without both the flow and its trigger node the platform prepares the list but cannot start the run — you press Run in Jobix instead."}
+            ? "Flow and trigger node set, so the platform can start a run."
+            : "Without the flow and its trigger node, you press Run in Jobix instead."}
       </p>
 
       <div className="space-y-3">
@@ -141,14 +141,12 @@ export function FlowCard({ initial, canEdit }: { initial: FlowConfig; canEdit: b
               value={flowInput}
               onChange={(event) => setFlowInput(event.target.value)}
               disabled={!canEdit}
+              title="Paste the whole address from the browser — the id is taken out of it."
             />
             <button className="btn" disabled={busy !== null || !flowInput.trim()} onClick={read}>
               {busy === "read" ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
               Read the flow
             </button>
-          </span>
-          <span className="mt-1 block text-[0.65625rem] text-ink-3">
-            Paste the whole address from the browser — the id is taken out of it.
           </span>
         </label>
 
@@ -165,14 +163,23 @@ export function FlowCard({ initial, canEdit }: { initial: FlowConfig; canEdit: b
           <div className="flex flex-wrap gap-1.5">
             {(
               [
-                { value: "insert", label: "A customer is written" },
-                { value: "trigger", label: "The trigger node is fired" },
+                {
+                  value: "insert",
+                  label: "A customer is written",
+                  why: "Your flow's first node is an event holding Insert Customer. Sending a dialling list writes each account with the call flag already set, which fires the flow and places the call there and then — so sending IS starting, and it needs calling enabled and the hours to be open.",
+                },
+                {
+                  value: "trigger",
+                  label: "The trigger node is fired",
+                  why: "The run begins when the platform fires the flow's Run node. Accounts are written unarmed, armed afterwards, and nobody is dialled until you press Start.",
+                },
               ] as const
             ).map((option) => (
               <button
                 key={option.value}
                 onClick={() => setStart(option.value)}
                 disabled={!canEdit}
+                title={option.why}
                 className={`rounded-full border px-2.5 py-1 text-[0.6875rem] transition-colors ${
                   start === option.value
                     ? "border-accent/45 bg-accent-soft text-ink"
@@ -185,8 +192,8 @@ export function FlowCard({ initial, canEdit }: { initial: FlowConfig; canEdit: b
           </div>
           <span className="mt-1 block text-[0.65625rem] leading-relaxed text-ink-3">
             {start === "insert"
-              ? "Your flow's first node is an event holding Insert Customer. Sending a dialling list writes each account with the call flag already set, which fires the flow and places the call there and then — so sending IS starting, and it needs calling enabled and the hours to be open."
-              : "The run begins when the platform fires the flow's Run node. Accounts are written unarmed, armed afterwards, and nobody is dialled until you press Start."}
+              ? "Sending the dialling list writes each account armed, and dials at once."
+              : "Accounts are written unarmed; nobody is dialled until you press Start."}
           </span>
         </fieldset>
 
@@ -215,12 +222,11 @@ export function FlowCard({ initial, canEdit }: { initial: FlowConfig; canEdit: b
             value={flagInput}
             onChange={(event) => setFlagInput(event.target.value)}
             disabled={!canEdit}
+            title="A fixed word means the flow's entry filter is written once and never edited again. Leave it empty and each run's batch code goes there instead — which dials, but means editing the flow before every run."
           />
           <span className="mt-1 block text-[0.65625rem] leading-relaxed text-ink-3">
-            The value written to each account&apos;s <span className="num">call</span> column, and what the
-            flow&apos;s entry filter must match. A fixed word means the filter is written once and never
-            edited again. Leave it empty and each run&apos;s batch code goes there instead — which dials, but
-            means editing the flow before every run.
+            Written to each account&apos;s <span className="num">call</span> column; the flow&apos;s
+            entry filter must match.
           </span>
         </label>
       </div>
@@ -280,7 +286,7 @@ export function FlowCard({ initial, canEdit }: { initial: FlowConfig; canEdit: b
       {saved && (
         <p className="mt-3 flex items-center gap-2 text-[0.78125rem] text-good">
           <Check size={13} className="shrink-0" />
-          Saved. No redeploy needed — the next run uses these settings.
+          Saved. The next run uses these settings.
         </p>
       )}
       {error && (

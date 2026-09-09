@@ -156,11 +156,7 @@ export default async function DebtorProfilePage({
       </div>
 
       {dials.length > 0 && (
-        <Card
-          className="mb-4"
-          title="Dials from here"
-          subtitle="Calls placed from this platform, and what came back"
-        >
+        <Card className="mb-4" title="Dials from here">
           <div className="space-y-2.5">
             {dials.map((dial) => (
               <CallResult key={dial.id} attemptId={dial.id} initial={dial} />
@@ -169,7 +165,7 @@ export default async function DebtorProfilePage({
         </Card>
       )}
 
-      <Card title="Timeline" subtitle="Every interaction on this account, most recent first">
+      <Card title="Timeline" subtitle="Most recent first">
         {timeline.length === 0 ? (
           <p className="py-6 text-center text-[0.8125rem] text-ink-3">No interactions recorded yet.</p>
         ) : (

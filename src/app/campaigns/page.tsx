@@ -17,7 +17,7 @@ export default async function CampaignsPage() {
     <div className="page-in">
       <PageHeader
         title="Campaigns"
-        description="Collection campaigns and the AI agents working them."
+        description="Campaigns and the agents working them"
         actions={
           <Link href="/campaigns/new" className="btn btn-primary">
             <Plus size={14} /> New campaign

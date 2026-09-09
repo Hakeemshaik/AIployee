@@ -11,10 +11,17 @@ import type { CSSProperties, ReactNode } from "react";
 export function PageHeader({
   title,
   description,
+  meta,
   actions,
 }: {
   title: string;
   description?: string;
+  /**
+   * A standing constraint or scope note — the calling window, the period a
+   * page counts. One dim line, because a rule that never changes should not
+   * read like news every time the screen opens.
+   */
+  meta?: string;
   actions?: ReactNode;
 }) {
   return (
@@ -22,8 +29,9 @@ export function PageHeader({
       <div>
         <h1 className="text-[1.375rem] font-semibold tracking-tight text-ink">{title}</h1>
         {description && (
-          <p className="mt-1.5 max-w-2xl text-[0.8125rem] leading-relaxed text-ink-2">{description}</p>
+          <p className="mt-1.5 max-w-2xl text-[0.8125rem] text-ink-2">{description}</p>
         )}
+        {meta && <p className="mt-1 text-[0.6875rem] text-ink-3">{meta}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>

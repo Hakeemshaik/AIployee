@@ -6,8 +6,9 @@ import { Card } from "@/components/ui";
 /**
  * What is set up and what is next, read from the live deployment.
  *
- * Deliberately plain: one line per step saying what it gives you, one line of
- * current state, and a link to the screen that does it. A step marked with a
+ * Deliberately plain: one line of current state per step and a link to the
+ * screen that does it. What the step gives you is on the title's tooltip — as
+ * a second paragraph it doubled the height of the list. A step marked with a
  * lock needs an environment variable, which is an administrator's job on the
  * host rather than something to click here.
  *
@@ -52,9 +53,7 @@ export function SetupChecklist({ status, compact = false }: { status: SetupStatu
     <Card
       title="Setting up"
       subtitle={
-        complete
-          ? "Everything is configured."
-          : `${status.done} of ${status.total} steps done — the rest are below, in order.`
+        complete ? "Everything is configured." : `${status.done} of ${status.total} steps done`
       }
     >
       <ol className="space-y-3">
@@ -70,7 +69,12 @@ export function SetupChecklist({ status, compact = false }: { status: SetupStatu
             <div className="min-w-0 flex-1">
               <p className="flex flex-wrap items-baseline gap-2 text-[0.8125rem] text-ink">
                 <span className="num text-ink-3">{index + 1}.</span>
-                <span className={step.done ? "text-ink-2" : "font-medium text-ink"}>{step.title}</span>
+                <span
+                  className={step.done ? "text-ink-2" : "font-medium text-ink"}
+                  title={step.purpose}
+                >
+                  {step.title}
+                </span>
                 {step.serverSide && !step.done && (
                   <span
                     className="inline-flex items-center gap-1 rounded-full border border-line bg-ink/[0.03] px-2 py-0.5 text-[0.625rem] text-ink-3"
@@ -80,8 +84,7 @@ export function SetupChecklist({ status, compact = false }: { status: SetupStatu
                   </span>
                 )}
               </p>
-              <p className="mt-0.5 text-[0.71875rem] leading-relaxed text-ink-3">{step.purpose}</p>
-              <p className="mt-1 text-[0.71875rem] leading-relaxed text-ink-2">{step.detail}</p>
+              <p className="mt-0.5 text-[0.71875rem] leading-relaxed text-ink-2">{step.detail}</p>
               {!step.done && (
                 <Link
                   href={step.href}

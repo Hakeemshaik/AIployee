@@ -298,7 +298,7 @@ export function LiveCampaign({
 
         {/* redial actions */}
         <div className="space-y-4">
-          <Card title="Redial actions" subtitle="Each button prepares a list of only its filtered contacts">
+          <Card title="Redial actions" subtitle="Only the filtered contacts">
             <ul className="space-y-2.5">
               {REDIAL_BUTTONS.map(({ filter, title, icon: Icon }) => {
                 const count = state.redial[filter] ?? 0;

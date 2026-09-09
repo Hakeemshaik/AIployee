@@ -235,11 +235,12 @@ export function BookImporter({
           Review file
         </button>
       </div>
-      <p className="text-[0.6875rem] leading-relaxed text-ink-3">
-        Accepts .xlsx and .csv up to 4 MB — the Jobix import workbook, the platform template, or any
-        spreadsheet with name, phone and amount columns.
-        {fixedCampaign ? ` Imported accounts are assigned to ${fixedCampaign.name}.` : ""} Nothing is written
-        until the review below is confirmed.
+      <p
+        className="text-[0.6875rem] text-ink-3"
+        title="The Jobix import workbook, the platform template, or any spreadsheet with name, phone and amount columns. Nothing is written until the review below is confirmed."
+      >
+        .xlsx or .csv, up to 4 MB · nothing is written until you confirm
+        {fixedCampaign ? ` · assigned to ${fixedCampaign.name}` : ""}
       </p>
 
       {error && (
@@ -345,11 +346,9 @@ export function BookImporter({
           )}
 
           {preview.grid.truncated > 0 && (
-            <p className="text-[0.6875rem] text-ink-3">
+            <p className="text-[0.6875rem] text-ink-3" title="Only the display is capped.">
               Showing the first <span className="num">{count(preview.grid.rows.length)}</span> of{" "}
-              <span className="num">{count(preview.totalRows)}</span> rows. All{" "}
-              <span className="num">{count(preview.totalRows)}</span> are validated and will be imported —
-              only the display is capped.
+              <span className="num">{count(preview.totalRows)}</span> rows — all are validated and imported
             </p>
           )}
 

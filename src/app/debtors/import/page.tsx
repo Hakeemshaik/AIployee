@@ -17,13 +17,13 @@ export default async function ImportDebtorsPage() {
       <BackLink href="/debtors" label="All debtors" />
       <PageHeader
         title="Import debtors"
-        description="Upload the book in whatever format the client provided. Every row is validated and reported before anything is imported."
+        description="Upload the client's book in any format"
       />
       <div className="space-y-4">
         <Card title="Upload a file" subtitle="Jobix workbook, platform template, or any client spreadsheet">
           <BookImporter campaigns={campaigns} />
         </Card>
-        <Card title="Paste CSV" subtitle="The platform template, pasted as text">
+        <Card title="Paste CSV">
           <ImportForm campaigns={campaigns} />
         </Card>
       </div>

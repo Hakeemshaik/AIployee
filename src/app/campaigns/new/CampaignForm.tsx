@@ -121,9 +121,11 @@ export function CampaignForm({ agents }: { agents: { id: string; name: string }[
           Cancel
         </button>
       </div>
-      <p className="text-[0.71875rem] leading-relaxed text-ink-3">
-        Calling hours and attempt limits are also constrained by the organization-wide compliance
-        settings — the stricter value applies.
+      <p
+        className="text-[0.71875rem] text-ink-3"
+        title="Calling hours and attempt limits are also constrained by the organization-wide compliance settings."
+      >
+        Compliance settings still apply — the stricter value wins.
       </p>
     </form>
   );

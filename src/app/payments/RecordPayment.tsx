@@ -164,8 +164,7 @@ export function RecordPaymentButton({
                   {busy ? "Recording…" : "Record payment"}
                 </button>
                 <p className="text-[0.6875rem] leading-relaxed text-ink-3">
-                  The payment is applied to the debtor&apos;s open promise automatically and their
-                  balance, status and campaign metrics update immediately.
+                  Applied to their open promise, balance and metrics at once.
                 </p>
               </form>
             )}

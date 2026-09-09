@@ -21,13 +21,13 @@ export default async function ReportsPage() {
     <div className="page-in">
       <PageHeader
         title="Reports"
-        description="AI-written collection reports built from a frozen data snapshot, so past reports never drift."
+        description="AI-written reports from a frozen data snapshot"
         actions={<GenerateReportControl campaigns={campaigns} />}
       />
       <Card pad={false}>
         {reports.length === 0 ? (
           <div className="p-5">
-            <EmptyState title="No reports yet" hint="Generate your first report using the control above." />
+            <EmptyState title="No reports yet" />
           </div>
         ) : (
           <div className="scroll-x">

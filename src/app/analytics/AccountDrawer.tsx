@@ -174,8 +174,7 @@ function CallRow({ call, defaultOpen }: { call: JourneyCall; defaultOpen: boolea
             <CallTurns turns={call.turns} />
           ) : (
             <p className="pt-3 text-[0.75rem] text-ink-3">
-              No transcript has been fetched for this call, so reach cannot be verified from content.
-              Run ingestion to pull it.
+              No transcript yet — run ingestion to verify reach from content.
             </p>
           )}
           <dl className="mt-3 flex flex-wrap gap-x-5 gap-y-1 border-t border-line-2 pt-2.5 text-[0.6875rem] text-ink-3">

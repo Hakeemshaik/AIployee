@@ -17,12 +17,12 @@ export default async function AgentsPage() {
     <div className="page-in">
       <PageHeader
         title="AI agents"
-        description="Voice agents from your calling platform and their collection performance."
+        description="Voice agents and their collection performance."
       />
       {agents.length === 0 ? (
         <EmptyState
           title="No agents registered"
-          hint="Agents are registered against your external voice platform and appear here once linked."
+          hint="Agents appear here once linked on the voice platform."
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

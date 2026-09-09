@@ -178,13 +178,10 @@ export default async function CallDetailPage({
                   {call.recordingUrl ? "Recording available on the voice platform" : "No recording attached"}
                 </p>
                 <p className="truncate text-[0.6875rem] text-ink-3">
-                  {call.recordingUrl ?? "The voice platform can attach a recordingUrl via the integration API."}
+                  {call.recordingUrl ?? "No recording attached"}
                 </p>
               </div>
             </div>
-            <p className="mt-2 text-[0.6875rem] leading-relaxed text-ink-3">
-              Playback stays on the voice platform in this MVP — recordings are referenced, never copied.
-            </p>
           </Card>
 
           <Card title="Other calls with this debtor">

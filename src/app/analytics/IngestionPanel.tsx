@@ -384,12 +384,12 @@ export function IngestionPanel({
                 : blocked
                 ? blocked
                 : paused
-                  ? `Paused part way${remainingNote ? ` — ${remainingNote}` : ""}. Continue picks up where it stopped.`
+                  ? `Paused part way${remainingNote ? ` — ${remainingNote}` : ""}`
                   : failed
                     ? "Last import did not finish — open Detail for the reason."
                     : progress?.finishedAt
                       ? `Last import finished ${formatDateTime(progress.finishedAt)} · ${count(progress.conversationsFound)} calls`
-                      : "Nothing imported yet. Choose how far back to pull, then press Import."}
+                      : "Nothing imported yet"}
           </p>
         </div>
         <Select
@@ -461,15 +461,18 @@ export function IngestionPanel({
             </div>
           )}
 
-          <p className="text-[0.71875rem] text-ink-2">
+          <p
+            className="text-[0.71875rem] text-ink-2"
+            title={
+              quick
+                ? "Numbers only pulls the call list and the accounts, no transcripts. Reach stays unverified until you import again without it on."
+                : "The slow part is one transcript request per call, so a narrower window finishes sooner."
+            }
+          >
             {from
-              ? `Pulling calls made on or after ${formatDate(from)} (${windowLabel.toLowerCase()}).`
-              : "Pulling every call on the platform, however old."}{" "}
-            <span className="text-ink-3">
-              {quick
-                ? "Numbers only: the call list and the accounts, no transcripts. Finishes in seconds — reach stays unverified until you import again without this on."
-                : "A narrower window is faster: the slow part is one transcript request per call."}
-            </span>
+              ? `Pulling calls from ${formatDate(from)} (${windowLabel.toLowerCase()})`
+              : "Pulling every call on the platform"}
+            <span className="text-ink-3">{quick ? " · no transcripts" : ""}</span>
           </p>
 
           {/* what happens, in order */}
@@ -532,10 +535,12 @@ export function IngestionPanel({
           )}
 
           {progress && (progress.droppedStale > 0 || progress.droppedDuplicate > 0) && (
-            <p className="text-[0.71875rem] text-ink-3">
+            <p
+              className="text-[0.71875rem] text-ink-3"
+              title="Deduped by phone, keeping the most recently modified record."
+            >
               Dropped <span className="num">{progress.droppedStale}</span> stale and{" "}
-              <span className="num">{progress.droppedDuplicate}</span> duplicate account records — deduped by
-              phone, keeping the most recently modified.
+              <span className="num">{progress.droppedDuplicate}</span> duplicate account records
             </p>
           )}
 
@@ -544,14 +549,13 @@ export function IngestionPanel({
           )}
 
           {paused && !running && (
-            <div className="rounded-lg border border-accent/35 bg-accent-soft px-3 py-2.5">
+            <div
+              className="rounded-lg border border-accent/35 bg-accent-soft px-3 py-2.5"
+              title="A single server request cannot hold a pull of this size open, so it stops itself before the platform cuts it off. Nothing already stored is fetched twice, and a shorter window finishes in one part."
+            >
               <p className="text-[0.78125rem] font-medium text-ink">Paused, not failed</p>
-              <p className="mt-1 text-[0.71875rem] leading-relaxed text-ink-2">
-                A single server request cannot hold a pull of this size open, so it stops itself before the
-                platform cuts it off and everything fetched so far is kept.{" "}
-                {remainingNote ? `There are ${remainingNote}. ` : ""}
-                Press Continue to carry on from this point — nothing already stored is fetched twice. A shorter
-                window finishes in one part.
+              <p className="mt-1 text-[0.71875rem] text-ink-2">
+                {remainingNote ? `${remainingNote}. ` : ""}Everything fetched so far is kept — press Continue.
               </p>
             </div>
           )}
@@ -584,12 +588,6 @@ export function IngestionPanel({
               </p>
             </div>
           )}
-
-          <p className="border-t border-line-2 pt-2.5 text-[0.6875rem] leading-relaxed text-ink-3">
-            Imports are resumable: a transcript already stored is never fetched again, so pressing Import after
-            an interrupted one continues rather than restarts. A large pull runs in parts automatically, up to{" "}
-            {MAX_AUTO_PARTS}. Refresh the page to recompute the analytics below with the newly imported data.
-          </p>
 
           {diagnostic && (
             <p className="num text-[0.65625rem] leading-relaxed text-ink-3">

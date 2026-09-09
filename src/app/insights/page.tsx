@@ -31,14 +31,14 @@ export default async function InsightsPage() {
     <div className="page-in">
       <PageHeader
         title="AI insights"
-        description="Structured analysis of outcomes, behaviour, risk and campaign performance across the last 30 days."
+        description="AI analysis of the last 30 days"
         actions={<RefreshInsightsButton scope="insights" />}
       />
 
       {!insight ? (
         <EmptyState
           title="No analysis yet"
-          hint="Generate insights once there is collection activity to analyse."
+          hint="Needs collection activity to analyse."
         />
       ) : (
         <>
@@ -80,8 +80,7 @@ export default async function InsightsPage() {
           </div>
 
           <p className="mt-4 text-[0.71875rem] text-ink-3">
-            Analysis window: {formatDate(insight.content ? insight.generatedAt : null)} — based on call
-            outcomes, promise fulfilment, payments, contact rates, aging and sentiment. No debtor
+            Analysed to {formatDate(insight.content ? insight.generatedAt : null)} · no debtor
             personal information is sent to the AI provider.
           </p>
         </>

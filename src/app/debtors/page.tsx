@@ -80,7 +80,7 @@ export default async function DebtorsPage({
           <div className="p-5">
             <EmptyState
               title="No debtors match these filters"
-              hint="Adjust or clear the filters above. New debtors arrive via import or the API."
+              hint="Adjust or clear the filters above."
             />
           </div>
         ) : (

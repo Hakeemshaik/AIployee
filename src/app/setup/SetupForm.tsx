@@ -136,10 +136,7 @@ export function SetupForm() {
           <p className="flex items-center gap-2 text-[0.875rem] font-semibold text-ink">
             <Rocket size={15} className="text-accent" /> Start clean
           </p>
-          <p className="mt-1 text-[0.75rem] leading-relaxed text-ink-2">
-            Empty platform ready for your real book — import debtors via CSV and point Jobix at the
-            webhook.
-          </p>
+          <p className="mt-1 text-[0.75rem] text-ink-2">Empty, ready for your real book.</p>
         </button>
       </div>
 
@@ -184,10 +181,7 @@ export function SetupForm() {
             autoComplete="new-password"
             className="field w-full"
           />
-          <p className="mt-1 text-[0.6875rem] text-ink-3">
-            At least 12 characters. This is how you sign in — without it the deployment would be
-            open to anyone with the URL.
-          </p>
+          <p className="mt-1 text-[0.6875rem] text-ink-3">At least 12 characters.</p>
         </div>
       </div>
 
@@ -195,9 +189,7 @@ export function SetupForm() {
       <button type="submit" disabled={busy} className="btn btn-primary">
         {busy ? "Setting up…" : mode === "demo" ? "Set up with demo data" : "Set up empty platform"}
       </button>
-      <p className="text-[0.6875rem] leading-relaxed text-ink-3">
-        This page only works once — after setup it locks itself and every setup request is refused.
-      </p>
+      <p className="text-[0.6875rem] text-ink-3">This page works once, then locks itself.</p>
     </form>
   );
 }

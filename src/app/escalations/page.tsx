@@ -38,7 +38,7 @@ export default async function EscalationsPage({
       <CollectionsTabs />
       <PageHeader
         title="Escalations"
-        description="Cases the AI has handed off for human judgement — disputes, hardship, vulnerability and authority limits."
+        description="Cases handed to a person"
       />
       <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-5">
         <StatCard label="Open" value={String(stats.open)} tone={stats.open > 0 ? "critical" : undefined} />
@@ -59,7 +59,7 @@ export default async function EscalationsPage({
           <div className="p-5">
             <EmptyState
               title="No escalations match"
-              hint="The AI raises escalations automatically when a call needs human handling."
+              hint="Raised automatically when a call needs a person."
             />
           </div>
         ) : (

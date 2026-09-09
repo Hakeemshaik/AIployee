@@ -204,8 +204,8 @@ export function DebtorActions({
               <button type="submit" disabled={busy} className="btn btn-primary w-full justify-center">
                 {busy ? "Escalating…" : "Create escalation"}
               </button>
-              <p className="text-[0.6875rem] leading-relaxed text-ink-3">
-                The debtor is marked as escalated and AI dialling stops until the case is resolved.
+              <p className="text-[0.6875rem] text-ink-3">
+                Marks the account escalated and stops AI dialling.
               </p>
             </form>
           </div>

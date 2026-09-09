@@ -166,11 +166,6 @@ export function CampaignList({ campaigns, canDelete }: { campaigns: CampaignCard
                 </span>
               </div>
 
-              <p className="mt-2.5 text-[0.6875rem] text-ink-3">
-                {c.metrics.contacted > 0
-                  ? "Open for calls, transcripts and analytics"
-                  : "Not dialled yet — open to send the list"}
-              </p>
             </Link>
           ))}
         </div>

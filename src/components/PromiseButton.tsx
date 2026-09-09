@@ -339,8 +339,7 @@ export function PromiseButton({
                         : "Promise to pay"}
                   </button>
                   <p className="text-[0.6875rem] leading-relaxed text-ink-3">
-                    While a promise is open the account is not dialled. It becomes broken on its
-                    own three days after the date if nothing is paid.
+                    Not dialled while open. Breaks three days after the date if unpaid.
                   </p>
                 </div>
               )}

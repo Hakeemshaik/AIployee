@@ -35,7 +35,7 @@ export default async function PromisesPage({
       <CollectionsTabs />
       <PageHeader
         title="Promises to pay"
-        description="Every commitment captured on calls, tracked to fulfilment."
+        description="Commitments captured on calls"
         actions={<SweepButton />}
       />
       <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">

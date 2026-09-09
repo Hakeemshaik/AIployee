@@ -391,10 +391,7 @@ export function EngineView({ initial, campaignId }: { initial: EngineState; camp
             <a href={`/api/engine/${campaignId}/import-file`} className="btn">
               <Download size={14} /> Jobix import (.xlsx)
             </a>
-            <p className="text-[0.6875rem] text-ink-3">
-              The cleaned book as the 72-column import workbook — for a manual upload or the archive.
-              The engine itself dials by API and never needs it.
-            </p>
+            <p className="text-[0.6875rem] text-ink-3">For a manual upload or the archive</p>
           </div>
 
           {summary && summary.skipped.length > 0 && (
@@ -413,7 +410,7 @@ export function EngineView({ initial, campaignId }: { initial: EngineState; camp
           {state.book.multiUnit.count > 0 && (
             <Card
               title="Multi-unit tenants"
-              subtitle="Collapsed to one call each — the agent quotes their combined balance, described by their largest unit"
+              subtitle="One call each, combined balance quoted"
             >
               <p className="text-[0.8125rem] text-ink-2">
                 <span className="num font-semibold text-ink">{state.book.multiUnit.count}</span> tenants hold
@@ -433,7 +430,7 @@ export function EngineView({ initial, campaignId }: { initial: EngineState; camp
       {["ready", "between_rounds"].includes(status) && state.book.accounts > 0 && (
         <Card
           title={state.campaign.currentRound === 0 ? "2 · Cut round 1" : `Round ${state.campaign.currentRound} is done`}
-          subtitle="Largest balances first, batches frozen at creation, codes never reused"
+          subtitle="Largest balances first"
         >
           {/* §5.4: the switch-channel table is shown BEFORE another round is offered. */}
           {state.switchChannel.count > 0 && (
@@ -443,9 +440,8 @@ export function EngineView({ initial, campaignId }: { initial: EngineState; camp
                 <span className="num font-semibold">{money(state.switchChannel.arrears)}</span> have
                 exhausted automated calling.
               </p>
-              <p className="mt-1 text-[0.71875rem] leading-relaxed text-ink-2">
-                Attempt five produced zero conversations on real runs. These belong on WhatsApp, SMS or
-                written notice — they are in the worklists below, not in the next round.
+              <p className="mt-1 text-[0.71875rem] text-ink-2">
+                WhatsApp, SMS or written notice from here — they are in the worklists, not the next round.
               </p>
             </div>
           )}
@@ -593,7 +589,7 @@ export function EngineView({ initial, campaignId }: { initial: EngineState; camp
       {state.campaign.currentRound > 0 && status !== "complete" && (
         <Card
           title="Results from the platform"
-          subtitle="Read live from the calls themselves — not from an outcome label somebody set"
+          subtitle="Read from the calls themselves"
         >
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -625,10 +621,7 @@ export function EngineView({ initial, campaignId }: { initial: EngineState; camp
               )}
               Resync who picked up
             </button>
-            <p className="text-[0.6875rem] text-ink-3">
-              Checks every call in round {state.campaign.currentRound} again. Dials nobody, and a second
-              press records nothing twice.
-            </p>
+            <p className="text-[0.6875rem] text-ink-3">Dials nobody. Safe to press twice.</p>
           </div>
 
           {resync && (
@@ -701,7 +694,7 @@ export function EngineView({ initial, campaignId }: { initial: EngineState; camp
         <Card
           key={`results-${round.round}`}
           title={`Round ${round.round} results`}
-          subtitle="Counted per account. Every number opens the accounts — and the words — behind it."
+          subtitle="Every number opens the accounts behind it"
         >
           <div className="flex flex-wrap gap-2">
             {[
@@ -738,7 +731,7 @@ export function EngineView({ initial, campaignId }: { initial: EngineState; camp
       {(status === "between_rounds" || status === "complete") && (
         <Card
           title={status === "complete" ? "The campaign is closed" : "Where every account stands"}
-          subtitle="Rows and arrears reconcile exactly to the book — the export refuses otherwise"
+          subtitle="Reconciled to the book, or the export refuses"
         >
           <div className="scroll-x">
             <table className="data-table">

@@ -25,6 +25,7 @@ const DAY_LABELS: Record<string, string> = {
   mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun",
 };
 
+// A hint only where the label does not already say it.
 function Toggle({
   checked,
   onChange,
@@ -34,13 +35,15 @@ function Toggle({
   checked: boolean;
   onChange: (value: boolean) => void;
   label: string;
-  hint: string;
+  hint?: string;
 }) {
   return (
     <label className="flex cursor-pointer items-start justify-between gap-4 rounded-lg border border-line-2 bg-ink/[0.025] p-3">
       <span>
         <span className="block text-[0.8125rem] font-medium text-ink">{text}</span>
-        <span className="mt-0.5 block text-[0.6875rem] leading-relaxed text-ink-3">{hint}</span>
+        {hint && (
+          <span className="mt-0.5 block text-[0.6875rem] leading-relaxed text-ink-3">{hint}</span>
+        )}
       </span>
       <input
         type="checkbox"
@@ -145,12 +148,12 @@ export function ComplianceForm({ initial }: { initial: Compliance }) {
       </div>
 
       <div className="grid gap-2.5 sm:grid-cols-2">
-        <Toggle checked={form.recordingConsentRequired} onChange={(v) => set("recordingConsentRequired", v)} label="Recording consent required" hint="The agent must disclose recording at the start of every call." />
-        <Toggle checked={form.honourOptOut} onChange={(v) => set("honourOptOut", v)} label="Honour opt-outs" hint="A debtor who opts out is suppressed from all AI dialling." />
-        <Toggle checked={form.escalateOnDispute} onChange={(v) => set("escalateOnDispute", v)} label="Escalate disputes" hint="Disputed accounts route straight to a human collector." />
-        <Toggle checked={form.freezeContactOnDispute} onChange={(v) => set("freezeContactOnDispute", v)} label="Freeze contact on dispute" hint="No further AI contact while a dispute is open." />
-        <Toggle checked={form.escalateOnHardship} onChange={(v) => set("escalateOnHardship", v)} label="Escalate financial hardship" hint="Hardship signals route to an affordability review." />
-        <Toggle checked={form.escalateOnVulnerable} onChange={(v) => set("escalateOnVulnerable", v)} label="Escalate vulnerable customers" hint="Vulnerability signals always require a human." />
+        <Toggle checked={form.recordingConsentRequired} onChange={(v) => set("recordingConsentRequired", v)} label="Recording consent required" />
+        <Toggle checked={form.honourOptOut} onChange={(v) => set("honourOptOut", v)} label="Honour opt-outs" />
+        <Toggle checked={form.escalateOnDispute} onChange={(v) => set("escalateOnDispute", v)} label="Escalate disputes" />
+        <Toggle checked={form.freezeContactOnDispute} onChange={(v) => set("freezeContactOnDispute", v)} label="Freeze contact on dispute" />
+        <Toggle checked={form.escalateOnHardship} onChange={(v) => set("escalateOnHardship", v)} label="Escalate financial hardship" hint="Routes to an affordability review." />
+        <Toggle checked={form.escalateOnVulnerable} onChange={(v) => set("escalateOnVulnerable", v)} label="Escalate vulnerable customers" />
       </div>
 
       <div className="flex items-center gap-3">
@@ -161,9 +164,7 @@ export function ComplianceForm({ initial }: { initial: Compliance }) {
         {error && <span className="text-[0.75rem] text-critical">Changes could not be saved.</span>}
       </div>
       <p className="text-[0.6875rem] leading-relaxed text-ink-3">
-        These guardrails are configuration, not legal advice — set them to match your organization&apos;s
-        regulatory obligations and mandates. They are enforced against campaigns and passed to the
-        voice platform as dialling constraints.
+        Configuration, not legal advice — match your organization&apos;s obligations and mandates.
       </p>
     </div>
   );

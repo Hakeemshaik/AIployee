@@ -123,9 +123,8 @@ export function LoginCard() {
             <ShieldAlert size={14} className="mt-0.5 shrink-0" />
             No password is set on this deployment
           </p>
-          <p className="mt-1 pl-[1.375rem] text-[0.75rem] leading-relaxed text-ink-2">
-            Set one now with your own email and password. Until you do, the same offer is open to
-            anyone who finds this URL.
+          <p className="mt-1 pl-[1.375rem] text-[0.75rem] text-ink-2">
+            Set one now — until you do, this offer is open to anyone with the URL.
           </p>
         </div>
       )}

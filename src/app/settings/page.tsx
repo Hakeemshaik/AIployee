@@ -1,7 +1,6 @@
 import { KeyRound, Webhook } from "lucide-react";
 import { CreateKeyButton } from "./CreateKeyButton";
 import { getContext, hasRole } from "@/lib/auth";
-import { EVENT_TYPES } from "@/lib/domain";
 import { formatDateTime } from "@/lib/format";
 import { getSettings } from "@/services/settings";
 import { setupStatus } from "@/services/setup-status";
@@ -68,7 +67,7 @@ export default async function SettingsPage() {
     <div className="page-in">
       <PageHeader
         title="Settings"
-        description={`Organization, compliance guardrails and integrations for ${org.name}.`}
+        description={`Guardrails, integrations and team for ${org.name}.`}
       />
 
       {/* The setup list is short and the integration cards are tall, so a
@@ -101,11 +100,12 @@ export default async function SettingsPage() {
             </Meta>
             <Meta label="Configuration">Server environment only</Meta>
           </dl>
-          <p className="mt-3 text-[0.6875rem] leading-relaxed text-ink-3">
+          <p
+            className="mt-3 text-[0.6875rem] leading-relaxed text-ink-3"
+            title="Keys never reach the browser, and only aggregated, anonymised data is sent for insight generation."
+          >
             Set <code className="text-ink-2">AI_PROVIDER=claude</code> and{" "}
-            <code className="text-ink-2">ANTHROPIC_API_KEY</code> in the server environment to switch
-            the analysis engine to Claude. Keys never reach the browser, and only aggregated,
-            anonymised data is sent for insight generation.
+            <code className="text-ink-2">ANTHROPIC_API_KEY</code> in the server environment.
           </p>
         </Card>
         {ctx.userRole === "admin" ? (
@@ -130,7 +130,7 @@ export default async function SettingsPage() {
       <Card
         className="mb-4"
         title="Compliance & guardrails"
-        subtitle="Configurable per organization — enforced on campaigns and passed to the voice platform"
+        subtitle="Enforced on campaigns and the voice platform"
       >
         {compliance ? (
           <ComplianceForm
@@ -156,45 +156,47 @@ export default async function SettingsPage() {
         )}
       </Card>
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      {/* One card wide now that the event list has gone: in a two-column grid
+          it sat beside an empty column. */}
+      <div className="grid gap-4">
         {/* Named for what it is. Jobix results do NOT arrive here — they are
             pulled in by ingestion on the Call analytics page — and calling this
             "the voice platform integration" had a reader believing this was the
             live pipe. It is a working ingress for a provider that can post. */}
-        <Card
-          title="Call results, coming back"
-          subtitle="Point the flow's call webhook here and every dial fills itself in"
-        >
+        <Card title="Call results, coming back" subtitle="Point the flow's call webhook here">
           {/* The one to wire up. A dial placed from here carries a reference,
               and this is where the platform hands it back with what happened. */}
-          <div className="mb-3 flex items-start gap-3 rounded-xl border border-accent/30 bg-accent/[0.06] p-3">
+          <div
+            className="mb-3 flex items-start gap-3 rounded-xl border border-accent/30 bg-accent/[0.06] p-3"
+            title="Send the suid back and the result finds its own account: the transcript is analysed, a promise to pay becomes a promise, an escalation becomes an escalation. A retry is safe — the same reference never makes a second call."
+          >
             <Webhook size={15} className="mt-0.5 shrink-0 text-accent" />
             <div className="min-w-0">
               <p className="text-[0.78125rem] font-medium text-ink">
                 POST <span className="num">/api/integrations/voice/dial-outcome</span>
               </p>
               <p className="mt-1 text-[0.6875rem] leading-relaxed text-ink-2">
-                Keyed on the <code>suid</code> this platform minted for the write that placed the
-                call — send it back and the result finds its own account. The transcript is analysed,
-                a promise to pay becomes a promise, an escalation becomes an escalation, and the
-                dial stops saying &ldquo;ringing&rdquo;. Bearer API key, scope{" "}
-                <code>voice:ingest</code>. A retry is safe: the same reference never makes a second
-                call.
+                Keyed on the <code>suid</code> sent with the call. Bearer API key, scope{" "}
+                <code>voice:ingest</code>.
               </p>
             </div>
           </div>
-          <pre className="scroll-x rounded-xl border border-line bg-ink/[0.05] p-3 text-[0.65625rem] leading-relaxed text-ink-2">
-            {DIAL_OUTCOME_PAYLOAD}
-          </pre>
-          <details className="mt-3">
+          {/* Needed to configure the webhook, but a reference payload sitting
+              open is most of the page for everybody else. */}
+          <details>
+            <summary className="cursor-pointer text-[0.71875rem] text-ink-3">Show the payload</summary>
+            <pre className="scroll-x mt-2 rounded-xl border border-line bg-ink/[0.05] p-3 text-[0.65625rem] leading-relaxed text-ink-2">
+              {DIAL_OUTCOME_PAYLOAD}
+            </pre>
+          </details>
+          <details className="mt-2">
             <summary className="cursor-pointer text-[0.71875rem] text-ink-3">
-              The other endpoint: a call the platform already has an id for
+              The other endpoint
             </summary>
             <div className="page-in mt-2">
               <p className="mb-2 text-[0.6875rem] leading-relaxed text-ink-3">
-                <span className="num">POST /api/integrations/voice/call-completed</span> takes a call
-                that is matched to an account by number or account reference rather than by a
-                reference this platform issued. Same key, same scope, same pipeline behind it.
+                <span className="num">POST /api/integrations/voice/call-completed</span> matches by
+                number or account reference. Same key, same scope.
               </p>
               <pre className="scroll-x rounded-xl border border-line bg-ink/[0.05] p-3 text-[0.65625rem] leading-relaxed text-ink-2">
                 {EXAMPLE_PAYLOAD}
@@ -220,29 +222,7 @@ export default async function SettingsPage() {
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-[0.65625rem] text-ink-3">
-            Keys are stored as SHA-256 hashes; the full key is shown once at creation.
-          </p>
           <CreateKeyButton />
-        </Card>
-
-        <Card title="Event architecture" subtitle="Internal events, persisted and replayable">
-          <p className="mb-3 text-[0.78125rem] leading-relaxed text-ink-2">
-            Every domain action emits a persisted platform event. Outbound webhooks or a queue
-            consumer can attach to this stream to integrate payment providers, CRMs or data
-            warehouses without touching core logic.
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {EVENT_TYPES.filter((t) => t !== "sms.sent").map((t) => (
-              <span key={t} className="num rounded-md border border-line bg-ink/[0.03] px-2 py-1 text-[0.6875rem] text-ink-2">
-                {t}
-              </span>
-            ))}
-          </div>
-          <p className="mt-4 text-[0.6875rem] leading-relaxed text-ink-3">
-            Audit logging is always on: ingestion, payments, status changes and settings edits are
-            written to the audit log with actor attribution and no sensitive payload content.
-          </p>
         </Card>
       </div>
 

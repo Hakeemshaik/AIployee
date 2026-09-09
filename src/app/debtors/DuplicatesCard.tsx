@@ -108,7 +108,7 @@ export function DuplicatesCard({ initial, canMerge }: { initial: DuplicateReport
       <Card title="Duplicate check" subtitle={`${count(report.scanned)} accounts checked`} className="mb-4">
         <p className="flex items-center gap-2 text-[0.8125rem] text-ink-2">
           <CheckCircle2 size={14} className="shrink-0 text-good" />
-          No duplicates. Every account has its own phone number and its own record on the voice platform.
+          No duplicates.
         </p>
         {result && (
           <p className="mt-2 text-[0.71875rem] text-ink-3">
@@ -123,7 +123,7 @@ export function DuplicatesCard({ initial, canMerge }: { initial: DuplicateReport
   return (
     <Card
       title={`Duplicate accounts (${count(report.groups.length)})`}
-      subtitle={`${count(report.extraRecords)} records too many · the book is overstated by ${money(report.overstatedValue)}`}
+      subtitle={`${count(report.extraRecords)} records too many · ${money(report.overstatedValue)} overstated`}
       className="mb-4"
       actions={
         canMerge ? (
@@ -143,11 +143,11 @@ export function DuplicatesCard({ initial, canMerge }: { initial: DuplicateReport
         ) : undefined
       }
     >
-      <p className="mb-3 text-[0.71875rem] leading-relaxed text-ink-2">
-        Two records for the same person means the book counts their balance twice, every rate that divides by
-        the book is diluted, and a promise recorded against one copy leaves the other looking ignored. Merging
-        keeps one record and moves every account, call, promise and payment onto it — nothing is discarded, and
-        it cannot be undone.
+      <p
+        className="mb-3 text-[0.71875rem] text-ink-2"
+        title="Two records for the same person double-count their balance and dilute every rate that divides by the book. Every account, call, promise and payment moves onto the record that is kept; nothing is discarded."
+      >
+        Merging moves everything onto one record. It cannot be undone.
       </p>
 
       {result && (

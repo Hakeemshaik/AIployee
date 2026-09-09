@@ -303,29 +303,22 @@ export function CallResult({
       )}
 
       {attempt.state === "placed" && !stale && (
-        <p className="mt-2 text-[0.71875rem] leading-relaxed text-ink-3">
-          The result lands here on its own — the transcript, whether a person answered, and any
-          promise to pay. Nothing to press.
-        </p>
+        <p className="mt-2 text-[0.71875rem] text-ink-3">The result lands here on its own.</p>
       )}
       {unreported && (
-        <p className="mt-2 text-[0.71875rem] leading-relaxed text-ink-2">
-          The platform was asked for this call&rsquo;s result until it was too old to match a
-          conversation to safely. Whether it was answered is not recorded, because nobody knows.
-          Point the flow&rsquo;s call webhook at{" "}
+        <p className="mt-2 text-[0.71875rem] text-ink-2">
+          Too old to match a conversation safely, so whether it was answered is not recorded. Point the
+          flow at{" "}
           <code className="rounded bg-ink/[0.06] px-1 py-0.5">
             /api/integrations/voice/dial-outcome
           </code>{" "}
-          and results arrive the moment a call ends.
+          to get results as calls end.
         </p>
       )}
       {stale && (
-        <p className="mt-2 text-[0.71875rem] leading-relaxed text-ink-2">
-          The record was written and the flow accepted it, so either the call has not run yet or the
-          platform is not posting outcomes back. Look for it now, or point the flow&rsquo;s call
-          webhook at{" "}
-          <code className="rounded bg-ink/[0.06] px-1 py-0.5">/api/integrations/voice/dial-outcome</code>{" "}
-          and it will fill in by itself.
+        <p className="mt-2 text-[0.71875rem] text-ink-2">
+          Written and accepted, but no outcome posted back. Look for it now, or point the flow at{" "}
+          <code className="rounded bg-ink/[0.06] px-1 py-0.5">/api/integrations/voice/dial-outcome</code>.
         </p>
       )}
 

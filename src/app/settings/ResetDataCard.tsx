@@ -93,8 +93,8 @@ export function ResetDataCard() {
           <span className="font-medium text-ink">{result.organizationName}</span>.
         </p>
         <p className="mt-3 rounded-lg border border-line bg-ink/[0.03] px-3 py-2.5 text-[0.78125rem] leading-relaxed text-ink-2">
-          Next: import your book at <span className="text-accent">Debtors → Import</span>, then issue a
-          fresh webhook key below and point your voice platform at it. The old key no longer works.
+          Next: import your book at <span className="text-accent">Debtors → Import</span>, then issue
+          a fresh webhook key.
         </p>
       </section>
     );
@@ -105,10 +105,11 @@ export function ResetDataCard() {
       <h2 className="flex items-center gap-2 text-[0.9375rem] font-semibold tracking-tight text-ink">
         <Trash2 size={15} className="text-serious" /> Clear demo data
       </h2>
-      <p className="mt-1 text-[0.75rem] leading-relaxed text-ink-3">
-        Removes the seeded fictional book — debtors, campaigns, calls, promises, payments and the
-        demo staff accounts — and revokes every API key. Your sign-in, compliance settings and any
-        calls ingested from your voice provider are kept.
+      <p
+        className="mt-1 text-[0.75rem] leading-relaxed text-ink-3"
+        title="Debtors, campaigns, calls, promises, payments and the demo staff accounts go. Your sign-in, compliance settings and any calls ingested from your voice provider are kept."
+      >
+        Removes the seeded fictional book and revokes every API key.
       </p>
 
       {!preview && (
@@ -205,15 +206,17 @@ export function ResetDataCard() {
             </div>
           </div>
 
-          <label className="flex items-start gap-2 text-[0.71875rem] leading-relaxed text-ink-2">
+          <label
+            className="flex items-start gap-2 text-[0.71875rem] leading-relaxed text-ink-2"
+            title="This data is not part of the demo seed. Leave it off unless you want to re-ingest from scratch."
+          >
             <input
               type="checkbox"
               checked={includeIngested}
               onChange={(e) => setIncludeIngested(e.target.checked)}
               className="mt-0.5 h-3.5 w-3.5 accent-[#16b3a2]"
             />
-            Also delete calls and transcripts ingested from the voice provider. Leave this off unless
-            you want to re-ingest from scratch — this data is not part of the demo seed.
+            Also delete calls and transcripts ingested from the voice provider.
           </label>
 
           <div className="flex items-center gap-2">

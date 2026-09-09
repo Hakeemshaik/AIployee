@@ -149,7 +149,7 @@ export function ConnectionCard({
   return (
     <Card
       title="Voice platform connection"
-      subtitle="What this deployment can see, and whether the sign-in works"
+      subtitle="Credentials this deployment can see"
       actions={
         <button className="btn btn-primary" disabled={busy || !status.canTest} onClick={test}>
           {busy ? <Loader2 size={13} className="animate-spin" /> : <Plug size={13} />}
@@ -160,9 +160,11 @@ export function ConnectionCard({
       <p className="mb-3 text-[0.78125rem] leading-relaxed text-ink-2">{status.summary}</p>
 
       {status.envEmail && (
-        <p className="mb-3 text-[0.71875rem] leading-relaxed text-ink-3">
-          The environment&apos;s sign-in email, exactly as this server reads it:{" "}
-          <span className="num text-ink">{status.envEmail}</span>
+        <p
+          className="mb-3 text-[0.71875rem] leading-relaxed text-ink-3"
+          title="Exactly as this server reads it"
+        >
+          Environment sign-in email: <span className="num text-ink">{status.envEmail}</span>
         </p>
       )}
       {status.envEmailProblem && (
@@ -237,11 +239,9 @@ export function ConnectionCard({
               <CheckCircle2 size={13} className="mt-0.5 shrink-0 text-good" />
               {/* One text child. With the email as a second flex item the line
                   broke into columns instead of wrapping as a sentence. */}
-              <span>
+              <span title="The platform keeps itself signed in from this, so no environment variable is involved and no redeploy is needed.">
                 Signed in as <span className="num text-ink">{signIn.email}</span>, saved here
-                {signIn.savedAt ? ` on ${formatDateTime(signIn.savedAt)}` : ""}. The platform keeps
-                itself signed in from this, so no environment variable is involved and no redeploy
-                is needed.
+                {signIn.savedAt ? ` on ${formatDateTime(signIn.savedAt)}` : ""}.
               </span>
             </p>
             <div className="flex flex-wrap items-center gap-2">
@@ -249,24 +249,26 @@ export function ConnectionCard({
                 className="btn"
                 disabled={saving !== null}
                 onClick={() => send({ action: "clear_sign_in" }, "clear")}
-                title="Remove the stored sign-in and fall back to the environment"
+                title={
+                  signIn.environment
+                    ? "Remove the stored sign-in; the environment also holds one, which would be used instead."
+                    : "Remove the stored sign-in. There is none in the environment, so removing this leaves none."
+                }
               >
                 {saving === "clear" ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
                 Remove
               </button>
-              <span className="text-[0.6875rem] text-ink-3">
-                {signIn.environment
-                  ? "The environment also holds a sign-in, which would be used instead."
-                  : "There is no sign-in in the environment, so removing this leaves none."}
-              </span>
             </div>
           </>
         ) : (
           <>
-            <p className="mb-2.5 text-[0.75rem] leading-relaxed text-ink-2">
+            <p
+              className="mb-2.5 text-[0.75rem] leading-relaxed text-ink-2"
+              title="Signing in here stores the credential on the platform, so a wrong or blank environment variable can no longer stop dialling."
+            >
               {signIn.environment
-                ? "The platform is using the sign-in from the environment. Signing in here instead stores it on the platform, so a wrong or blank variable can no longer stop dialling."
-                : "No sign-in is available. Enter the Jobix dashboard sign-in and the platform will keep itself signed in from it."}
+                ? "Using the environment's sign-in. Sign in here to store it instead."
+                : "No sign-in available. Enter the Jobix dashboard sign-in."}
             </p>
             <div className="flex flex-wrap items-end gap-2">
               <label className="block">
@@ -293,15 +295,12 @@ export function ConnectionCard({
                 className="btn btn-primary"
                 disabled={saving !== null || !email.trim() || !password}
                 onClick={() => send({ action: "sign_in", email, password }, "save")}
+                title="Checked against Jobix before it is stored, so saving it proves it works. Encrypted at rest and never sent back to this page."
               >
                 {saving === "save" ? <Loader2 size={13} className="animate-spin" /> : <LogIn size={13} />}
                 Sign in and save
               </button>
             </div>
-            <p className="mt-1.5 text-[0.65625rem] leading-relaxed text-ink-3">
-              Checked against Jobix before it is stored, so saving it proves it works. Encrypted at
-              rest and never sent back to this page.
-            </p>
           </>
         )}
         {signInError && (
@@ -325,12 +324,15 @@ export function ConnectionCard({
             while company_key inside the body names the workspace. Test write
             below tries the arrangements and reports which one the platform
             actually keeps. */}
-        <p className="mb-2.5 text-[0.75rem] leading-relaxed text-ink-2">
+        <p
+          className="mb-2.5 text-[0.75rem] leading-relaxed text-ink-2"
+          title="A key for another workspace is accepted and the customer appears nowhere, so if a send reports queued and nothing arrives, this is the first thing to change."
+        >
           {key.using === "none"
-            ? "Not set. Writing a customer needs a credential — in Jobix this is the API key, described there as authenticating API requests."
+            ? "Not set. Writing a customer needs the Jobix API key."
             : `In use${key.hint ? ` (${key.hint})` : ""}, ${
                 key.using === "stored" ? "saved here" : "from an environment variable"
-              }. A key for another workspace is accepted and the customer appears nowhere, so if a send reports queued and nothing arrives, this is the first thing to change.`}
+              }.`}
         </p>
         <div className="flex flex-wrap items-end gap-2">
           <label className="block">
@@ -381,9 +383,11 @@ export function ConnectionCard({
               {probing ? <Loader2 size={13} className="animate-spin" /> : <Plug size={13} />}
               Test write
             </button>
-            <span className="text-[0.6875rem] leading-relaxed text-ink-3">
-              Writes one record named &ldquo;AIployee connection test&rdquo; with no dialling flag,
-              then looks for it. Nobody is called.
+            <span
+              className="text-[0.6875rem] leading-relaxed text-ink-3"
+              title="It is written with no dialling flag, then looked for."
+            >
+              Writes one record named &ldquo;AIployee connection test&rdquo;. Nobody is called.
             </span>
           </div>
 
@@ -427,11 +431,11 @@ export function ConnectionCard({
         </div>
       </div>
 
-      <p className="mt-3 border-t border-line-2 pt-2.5 text-[0.6875rem] leading-relaxed text-ink-3">
-        A deployment only sees the variables that existed when it was built, and each hosting
-        environment keeps its own set. If a variable reads Not set here but exists in the dashboard,
-        it was added to a different environment, or added after this build — redeploy. Signing in
-        above avoids that for the sign-in itself.
+      <p
+        className="mt-3 border-t border-line-2 pt-2.5 text-[0.6875rem] leading-relaxed text-ink-3"
+        title="A deployment only sees the variables that existed when it was built, and each hosting environment keeps its own set. Signing in above avoids that for the sign-in itself."
+      >
+        A variable set after this build, or on another environment, reads Not set — redeploy.
       </p>
 
       <p className="num mt-2 text-[0.65625rem] text-ink-3">

@@ -41,7 +41,7 @@ export default async function PaymentsPage({
       <CollectionsTabs />
       <PageHeader
         title="Payments"
-        description="Recovered money, linked back to promises and campaigns."
+        description="Recovered money"
         actions={
           <RecordPaymentButton
             debtors={debtors.map((d) => ({
