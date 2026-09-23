@@ -3,6 +3,16 @@
 // so the Vercel build works without renaming environment variables by hand.
 import { spawnSync } from "node:child_process";
 
+// Preview deployments point at the production database, so migrating there
+// applies unmerged branches' migrations to production — and one that fails
+// blocks every later deploy (P3009). Only production builds migrate unless
+// previews get their own database (e.g. a Neon branch per preview) and
+// MIGRATE_ON_PREVIEW=1 is set.
+if (process.env.VERCEL_ENV === "preview" && process.env.MIGRATE_ON_PREVIEW !== "1") {
+  console.log("Preview deployment: skipping prisma migrate deploy (set MIGRATE_ON_PREVIEW=1 to enable).");
+  process.exit(0);
+}
+
 const url =
   process.env.DATABASE_URL ??
   process.env.POSTGRES_PRISMA_URL ??
