@@ -1,0 +1,20 @@
+{
+  "name": "linkup",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Friends planning PWA: free days, plans, chat, AI planner, push notifications, video calls.",
+  "scripts": {
+    "setup": "npm install && npm --prefix server install && npm --prefix web install && npm --prefix web run build",
+    "build": "npm --prefix web run build",
+    "start": "node server/src/index.js",
+    "dev:server": "node --watch server/src/index.js",
+    "dev:web": "npm --prefix web run dev",
+    "test:e2e": "node tests/two-people.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.0"
+  }
+}
