@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Standalone app with its own toolchain.
+    "linkup/**",
   ]),
 ]);
 
