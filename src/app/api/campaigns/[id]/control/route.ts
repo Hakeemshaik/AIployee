@@ -2,9 +2,15 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getContext, requireRole } from "@/lib/auth";
 import { pauseCampaign, startCampaign, stopCampaign } from "@/services/campaign-control";
+import { startNextBatch } from "@/services/campaign-batches";
+import { resyncCampaign } from "@/services/campaign-resync";
 import { ProviderError } from "@/services/voice";
 
-const schema = z.object({ action: z.enum(["start", "pause", "stop"]) });
+const schema = z.object({
+  action: z.enum(["start", "batch", "resync", "pause", "stop"]),
+  /** batch only — override the campaign's configured batch size for one run. */
+  size: z.coerce.number().int().min(1).max(2000).optional(),
+});
 
 // POST /api/campaigns/:id/control — drive the voice provider.
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -17,6 +23,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "validation_failed" }, { status: 422 });
     }
 
+    // "batch" releases the next slice of never-dialled contacts; "start"
+    // remains the release-everything path for callers that want it.
+    if (parsed.data.action === "batch") {
+      const result = await startNextBatch({
+        organizationId: ctx.organizationId,
+        userId: ctx.userId,
+        campaignId: id,
+        size: parsed.data.size,
+      });
+      return NextResponse.json(result, { status: 201 });
+    }
+    if (parsed.data.action === "resync") {
+      const result = await resyncCampaign(ctx.organizationId, ctx.userId, id);
+      return NextResponse.json(result);
+    }
     if (parsed.data.action === "start") {
       const result = await startCampaign(ctx.organizationId, ctx.userId, id);
       return NextResponse.json(result);

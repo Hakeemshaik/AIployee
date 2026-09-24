@@ -10,6 +10,8 @@ import {
   Play,
   RotateCcw,
   Square,
+  Layers,
+  RefreshCw,
   Pause as PauseIcon,
 } from "lucide-react";
 import { label } from "@/lib/domain";
@@ -27,6 +29,11 @@ type LiveState = {
   outcomes: { outcome: string; count: number }[];
   promises: { count: number; value: number; kept: number; pending: number; broken: number; fulfilmentRate: number };
   redial: Record<string, number>;
+  batch: {
+    batchSize: number; assigned: number; eligible: number; released: number;
+    remaining: number; excluded: number; nextSequence: number;
+    nextBatchSize: number; complete: boolean;
+  };
   activity: {
     id: string; at: string; phone: string; debtorId: string; debtorName: string;
     status: string; outcome: string | null; promisedAmount: number | null; durationSeconds: number;
@@ -41,6 +48,30 @@ const REDIAL_BUTTONS: { filter: string; title: string; icon: typeof RotateCcw }[
   { filter: "callback_due", title: "Run callbacks due", icon: Activity },
   { filter: "failed", title: "Retry failed calls", icon: AlertTriangle },
 ];
+
+/** Turn each control response into one plain sentence for the operator. */
+function describeResult(action: string, body: Record<string, unknown>): string {
+  if (action === "batch") {
+    const n = Number(body.contactCount ?? 0);
+    const left = Number(body.remainingAfter ?? 0);
+    return `Batch ${body.sequence} released — ${n} contact${n === 1 ? "" : "s"} sent to ${body.provider}. ${
+      left > 0 ? `${left} still waiting for a later batch.` : "That was the last batch."
+    }${body.manualStep ? ` ${body.manualStep}` : ""}`;
+  }
+  if (action === "resync") {
+    const fetched = Number(body.fetched ?? 0);
+    const ingested = Number(body.ingested ?? 0);
+    const notReached = Number(body.notReached ?? 0);
+    if (fetched === 0) return "No new call results on the voice platform yet.";
+    return `Synced ${fetched} call${fetched === 1 ? "" : "s"} — ${ingested} new, ${Number(
+      body.duplicates ?? 0,
+    )} already had. ${notReached} contact${notReached === 1 ? " has" : "s have"} still not been reached.`;
+  }
+  if (action === "start") {
+    return `${body.contactsQueued} contacts queued via ${body.provider}.${body.manualStep ? ` ${body.manualStep}` : ""}`;
+  }
+  return `Campaign ${body.status}.`;
+}
 
 function maskPhone(phone: string) {
   return phone.length > 6 ? `${phone.slice(0, 6)}•••${phone.slice(-3)}` : phone;
@@ -95,8 +126,15 @@ export function LiveCampaign({
     };
   }, [campaignId]);
 
-  async function control(action: "start" | "pause" | "stop") {
+  async function control(action: "start" | "batch" | "resync" | "pause" | "stop") {
     if (action === "stop" && !window.confirm("Stop this campaign? Dialling ends for all remaining contacts.")) return;
+    if (
+      action === "batch" &&
+      !window.confirm(
+        `Release batch ${state.batch.nextSequence} — ${state.batch.nextBatchSize} contact${state.batch.nextBatchSize === 1 ? "" : "s"} — to the voice platform?`,
+      )
+    )
+      return;
     setBusy(action);
     setNotice(null);
     try {
@@ -107,13 +145,7 @@ export function LiveCampaign({
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.message ?? body.error ?? "Request failed");
-      setNotice({
-        kind: "ok",
-        text:
-          action === "start"
-            ? `${body.contactsQueued} contacts queued via ${body.provider}.${body.manualStep ? ` ${body.manualStep}` : ""}`
-            : `Campaign ${body.status}.`,
-      });
+      setNotice({ kind: "ok", text: describeResult(action, body) });
       router.refresh();
     } catch (err) {
       setNotice({ kind: "error", text: err instanceof Error ? err.message : "Request failed" });
@@ -174,8 +206,30 @@ export function LiveCampaign({
           </div>
           {canControl && (
             <div className="flex flex-wrap items-center gap-2">
-              <button className="btn btn-primary" disabled={busy !== null || isLive} onClick={() => control("start")}>
-                <Play size={13} /> {busy === "start" ? "Starting…" : "Start campaign"}
+              <button
+                className="btn btn-primary"
+                disabled={busy !== null || state.batch.remaining === 0}
+                title={
+                  state.batch.remaining === 0
+                    ? "Every contact has been released — resync, then redial the ones who did not pick up"
+                    : `Release ${state.batch.nextBatchSize} of the ${state.batch.remaining} contacts still waiting`
+                }
+                onClick={() => control("batch")}
+              >
+                <Play size={13} />
+                {busy === "batch"
+                  ? "Releasing…"
+                  : state.batch.remaining === 0
+                    ? "All contacts released"
+                    : `Run batch ${state.batch.nextSequence} · ${state.batch.nextBatchSize}`}
+              </button>
+              <button
+                className="btn"
+                disabled={busy !== null}
+                title="Pull the latest call results back from the voice platform"
+                onClick={() => control("resync")}
+              >
+                <RefreshCw size={13} /> {busy === "resync" ? "Syncing…" : "Resync results"}
               </button>
               <button className="btn" disabled={busy !== null || !isLive} onClick={() => control("pause")}>
                 <PauseIcon size={13} /> Pause
@@ -245,9 +299,61 @@ export function LiveCampaign({
           )}
         </GlassCard>
 
-        {/* redial actions */}
+        {/* batch progress + redial actions */}
         <div className="space-y-4">
-          <GlassCard title="Redial actions" subtitle="Each button sends only its filtered contacts">
+          <GlassCard
+            title="Run batches"
+            subtitle={`${state.batch.batchSize} contacts per batch, biggest balances first`}
+          >
+            <div className="mb-3 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+              <div
+                className="h-full rounded-full bg-[#3987e5] transition-[width] duration-500"
+                style={{
+                  width: `${state.batch.eligible > 0 ? Math.round((state.batch.released / state.batch.eligible) * 100) : 0}%`,
+                }}
+              />
+            </div>
+            <dl className="space-y-1.5 text-[0.78125rem]">
+              <div className="flex justify-between">
+                <dt className="text-ink-2">Released so far</dt>
+                <dd className="num font-medium text-ink">
+                  {state.batch.released} of {state.batch.eligible}
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-ink-2">Still waiting</dt>
+                <dd className="num font-medium text-ink">{state.batch.remaining}</dd>
+              </div>
+              {state.batch.excluded > 0 && (
+                <div className="flex justify-between">
+                  <dt className="text-ink-2">Held back</dt>
+                  <dd className="num text-ink-3" title="Suppressed, settled, no valid number, or at the attempt cap">
+                    {state.batch.excluded}
+                  </dd>
+                </div>
+              )}
+            </dl>
+            {state.batches.length > 0 && (
+              <ul className="mt-3 space-y-1 border-t border-white/[0.06] pt-3">
+                {state.batches.map((b) => (
+                  <li key={b.id} className="flex items-center justify-between gap-2 text-[0.71875rem]">
+                    <span className="flex items-center gap-1.5 text-ink-2">
+                      <Layers size={11} className="text-ink-3" />
+                      {b.filter === "batch" ? "Batch" : label(b.filter)}
+                    </span>
+                    <span className="num text-ink-3">
+                      {b.contactCount} · {label(b.status)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </GlassCard>
+
+          <GlassCard
+            title="Redial actions"
+            subtitle="Resync first, then each button sends only its filtered contacts"
+          >
             <ul className="space-y-2.5">
               {REDIAL_BUTTONS.map(({ filter, title, icon: Icon }) => {
                 const count = state.redial[filter] ?? 0;
